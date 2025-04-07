@@ -5,6 +5,7 @@ import Login from './components/Login';
 import Register from './components/Register';
 import Dashboard from './components/Dashboard';
 import LandingPage from './components/LandingPage';
+import UserDashboard from './components/UserDashboard';
 import axios from 'axios';
 
 const theme = createTheme({
@@ -68,6 +69,8 @@ function App() {
               </PrivateRoute>
             }
           />
+          <Route path="/userdashboard" element={<UserDashboard />} />
+
         </Routes>
       </Router>
     </ThemeProvider>

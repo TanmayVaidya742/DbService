@@ -8,7 +8,7 @@ import {
 } from '@mui/material';
 import {
   Menu as MenuIcon, Add as AddIcon, Settings as SettingsIcon,
-  Dashboard as DashboardIcon, Search as SearchIcon
+  Dashboard as DashboardIcon, Search as SearchIcon, Person as PersonIcon
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
@@ -83,6 +83,10 @@ const Dashboard = () => {
         <ListItem button onClick={() => navigate('/dashboard')}>
           <ListItemIcon><DashboardIcon /></ListItemIcon>
           <ListItemText primary="Dashboard" />
+        </ListItem>
+        <ListItem button onClick={() => navigate('/userdashboard')}>
+          <ListItemIcon><PersonIcon /></ListItemIcon>
+          <ListItemText primary="User Dashboard" />
         </ListItem>
       </List>
     </div>
