@@ -1,16 +1,46 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  Box,
-  Button,
+  Container,
   TextField,
   Typography,
-  Container,
-  Paper,
-  Alert,
+  Button,
+  Box,
   Snackbar,
+  Alert,
+  Grid,
+  Paper,
 } from '@mui/material';
+import { styled } from '@mui/material/styles';
 import axios from 'axios';
+
+// Styled Components
+const MainSection = styled('section')({
+  minHeight: '100vh',
+  position: 'relative',
+  backgroundColor: '#ffffff',
+  overflow: 'hidden',
+});
+
+const WaveBackground = styled('div')({
+  position: 'absolute',
+  top: 0,
+  left: 0,
+  right: 0,
+  zIndex: 0,
+});
+
+const ContentWrapper = styled('div')({
+  position: 'relative',
+  zIndex: 1,
+  paddingTop: '5rem',
+});
+
+const StyledPaper = styled(Paper)({
+  padding: '2rem',
+  borderRadius: '16px',
+  boxShadow: '0 6px 20px rgba(0,0,0,0.1)',
+});
 
 const Register = () => {
   const [formData, setFormData] = useState({
@@ -23,13 +53,13 @@ const Register = () => {
     password: '',
     confirmPassword: '',
   });
+
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
   const navigate = useNavigate();
 
-  const handleChange = (e) => {
+  const handleChange = (e) =>
     setFormData({ ...formData, [e.target.name]: e.target.value });
-  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -40,17 +70,14 @@ const Register = () => {
 
     try {
       const { confirmPassword, ...registerData } = formData;
-      // Convert mobileNo to the format expected by the backend
       const dataToSend = {
         ...registerData,
         mobile_no: registerData.mobileNo,
       };
       delete dataToSend.mobileNo;
 
-      const res = await axios.post('http://localhost:5000/api/auth/register', dataToSend);
+      await axios.post('http://localhost:5000/api/auth/register', dataToSend);
       setSuccess(true);
-      
-      // Clear form and error
       setFormData({
         name: '',
         mobileNo: '',
@@ -62,168 +89,112 @@ const Register = () => {
         confirmPassword: '',
       });
       setError('');
-      
-      // Redirect to login after 2 seconds
-      setTimeout(() => {
-        navigate('/login');
-      }, 2000);
+      setTimeout(() => navigate('/login'), 2000);
     } catch (err) {
       setError(err.response?.data?.message || 'Registration failed');
     }
   };
 
   return (
-    <Container component="main" maxWidth="sm">
-      <Box
-        sx={{
-          marginTop: 8,
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-        }}
-      >
-        <Paper elevation={3} sx={{ p: 4, width: '100%' }}>
-          <Typography component="h1" variant="h5" align="center" sx={{ mb: 3 }}>
-            Superadmin Registration
-          </Typography>
-          <Box component="form" onSubmit={handleSubmit} sx={{ mt: 1 }}>
-            <TextField
-              margin="normal"
-              required
-              fullWidth
-              id="name"
-              label="Full Name"
-              name="name"
-              autoComplete="name"
-              autoFocus
-              value={formData.name}
-              onChange={handleChange}
-            />
-            <TextField
-              margin="normal"
-              required
-              fullWidth
-              id="mobileNo"
-              label="Mobile Number"
-              name="mobileNo"
-              autoComplete="tel"
-              value={formData.mobileNo}
-              onChange={handleChange}
-            />
-            <TextField
-              margin="normal"
-              required
-              fullWidth
-              id="address"
-              label="Address"
-              name="address"
-              multiline
-              rows={3}
-              value={formData.address}
-              onChange={handleChange}
-            />
-            <TextField
-              margin="normal"
-              required
-              fullWidth
-              id="email"
-              label="Email Address"
-              name="email"
-              autoComplete="email"
-              value={formData.email}
-              onChange={handleChange}
-            />
-            <TextField
-              margin="normal"
-              required
-              fullWidth
-              id="organization"
-              label="Organization Name"
-              name="organization"
-              value={formData.organization}
-              onChange={handleChange}
-            />
-            <TextField
-              margin="normal"
-              required
-              fullWidth
-              id="username"
-              label="Username"
-              name="username"
-              autoComplete="username"
-              value={formData.username}
-              onChange={handleChange}
-            />
-            <TextField
-              margin="normal"
-              required
-              fullWidth
-              name="password"
-              label="Password"
-              type="password"
-              id="password"
-              autoComplete="new-password"
-              value={formData.password}
-              onChange={handleChange}
-            />
-            <TextField
-              margin="normal"
-              required
-              fullWidth
-              name="confirmPassword"
-              label="Confirm Password"
-              type="password"
-              id="confirmPassword"
-              value={formData.confirmPassword}
-              onChange={handleChange}
-            />
-            {error && (
-              <Typography color="error" align="center" sx={{ mt: 2 }}>
-                {error}
-              </Typography>
-            )}
-            <Button
-              type="submit"
-              fullWidth
-              variant="contained"
-              sx={{ 
-                mt: 3, 
-                mb: 2,
-                bgcolor: '#7C3AED',
-                '&:hover': {
-                  bgcolor: '#6D28D9',
-                }
-              }}
-            >
-              Register
-            </Button>
-            <Button
-              fullWidth
-              variant="text"
-              onClick={() => navigate('/login')}
-              sx={{ 
-                color: '#7C3AED',
-                '&:hover': {
-                  bgcolor: 'rgba(124, 58, 237, 0.04)',
-                }
-              }}
-            >
-              Already have an account? Login
-            </Button>
-          </Box>
-        </Paper>
-      </Box>
-      <Snackbar
-        open={success}
-        autoHideDuration={2000}
-        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
-      >
+    <MainSection>
+      {/* Wave background */}
+      <WaveBackground>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 320" style={{ display: 'block' }}>
+          <defs>
+            <linearGradient id="wave-gradient" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stopColor="#8B5CF6" />
+              <stop offset="100%" stopColor="#7C3AED" />
+            </linearGradient>
+          </defs>
+          <path
+            fill="url(#wave-gradient)"
+            fillOpacity="0.2"
+            d="M0,128L48,122.7C96,117,192,107,288,122.7C384,139,480,181,576,170.7C672,160,768,96,864,80C960,64,1056,96,1152,106.7C1248,117,1344,107,1392,101.3L1440,96L1440,0L1392,0C1344,0,1248,0,1152,0C1056,0,960,0,864,0C768,0,672,0,576,0C480,0,384,0,288,0C192,0,96,0,48,0L0,0Z"
+          />
+        </svg>
+      </WaveBackground>
+
+      {/* Registration Form */}
+      <ContentWrapper>
+        <Container maxWidth="md">
+          <Grid container spacing={4} justifyContent="center">
+            <Grid item xs={12} md={10}>
+              <StyledPaper>
+                <Typography
+                  variant="h4"
+                  align="center"
+                  gutterBottom
+                  sx={{ fontWeight: 600, color: '#111827' }}
+                >
+                  Superadmin Registration
+                </Typography>
+
+                <Box component="form" onSubmit={handleSubmit} noValidate sx={{ mt: 3 }}>
+                  <Grid container spacing={2}>
+                    <Grid item xs={12} sm={6}>
+                      <TextField required fullWidth label="Full Name" name="name" value={formData.name} onChange={handleChange} />
+                    </Grid>
+                    <Grid item xs={12} sm={6}>
+                      <TextField required fullWidth label="Mobile Number" name="mobileNo" value={formData.mobileNo} onChange={handleChange} />
+                    </Grid>
+                    <Grid item xs={12}>
+                      <TextField required fullWidth label="Address" name="address" multiline rows={3} value={formData.address} onChange={handleChange} />
+                    </Grid>
+                    <Grid item xs={12} sm={6}>
+                      <TextField required fullWidth label="Email Address" name="email" value={formData.email} onChange={handleChange} />
+                    </Grid>
+                    <Grid item xs={12} sm={6}>
+                      <TextField required fullWidth label="Organization Name" name="organization" value={formData.organization} onChange={handleChange} />
+                    </Grid>
+                    <Grid item xs={12} sm={6}>
+                      <TextField required fullWidth label="Username" name="username" value={formData.username} onChange={handleChange} />
+                    </Grid>
+                    <Grid item xs={12} sm={6}>
+                      <TextField required fullWidth type="password" label="Password" name="password" value={formData.password} onChange={handleChange} />
+                    </Grid>
+                    <Grid item xs={12}>
+                      <TextField required fullWidth type="password" label="Confirm Password" name="confirmPassword" value={formData.confirmPassword} onChange={handleChange} />
+                    </Grid>
+                  </Grid>
+
+                  <Button
+                    type="submit"
+                    fullWidth
+                    variant="contained"
+                    sx={{
+                      mt: 3,
+                      bgcolor: '#7C3AED',
+                      textTransform: 'none',
+                      fontSize: '1rem',
+                      padding: '0.75rem',
+                      borderRadius: '8px',
+                      '&:hover': { bgcolor: '#6D28D9' },
+                    }}
+                  >
+                    Register
+                  </Button>
+                </Box>
+              </StyledPaper>
+            </Grid>
+          </Grid>
+        </Container>
+      </ContentWrapper>
+
+      {/* Snackbar for success */}
+      <Snackbar open={success} autoHideDuration={4000}>
         <Alert severity="success" sx={{ width: '100%' }}>
           Registration successful! Redirecting to login...
         </Alert>
       </Snackbar>
-    </Container>
+
+      {/* Snackbar for error */}
+      <Snackbar open={Boolean(error)} autoHideDuration={4000} onClose={() => setError('')}>
+        <Alert onClose={() => setError('')} severity="error" sx={{ width: '100%' }}>
+          {error}
+        </Alert>
+      </Snackbar>
+    </MainSection>
   );
 };
 
-export default Register; 
+export default Register;
