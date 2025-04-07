@@ -140,7 +140,8 @@ const Dashboard = () => {
     <div>
       <Toolbar>
         <Typography variant="h6" noWrap component="div">
-          Superadmin Panel
+          1SPOC
+          
         </Typography>
       </Toolbar>
       <Divider />

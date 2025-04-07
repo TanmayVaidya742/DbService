@@ -3,6 +3,7 @@ const cors = require('cors');
 const pool = require('./config/db');
 const authRoutes = require('./routes/auth');
 const usersRoutes = require('./routes/users');
+require('dotenv').config();
 
 const app = express();
 
@@ -64,6 +65,9 @@ app.use('/api/users', usersRoutes);
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
+  console.log("Connecting with user:", process.env.DB_USER);
+  console.log("Password is:", process.env.DB_PASSWORD);
+
 });
 
 module.exports = pool; 
