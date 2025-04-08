@@ -6,6 +6,7 @@ import Register from './components/Register';
 import Dashboard from './components/Dashboard';
 import LandingPage from './components/LandingPage';
 import UserDashboard from './components/UserDashboard';
+import Organizations from './components/Organizations';
 import axios from 'axios';
 
 const theme = createTheme({
@@ -70,7 +71,7 @@ function App() {
             }
           />
           <Route path="/userdashboard" element={<UserDashboard />} />
-
+          <Route path="/organizations" element={<Organizations />} />
         </Routes>
       </Router>
     </ThemeProvider>
