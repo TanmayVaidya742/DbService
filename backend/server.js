@@ -65,61 +65,100 @@ console.log('Database port:', dbConfig.port);
 const mainPool = new Pool(dbConfig);
 
 // Test connection
-mainPool.query('SELECT 1')
-  .then(() => {
-    console.log('Successfully connected to PostgreSQL');
-  })
-  .catch(err => {
+mainPool.connect((err, client, release) => {
+  if (err) {
     console.error('Error connecting to PostgreSQL:', err);
-    process.exit(1);
-  });
+    return;
+  }
+  console.log('Connected to PostgreSQL successfully');
+  release();
+});
 
 // Initialize database tables
-async function initializeDatabase() {
+const initializeDatabase = async () => {
+  const client = await mainPool.connect();
   try {
-    // Check if tables exist
-    const result = await mainPool.query(`
-      SELECT EXISTS (
-        SELECT FROM information_schema.tables 
-        WHERE table_schema = 'public' 
-        AND table_name IN ('users', 'organizations')
-      )
-    `);
+    // Check if tables exist first
+    const checkTablesQuery = `
+      SELECT table_name 
+      FROM information_schema.tables 
+      WHERE table_schema = 'public' 
+      AND table_name IN ('users', 'organizations', 'superadmins');
+    `;
+    const existingTables = await client.query(checkTablesQuery);
+    const existingTableNames = existingTables.rows.map(row => row.table_name);
 
-    if (result.rows[0].exists) {
-      console.log('Tables already exist in', dbConfig.database);
-      return;
+    // Create organizations table if it doesn't exist
+    if (!existingTableNames.includes('organizations')) {
+      await client.query(`
+        CREATE TABLE organizations (
+          id SERIAL PRIMARY KEY,
+          organization_name VARCHAR(255) NOT NULL UNIQUE,
+          owner_name VARCHAR(255) NOT NULL,
+          domain VARCHAR(255) NOT NULL,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+      `);
+      console.log('Organizations table created successfully');
+    } else {
+      console.log('Organizations table already exists');
     }
 
-    // Create users table
-    await mainPool.query(`
-      CREATE TABLE IF NOT EXISTS users (
-        id SERIAL PRIMARY KEY,
-        username VARCHAR(255) NOT NULL UNIQUE,
-        password VARCHAR(255) NOT NULL,
-        role VARCHAR(50) NOT NULL,
-        organization VARCHAR(255) NOT NULL,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      )
-    `);
+    // Create users table if it doesn't exist
+    if (!existingTableNames.includes('users')) {
+      await client.query(`
+        CREATE TABLE users (
+          id SERIAL PRIMARY KEY,
+          name VARCHAR(255) NOT NULL,
+          email VARCHAR(255) UNIQUE NOT NULL,
+          password VARCHAR(255) NOT NULL,
+          organization VARCHAR(255) NOT NULL,
+          user_type VARCHAR(50) NOT NULL,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY (organization) REFERENCES organizations(organization_name) ON DELETE CASCADE
+        );
+      `);
+      console.log('Users table created successfully');
+    }
 
-    // Create organizations table
-    await mainPool.query(`
-      CREATE TABLE IF NOT EXISTS organizations (
-        id SERIAL PRIMARY KEY,
-        organization_name VARCHAR(255) UNIQUE NOT NULL,
-        owner_name VARCHAR(255) NOT NULL,
-        domain VARCHAR(255) NOT NULL,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      )
-    `);
+    // Create superadmins table if it doesn't exist
+    if (!existingTableNames.includes('superadmins')) {
+      await client.query(`
+        CREATE TABLE superadmins (
+          id SERIAL PRIMARY KEY,
+          name VARCHAR(255) NOT NULL,
+          email VARCHAR(255) UNIQUE NOT NULL,
+          password VARCHAR(255) NOT NULL,
+          organization VARCHAR(255) NOT NULL,
+          username VARCHAR(255) UNIQUE NOT NULL,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY (organization) REFERENCES organizations(organization_name) ON DELETE CASCADE
+        );
+      `);
+      console.log('Superadmins table created successfully');
+    }
 
-    console.log('Database tables initialized successfully');
+    // Sync existing organizations from superadmins table
+    await client.query(`
+      INSERT INTO organizations (organization_name, owner_name, domain)
+      SELECT DISTINCT organization, name, email
+      FROM superadmins
+      WHERE NOT EXISTS (
+        SELECT 1 FROM organizations 
+        WHERE organizations.organization_name = superadmins.organization
+      );
+    `);
+    console.log('Synced organizations from superadmins table');
+
   } catch (error) {
     console.error('Error initializing database:', error);
-    throw error;
+  } finally {
+    client.release();
   }
-}
+};
+
+// Initialize database
+initializeDatabase();
 
 // Routes
 app.use('/api/auth', authRoutes);
@@ -130,7 +169,6 @@ app.use('/api/databases', databasesRoutes);
 const port = process.env.PORT || 5000;
 app.listen(port, () => {
   console.log(`Server is running on port ${port}`);
-  initializeDatabase().catch(console.error);
 });
 
 // Export the mainPool for use in other files

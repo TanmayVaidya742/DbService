@@ -26,27 +26,48 @@ router.get('/', async (req, res) => {
 router.post('/', async (req, res) => {
   const { organization, userType, email, name } = req.body;
   
+  console.log('Received user creation request:', { organization, userType, email, name });
+  
   if (!organization || !userType || !email || !name) {
+    console.log('Missing required fields:', { organization, userType, email, name });
     return res.status(400).json({ message: 'All fields are required' });
   }
 
-  // Generate username and password based on organization
-  const username = `${organization.toLowerCase().replace(/[^a-z0-9]/g, '')}@${organization.split('.').pop()}`;
+  // Generate unique username and password based on organization
+  const timestamp = Date.now().toString().slice(-4); // Get last 4 digits of timestamp
+  const username = `${organization.toLowerCase().replace(/[^a-z0-9]/g, '')}${timestamp}@${organization.split('.').pop()}`;
   const password = `${organization.toLowerCase().replace(/[^a-z0-9]/g, '')}@123`;
 
+  const client = await pool.connect();
   try {
-    // Check if user already exists
-    const userCheck = await pool.query(
+    await client.query('BEGIN');
+
+    // Check if organization exists
+    const orgCheck = await client.query(
+      'SELECT * FROM organizations WHERE organization_name = $1',
+      [organization]
+    );
+
+    if (orgCheck.rows.length === 0) {
+      console.log('Organization not found:', organization);
+      await client.query('ROLLBACK');
+      return res.status(400).json({ message: 'Organization does not exist' });
+    }
+
+    // Check if user already exists with email
+    const userCheck = await client.query(
       'SELECT * FROM users WHERE email = $1',
       [email]
     );
 
     if (userCheck.rows.length > 0) {
+      console.log('User already exists with email:', email);
+      await client.query('ROLLBACK');
       return res.status(400).json({ message: 'User with this email already exists' });
     }
 
     // Insert new user
-    const result = await pool.query(
+    const result = await client.query(
       `INSERT INTO users (first_name, last_name, username, email, organization, password, branch, user_type, created_at)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW())
        RETURNING *`,
@@ -62,6 +83,8 @@ router.post('/', async (req, res) => {
       ]
     );
 
+    await client.query('COMMIT');
+
     res.status(201).json({
       message: 'User created successfully',
       user: {
@@ -75,8 +98,15 @@ router.post('/', async (req, res) => {
       }
     });
   } catch (error) {
+    await client.query('ROLLBACK');
     console.error('Error creating user:', error);
-    res.status(500).json({ message: 'Error creating user', error: error.message });
+    res.status(500).json({ 
+      message: 'Error creating user',
+      error: error.message,
+      detail: error.detail
+    });
+  } finally {
+    client.release();
   }
 });
 
