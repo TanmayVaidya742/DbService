@@ -3,11 +3,8 @@ const cors = require('cors');
 const pool = require('./config/db');
 const authRoutes = require('./routes/auth');
 const usersRoutes = require('./routes/users');
-<<<<<<< Updated upstream
+const organizationsRoutes = require('./routes/organizations')
 require('dotenv').config();
-=======
-const organizationsRoutes = require('./routes/organizations');
->>>>>>> Stashed changes
 
 const app = express();
 
