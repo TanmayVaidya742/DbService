@@ -14,6 +14,7 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import AddUserDialog from './AddUserDialog';
 import { styled } from '@mui/material/styles';
+import OrganizationModal from './OrganizationModal';
 
 const drawerWidth = 240;
 
@@ -28,6 +29,9 @@ const Dashboard = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
   const navigate = useNavigate();
   const [openDialog, setOpenDialog] = useState(false);
+
+  const [open, setOpen] = useState(false);
+
   const [users, setUsers] = useState([]);
   const [formData, setFormData] = useState({
     firstName: '', lastName: '', username: '', organization: '', password: '', domain: ''
@@ -146,7 +150,8 @@ const Dashboard = () => {
               <Button
                 variant="contained"
                 startIcon={<AddIcon />}
-                onClick={handleOpenDialog}
+                // onClick={handleOpenDialog}
+                onClick={() => setOpen(true)}
                 sx={{
                   backgroundColor: '#7C3AED',
                   borderRadius: '10px',
@@ -226,7 +231,9 @@ const Dashboard = () => {
           />
         </Container>
       </Box>
+      <OrganizationModal open={open} onClose={() => setOpen(false)} />
     </Box>
+
   );
 };
 

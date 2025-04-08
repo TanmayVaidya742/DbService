@@ -4,7 +4,11 @@ const pool = new Pool({
   user: 'postgres',
   host: 'localhost',
   database: 'superadmin_db',
+<<<<<<< Updated upstream
   password: 'ptspl1234',
+=======
+  password: 'pass',
+>>>>>>> Stashed changes
   port: 5432,
 });
 
