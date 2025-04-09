@@ -15,6 +15,7 @@ import {
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { styled } from '@mui/material/styles';
+import OrganizationModal from './OrganizationModal';
 
 const drawerWidth = 240;
 
@@ -291,7 +292,7 @@ const Dashboard = () => {
           </StyledPaper>
 
           <Dialog open={openDialog} onClose={handleCloseDialog} maxWidth="sm" fullWidth>
-            <DialogTitle>Add New Orgination</DialogTitle>
+            <DialogTitle>Add New User</DialogTitle>
             <DialogContent>
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 2 }}>
                 <FormControl fullWidth>
@@ -360,6 +361,7 @@ const Dashboard = () => {
           </Snackbar>
         </Container>
       </Box>
+      <OrganizationModal open={open} onClose={() => setOpen(false)} />
     </Box>
   );
 };

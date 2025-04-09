@@ -110,9 +110,10 @@ const initializeDatabase = async () => {
     // First create the database if it doesn't exist
     await createDatabase();
 
-    // Create superadmins table if not exists
+    // Create superadmins table
     await mainPool.query(`
-      CREATE TABLE IF NOT EXISTS superadmins (
+      DROP TABLE IF EXISTS superadmins CASCADE;
+      CREATE TABLE superadmins (
         id SERIAL PRIMARY KEY,
         name VARCHAR(255) NOT NULL,
         mobile_no VARCHAR(20) NOT NULL,
@@ -125,9 +126,10 @@ const initializeDatabase = async () => {
       )
     `);
 
-    // Create users table if not exists
+    // Create users table
     await mainPool.query(`
-      CREATE TABLE IF NOT EXISTS users (
+      DROP TABLE IF EXISTS users CASCADE;
+      CREATE TABLE users (
         id SERIAL PRIMARY KEY,
         first_name VARCHAR(255) NOT NULL,
         last_name VARCHAR(255) NOT NULL,
@@ -140,7 +142,7 @@ const initializeDatabase = async () => {
       )
     `);
 
-    // ✅ Create organizations table if not exists
+
     await mainPool.query(`
       CREATE TABLE IF NOT EXISTS organizations (
         id SERIAL PRIMARY KEY,
