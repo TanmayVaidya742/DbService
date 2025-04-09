@@ -56,8 +56,15 @@ const Dashboard = () => {
 
   const fetchOrganizations = async () => {
     try {
-      const response = await axios.get('http://localhost:5000/api/organizations');
-      setOrganizations(response.data);
+      // Fetch the superadmin data which contains the organization
+      const response = await axios.get('http://localhost:5000/api/superadmin', {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+      
+      // Create an array with the single organization from the superadmin
+      setOrganizations([{ organization_name: response.data.organization }]);
     } catch (error) {
       console.error('Error fetching organizations:', error);
       setSnackbar({
@@ -294,7 +301,7 @@ const Dashboard = () => {
             <DialogTitle>Add New Orgination</DialogTitle>
             <DialogContent>
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 2 }}>
-                <FormControl fullWidth>
+              <FormControl fullWidth>
                   <InputLabel>Select Organization</InputLabel>
                   <Select
                     name="organization"
@@ -302,11 +309,15 @@ const Dashboard = () => {
                     onChange={handleChange}
                     label="Select Organization"
                   >
-                    {organizations.map((org) => (
-                      <MenuItem key={org.organization_name} value={org.organization_name}>
-                        {org.organization_name}
-                      </MenuItem>
-                    ))}
+                    {organizations.length > 0 ? (
+                      organizations.map((org) => (
+                        <MenuItem key={org.organization_name} value={org.organization_name}>
+                          {org.organization_name}
+                        </MenuItem>
+                      ))
+                    ) : (
+                      <MenuItem disabled>No organizations available</MenuItem>
+                    )}
                   </Select>
                 </FormControl>
                 <FormControl fullWidth>
