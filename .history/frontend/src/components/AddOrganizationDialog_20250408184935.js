@@ -32,34 +32,24 @@ const AddOrganizationDialog = ({ open, onClose, onSuccess }) => {
   const fetchSuperadminData = async () => {
     try {
       const token = localStorage.getItem('token');
-      if (!token) {
-        setError('No authentication token found');
-        return;
-      }
-
-      console.log('Fetching superadmin data...');
       const response = await axios.get('http://localhost:5000/api/superadmin', {
         headers: { Authorization: `Bearer ${token}` }
       });
       
-      console.log('Superadmin data received:', response.data);
       if (response.data && response.data.organization) {
         setFormData(prev => ({
           ...prev,
-          organization: response.data.organization,
-          name: response.data.organization
+          organization: response.data.organization
         }));
       }
     } catch (err) {
       console.error('Error fetching superadmin data:', err);
-      setError(err.response?.data?.message || 'Failed to fetch organization details');
+      setError('Failed to fetch organization details');
     }
   };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    if (name === 'organization') return;
-    
     setFormData({ ...formData, [name]: value });
     if (error) setError('');
   };
@@ -155,13 +145,7 @@ const AddOrganizationDialog = ({ open, onClose, onSuccess }) => {
                 name="organization"
                 value={formData.organization}
                 disabled
-                helperText="This is your current organization name"
-                sx={{
-                  '& .MuiInputBase-input.Mui-disabled': {
-                    WebkitTextFillColor: '#000000',
-                    fontWeight: 'bold'
-                  }
-                }}
+                helperText="This is your superadmin organization name"
               />
             </Grid>
           </Grid>

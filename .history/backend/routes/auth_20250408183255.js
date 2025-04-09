@@ -85,44 +85,31 @@ router.post('/register', async (req, res) => {
 // Login Superadmin
 router.post('/login', async (req, res) => {
   try {
-    const { username, password } = req.body;
-    console.log('Login attempt for username:', username);
+    const { email, password } = req.body;
 
-    // Check if username and password are provided
-    if (!username || !password) {
-      console.log('Missing username or password');
-      return res.status(400).json({ message: 'Username and password are required' });
-    }
-
-    // Find user by username in superadmins table
-    console.log('Executing database query for username:', username);
-    const user = await pool.query('SELECT * FROM superadmins WHERE username = $1', [username]);
-    console.log('Query result:', user.rows);
-    console.log('User found:', user.rows[0] ? 'Yes' : 'No');
+    // Check if user exists
+    const user = await pool.query(
+      'SELECT * FROM superadmins WHERE email = $1',
+      [email]
+    );
 
     if (user.rows.length === 0) {
-      console.log('User not found in database');
-      return res.status(401).json({ message: 'Invalid username or password' });
+      return res.status(400).json({ message: 'Invalid credentials' });
     }
 
     // Verify password
-    console.log('Comparing password for user:', user.rows[0].username);
     const validPassword = await bcrypt.compare(password, user.rows[0].password);
-    console.log('Password valid:', validPassword);
-
     if (!validPassword) {
-      console.log('Invalid password for user:', user.rows[0].username);
-      return res.status(401).json({ message: 'Invalid username or password' });
+      return res.status(400).json({ message: 'Invalid credentials' });
     }
 
     // Generate JWT token
     const token = jwt.sign(
-      { id: user.rows[0].id, username: user.rows[0].username },
+      { id: user.rows[0].id },
       process.env.JWT_SECRET || 'fallback-secret-key',
       { expiresIn: '1d' }
     );
 
-    console.log('Login successful for username:', username);
     res.json({
       token,
       user: {
@@ -134,13 +121,8 @@ router.post('/login', async (req, res) => {
         mobile_no: user.rows[0].mobile_no
       }
     });
-  } catch (err) {
-    console.error('Login error:', err);
-    console.error('Error details:', {
-      message: err.message,
-      stack: err.stack,
-      code: err.code
-    });
+  } catch (error) {
+    console.error('Login error:', error);
     res.status(500).json({ message: 'Server error during login' });
   }
 });

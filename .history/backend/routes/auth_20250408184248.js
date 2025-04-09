@@ -95,23 +95,20 @@ router.post('/login', async (req, res) => {
     }
 
     // Find user by username in superadmins table
-    console.log('Executing database query for username:', username);
     const user = await pool.query('SELECT * FROM superadmins WHERE username = $1', [username]);
-    console.log('Query result:', user.rows);
     console.log('User found:', user.rows[0] ? 'Yes' : 'No');
 
     if (user.rows.length === 0) {
-      console.log('User not found in database');
+      console.log('User not found');
       return res.status(401).json({ message: 'Invalid username or password' });
     }
 
     // Verify password
-    console.log('Comparing password for user:', user.rows[0].username);
     const validPassword = await bcrypt.compare(password, user.rows[0].password);
     console.log('Password valid:', validPassword);
 
     if (!validPassword) {
-      console.log('Invalid password for user:', user.rows[0].username);
+      console.log('Invalid password');
       return res.status(401).json({ message: 'Invalid username or password' });
     }
 
@@ -136,11 +133,6 @@ router.post('/login', async (req, res) => {
     });
   } catch (err) {
     console.error('Login error:', err);
-    console.error('Error details:', {
-      message: err.message,
-      stack: err.stack,
-      code: err.code
-    });
     res.status(500).json({ message: 'Server error during login' });
   }
 });

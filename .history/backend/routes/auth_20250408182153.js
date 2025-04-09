@@ -18,11 +18,11 @@ router.get('/check-users', async (req, res) => {
 
 // Register Superadmin
 router.post('/register', async (req, res) => {
-  const { name, mobile_no, address, email, organization, username, password } = req.body;
+  const { organization_name, owner_name, domain, email, password } = req.body;
 
   try {
     // Validate required fields
-    if (!name || !mobile_no || !address || !email || !organization || !username || !password) {
+    if (!organization_name || !owner_name || !domain || !email || !password) {
       return res.status(400).json({ message: 'All fields are required' });
     }
 
@@ -36,14 +36,14 @@ router.post('/register', async (req, res) => {
       return res.status(400).json({ message: 'Email already exists' });
     }
 
-    // Check if username already exists
-    const usernameCheck = await pool.query(
-      'SELECT * FROM superadmins WHERE username = $1',
-      [username]
+    // Check if organization name already exists
+    const orgCheck = await pool.query(
+      'SELECT * FROM superadmins WHERE organization_name = $1',
+      [organization_name]
     );
 
-    if (usernameCheck.rows.length > 0) {
-      return res.status(400).json({ message: 'Username already exists' });
+    if (orgCheck.rows.length > 0) {
+      return res.status(400).json({ message: 'Organization name already exists' });
     }
 
     // Hash password
@@ -52,10 +52,10 @@ router.post('/register', async (req, res) => {
     // Insert into superadmins table
     const result = await pool.query(
       `INSERT INTO superadmins 
-       (name, mobile_no, address, email, organization, username, password) 
-       VALUES ($1, $2, $3, $4, $5, $6, $7) 
-       RETURNING id, name, email, username, organization, mobile_no`,
-      [name, mobile_no, address, email, organization, username, hashedPassword]
+       (organization_name, owner_name, domain, email, password) 
+       VALUES ($1, $2, $3, $4, $5) 
+       RETURNING id, organization_name, owner_name, domain, email`,
+      [organization_name, owner_name, domain, email, hashedPassword]
     );
 
     // Generate JWT token
@@ -69,11 +69,10 @@ router.post('/register', async (req, res) => {
       token,
       user: {
         id: result.rows[0].id,
-        name: result.rows[0].name,
-        email: result.rows[0].email,
-        username: result.rows[0].username,
-        organization: result.rows[0].organization,
-        mobile_no: result.rows[0].mobile_no
+        organization_name: result.rows[0].organization_name,
+        owner_name: result.rows[0].owner_name,
+        domain: result.rows[0].domain,
+        email: result.rows[0].email
       }
     });
   } catch (err) {
@@ -86,61 +85,43 @@ router.post('/register', async (req, res) => {
 router.post('/login', async (req, res) => {
   try {
     const { username, password } = req.body;
-    console.log('Login attempt for username:', username);
 
-    // Check if username and password are provided
-    if (!username || !password) {
-      console.log('Missing username or password');
-      return res.status(400).json({ message: 'Username and password are required' });
-    }
-
-    // Find user by username in superadmins table
-    console.log('Executing database query for username:', username);
-    const user = await pool.query('SELECT * FROM superadmins WHERE username = $1', [username]);
-    console.log('Query result:', user.rows);
-    console.log('User found:', user.rows[0] ? 'Yes' : 'No');
+    // Check if user exists
+    const user = await pool.query(
+      'SELECT * FROM superadmins WHERE username = $1',
+      [username]
+    );
 
     if (user.rows.length === 0) {
-      console.log('User not found in database');
-      return res.status(401).json({ message: 'Invalid username or password' });
+      return res.status(400).json({ message: 'Invalid credentials' });
     }
 
     // Verify password
-    console.log('Comparing password for user:', user.rows[0].username);
     const validPassword = await bcrypt.compare(password, user.rows[0].password);
-    console.log('Password valid:', validPassword);
-
     if (!validPassword) {
-      console.log('Invalid password for user:', user.rows[0].username);
-      return res.status(401).json({ message: 'Invalid username or password' });
+      return res.status(400).json({ message: 'Invalid credentials' });
     }
 
     // Generate JWT token
     const token = jwt.sign(
-      { id: user.rows[0].id, username: user.rows[0].username },
+      { id: user.rows[0].id },
       process.env.JWT_SECRET || 'fallback-secret-key',
       { expiresIn: '1d' }
     );
 
-    console.log('Login successful for username:', username);
     res.json({
       token,
       user: {
         id: user.rows[0].id,
         name: user.rows[0].name,
-        email: user.rows[0].email,
         username: user.rows[0].username,
+        email: user.rows[0].email,
         organization: user.rows[0].organization,
         mobile_no: user.rows[0].mobile_no
       }
     });
-  } catch (err) {
-    console.error('Login error:', err);
-    console.error('Error details:', {
-      message: err.message,
-      stack: err.stack,
-      code: err.code
-    });
+  } catch (error) {
+    console.error('Login error:', error);
     res.status(500).json({ message: 'Server error during login' });
   }
 });

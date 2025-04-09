@@ -10,7 +10,6 @@ const authRoutes = require('./routes/auth');
 const usersRoutes = require('./routes/users');
 const organizationsRoutes = require('./routes/organizations');
 const databasesRoutes = require('./routes/databases');
-const superadminRoutes = require('./routes/superadmin');
 
 const app = express();
 
@@ -62,35 +61,6 @@ console.log('Connecting with user:', dbConfig.user);
 console.log('Database host:', dbConfig.host);
 console.log('Database port:', dbConfig.port);
 
-// Function to create database if it doesn't exist
-const createDatabase = async () => {
-  // Connect to default postgres database
-  const defaultPool = new Pool({
-    ...dbConfig,
-    database: 'postgres'
-  });
-
-  try {
-    // Check if database exists
-    const result = await defaultPool.query(
-      "SELECT 1 FROM pg_database WHERE datname = $1",
-      [dbConfig.database]
-    );
-
-    if (result.rows.length === 0) {
-      // Create database if it doesn't exist
-      await defaultPool.query(`CREATE DATABASE ${dbConfig.database}`);
-      console.log(`Database ${dbConfig.database} created successfully`);
-    } else {
-      console.log(`Database ${dbConfig.database} already exists`);
-    }
-  } catch (err) {
-    console.error('Error creating database:', err);
-  } finally {
-    await defaultPool.end();
-  }
-};
-
 // Create main connection pool
 const mainPool = new Pool(dbConfig);
 
@@ -104,23 +74,17 @@ mainPool.connect((err, client, release) => {
   release();
 });
 
-// Initialize database
+// Initialize database tables
 const initializeDatabase = async () => {
   try {
-    // First create the database if it doesn't exist
-    await createDatabase();
-
     // Create superadmins table
     await mainPool.query(`
-      DROP TABLE IF EXISTS superadmins CASCADE;
-      CREATE TABLE superadmins (
+      CREATE TABLE IF NOT EXISTS superadmins (
         id SERIAL PRIMARY KEY,
-        name VARCHAR(255) NOT NULL,
-        mobile_no VARCHAR(20) NOT NULL,
-        address TEXT NOT NULL,
+        organization_name VARCHAR(255) NOT NULL,
+        owner_name VARCHAR(255) NOT NULL,
+        domain VARCHAR(255) NOT NULL,
         email VARCHAR(255) NOT NULL UNIQUE,
-        organization VARCHAR(255) NOT NULL,
-        username VARCHAR(255) NOT NULL UNIQUE,
         password VARCHAR(255) NOT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
@@ -128,8 +92,7 @@ const initializeDatabase = async () => {
 
     // Create users table
     await mainPool.query(`
-      DROP TABLE IF EXISTS users CASCADE;
-      CREATE TABLE users (
+      CREATE TABLE IF NOT EXISTS users (
         id SERIAL PRIMARY KEY,
         first_name VARCHAR(255) NOT NULL,
         last_name VARCHAR(255) NOT NULL,
@@ -156,7 +119,6 @@ app.use('/api/auth', authRoutes);
 app.use('/api/users', usersRoutes);
 app.use('/api/organizations', organizationsRoutes);
 app.use('/api/databases', databasesRoutes);
-app.use('/api/superadmin', superadminRoutes);
 
 const port = process.env.PORT || 5000;
 app.listen(port, () => {

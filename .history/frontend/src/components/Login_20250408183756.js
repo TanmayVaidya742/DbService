@@ -43,27 +43,15 @@ const StyledPaper = styled(Paper)({
 });
 
 const Login = () => {
-  const [formData, setFormData] = useState({ username: '', password: '' });
+  const [formData, setFormData] = useState({ email: '', password: '' });
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
   const navigate = useNavigate();
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData({ ...formData, [name]: value });
-    // Clear error when user starts typing
-    if (error) setError('');
-  };
+  const handleChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value });
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
-    // Validate username is not empty
-    if (!formData.username.trim()) {
-      setError('Please enter your username');
-      return;
-    }
-
     try {
       console.log('Attempting login with:', formData);
       const res = await axios.post('http://localhost:5000/api/auth/login', formData);
@@ -78,7 +66,7 @@ const Login = () => {
         response: err.response?.data,
         status: err.response?.status
       });
-      setError(err.response?.data?.message || 'Login failed. Please check your credentials.');
+      setError(err.response?.data?.message || 'Login failed');
     }
   };
 
@@ -121,15 +109,13 @@ const Login = () => {
                     margin="normal"
                     required
                     fullWidth
-                    label="Username"
-                    name="username"
-                    autoComplete="username"
+                    label="Email"
+                    name="email"
+                    type="email"
+                    autoComplete="email"
                     autoFocus
-                    value={formData.username}
+                    value={formData.email}
                     onChange={handleChange}
-                    error={Boolean(error)}
-                    helperText={error}
-                    placeholder="Enter your username"
                   />
                   <TextField
                     margin="normal"
@@ -141,7 +127,6 @@ const Login = () => {
                     autoComplete="current-password"
                     value={formData.password}
                     onChange={handleChange}
-                    error={Boolean(error)}
                   />
                   <Button
                     type="submit"
