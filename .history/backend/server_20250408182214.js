@@ -10,7 +10,6 @@ const authRoutes = require('./routes/auth');
 const usersRoutes = require('./routes/users');
 const organizationsRoutes = require('./routes/organizations');
 const databasesRoutes = require('./routes/databases');
-const superadminRoutes = require('./routes/superadmin');
 
 const app = express();
 
@@ -115,12 +114,10 @@ const initializeDatabase = async () => {
       DROP TABLE IF EXISTS superadmins CASCADE;
       CREATE TABLE superadmins (
         id SERIAL PRIMARY KEY,
-        name VARCHAR(255) NOT NULL,
-        mobile_no VARCHAR(20) NOT NULL,
-        address TEXT NOT NULL,
+        organization_name VARCHAR(255) NOT NULL UNIQUE,
+        owner_name VARCHAR(255) NOT NULL,
+        domain VARCHAR(255) NOT NULL,
         email VARCHAR(255) NOT NULL UNIQUE,
-        organization VARCHAR(255) NOT NULL,
-        username VARCHAR(255) NOT NULL UNIQUE,
         password VARCHAR(255) NOT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
@@ -156,7 +153,6 @@ app.use('/api/auth', authRoutes);
 app.use('/api/users', usersRoutes);
 app.use('/api/organizations', organizationsRoutes);
 app.use('/api/databases', databasesRoutes);
-app.use('/api/superadmin', superadminRoutes);
 
 const port = process.env.PORT || 5000;
 app.listen(port, () => {

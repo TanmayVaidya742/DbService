@@ -10,7 +10,6 @@ const authRoutes = require('./routes/auth');
 const usersRoutes = require('./routes/users');
 const organizationsRoutes = require('./routes/organizations');
 const databasesRoutes = require('./routes/databases');
-const superadminRoutes = require('./routes/superadmin');
 
 const app = express();
 
@@ -156,7 +155,6 @@ app.use('/api/auth', authRoutes);
 app.use('/api/users', usersRoutes);
 app.use('/api/organizations', organizationsRoutes);
 app.use('/api/databases', databasesRoutes);
-app.use('/api/superadmin', superadminRoutes);
 
 const port = process.env.PORT || 5000;
 app.listen(port, () => {

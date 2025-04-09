@@ -94,31 +94,28 @@ router.post('/login', async (req, res) => {
       return res.status(400).json({ message: 'Username and password are required' });
     }
 
-    // Find user by username in superadmins table
-    console.log('Executing database query for username:', username);
-    const user = await pool.query('SELECT * FROM superadmins WHERE username = $1', [username]);
-    console.log('Query result:', user.rows);
+    // Find user by username
+    const user = await pool.query('SELECT * FROM users WHERE username = $1', [username]);
     console.log('User found:', user.rows[0] ? 'Yes' : 'No');
 
     if (user.rows.length === 0) {
-      console.log('User not found in database');
+      console.log('User not found');
       return res.status(401).json({ message: 'Invalid username or password' });
     }
 
     // Verify password
-    console.log('Comparing password for user:', user.rows[0].username);
     const validPassword = await bcrypt.compare(password, user.rows[0].password);
     console.log('Password valid:', validPassword);
 
     if (!validPassword) {
-      console.log('Invalid password for user:', user.rows[0].username);
+      console.log('Invalid password');
       return res.status(401).json({ message: 'Invalid username or password' });
     }
 
     // Generate JWT token
     const token = jwt.sign(
       { id: user.rows[0].id, username: user.rows[0].username },
-      process.env.JWT_SECRET || 'fallback-secret-key',
+      process.env.JWT_SECRET,
       { expiresIn: '1d' }
     );
 
@@ -127,20 +124,14 @@ router.post('/login', async (req, res) => {
       token,
       user: {
         id: user.rows[0].id,
-        name: user.rows[0].name,
-        email: user.rows[0].email,
         username: user.rows[0].username,
-        organization: user.rows[0].organization,
-        mobile_no: user.rows[0].mobile_no
+        full_name: user.rows[0].full_name,
+        user_type: user.rows[0].user_type,
+        organization_id: user.rows[0].organization_id
       }
     });
   } catch (err) {
     console.error('Login error:', err);
-    console.error('Error details:', {
-      message: err.message,
-      stack: err.stack,
-      code: err.code
-    });
     res.status(500).json({ message: 'Server error during login' });
   }
 });

@@ -43,7 +43,7 @@ const StyledPaper = styled(Paper)({
 });
 
 const Login = () => {
-  const [formData, setFormData] = useState({ username: '', password: '' });
+  const [formData, setFormData] = useState({ email: '', password: '' });
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
   const navigate = useNavigate();
@@ -55,12 +55,17 @@ const Login = () => {
     if (error) setError('');
   };
 
+  const validateEmail = (email) => {
+    const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return re.test(email);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    // Validate username is not empty
-    if (!formData.username.trim()) {
-      setError('Please enter your username');
+    // Validate email format
+    if (!validateEmail(formData.email)) {
+      setError('Please enter a valid email address');
       return;
     }
 
@@ -121,15 +126,16 @@ const Login = () => {
                     margin="normal"
                     required
                     fullWidth
-                    label="Username"
-                    name="username"
-                    autoComplete="username"
+                    label="Email"
+                    name="email"
+                    type="email"
+                    autoComplete="email"
                     autoFocus
-                    value={formData.username}
+                    value={formData.email}
                     onChange={handleChange}
                     error={Boolean(error)}
                     helperText={error}
-                    placeholder="Enter your username"
+                    placeholder="Enter your email address"
                   />
                   <TextField
                     margin="normal"

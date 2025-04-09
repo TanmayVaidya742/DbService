@@ -46,8 +46,7 @@ const AddOrganizationDialog = ({ open, onClose, onSuccess }) => {
       if (response.data && response.data.organization) {
         setFormData(prev => ({
           ...prev,
-          organization: response.data.organization,
-          name: response.data.organization
+          organization: response.data.organization
         }));
       }
     } catch (err) {
@@ -58,8 +57,6 @@ const AddOrganizationDialog = ({ open, onClose, onSuccess }) => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    if (name === 'organization') return;
-    
     setFormData({ ...formData, [name]: value });
     if (error) setError('');
   };
@@ -155,13 +152,7 @@ const AddOrganizationDialog = ({ open, onClose, onSuccess }) => {
                 name="organization"
                 value={formData.organization}
                 disabled
-                helperText="This is your current organization name"
-                sx={{
-                  '& .MuiInputBase-input.Mui-disabled': {
-                    WebkitTextFillColor: '#000000',
-                    fontWeight: 'bold'
-                  }
-                }}
+                helperText="This is your superadmin organization name"
               />
             </Grid>
           </Grid>
