@@ -15,6 +15,7 @@ import {
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { styled } from '@mui/material/styles';
+import OrganizationModal from './OrganizationModal';
 
 const drawerWidth = 240;
 
