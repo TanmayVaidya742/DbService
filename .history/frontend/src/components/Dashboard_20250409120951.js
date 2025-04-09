@@ -34,9 +34,7 @@ const Dashboard = () => {
     organization: '',
     userType: '',
     email: '',
-    name: '',
-    username: '',  // Add this
-    password: ''   // Add this
+    name: ''
   });
   const [snackbar, setSnackbar] = useState({
     open: false,
@@ -58,11 +56,14 @@ const Dashboard = () => {
 
   const fetchOrganizations = async () => {
     try {
+      // Fetch the superadmin data which contains the organization
       const response = await axios.get('http://localhost:5000/api/superadmin', {
         headers: {
           Authorization: `Bearer ${localStorage.getItem('token')}`
         }
       });
+      
+      // Create an array with the single organization from the superadmin
       setOrganizations([{ organization_name: response.data.organization }]);
     } catch (error) {
       console.error('Error fetching organizations:', error);
@@ -73,6 +74,7 @@ const Dashboard = () => {
       });
     }
   };
+
   const fetchUsers = async () => {
     try {
       const res = await axios.get('http://localhost:5000/api/users');
@@ -98,9 +100,7 @@ const Dashboard = () => {
   };
 
   const handleSubmit = async () => {
-    // Check all required fields
-    if (!formData.organization || !formData.userType || !formData.email || 
-        !formData.name || !formData.username || !formData.password) {
+    if (!formData.organization || !formData.userType || !formData.email || !formData.name) {
       setSnackbar({
         open: true,
         message: 'Please fill in all fields',
@@ -110,13 +110,19 @@ const Dashboard = () => {
     }
   
     try {
+      // Split the name into first and last name
+      const nameParts = formData.name.split(' ');
+      const firstName = nameParts[0];
+      const lastName = nameParts.slice(1).join(' ') || '';
+  
       const response = await axios.post('http://localhost:5000/api/users', {
-        name: formData.name,
+        first_name: firstName,
+        last_name: lastName,
         email: formData.email,
         organization: formData.organization,
         user_type: formData.userType,
-        username: formData.username,
-        password: formData.password
+        username: formData.email, // Using email as username for now
+        password: 'defaultPassword' // You should implement proper password handling
       }, {
         headers: {
           Authorization: `Bearer ${localStorage.getItem('token')}`
@@ -133,7 +139,6 @@ const Dashboard = () => {
       handleCloseDialog();
     } catch (error) {
       console.error('Error adding user:', error);
-      console.error('Error response:', error.response?.data);
       setSnackbar({
         open: true,
         message: error.response?.data?.message || 'Error adding user',
@@ -141,13 +146,13 @@ const Dashboard = () => {
       });
     }
   };
-
-  
   const handleCloseSnackbar = () => {
     setSnackbar({ ...snackbar, open: false });
   };
 
   const filteredUsers = users.filter(user =>
+    (user.first_name?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+    (user.last_name?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
     (user.username?.toLowerCase() || '').includes(searchTerm.toLowerCase())
   );
 
@@ -356,28 +361,6 @@ const Dashboard = () => {
                   fullWidth
                   required
                 />
-
-
-                <TextField
-                      label="Username"
-                      name="username"
-                      value={formData.username}
-                      onChange={handleChange}
-                      fullWidth
-                      required
-                />
-
-
-                <TextField
-                  label="Password"
-                  name="password"
-                  type="password"
-                  value={formData.password}
-                  onChange={handleChange}
-                  fullWidth
-                  required
-                />
-
               </Box>
             </DialogContent>
             <DialogActions>

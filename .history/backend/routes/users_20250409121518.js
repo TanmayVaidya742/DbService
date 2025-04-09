@@ -24,35 +24,62 @@ router.get('/', async (req, res) => {
 
 // Create a new user
 router.post('/', async (req, res) => {
-  const { organization, user_type, email, name, username, password } = req.body;
+  const { organization, userType, email, name } = req.body;
   
-  console.log('Received user creation request:', req.body);
+  console.log('Received user creation request:', { organization, userType, email, name });
   
-  if (!organization || !user_type || !email || !name || !username || !password) {
+  if (!organization || !userType || !email || !name) {
+    console.log('Missing required fields:', { organization, userType, email, name });
     return res.status(400).json({ message: 'All fields are required' });
   }
+
+  // Generate unique username and password
+  const timestamp = Date.now().toString().slice(-4);
+  const username = `${organization.toLowerCase().replace(/[^a-z0-9]/g, '')}${timestamp}`;
+  const password = `${organization.toLowerCase().replace(/[^a-z0-9]/g, '')}@123`;
 
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
 
-    // Check if user exists with email or username
+    // Check if organization exists (if you're using organizations table)
+    // If not, you can remove this check since you're using superadmin's organization
+    const orgCheck = await client.query(
+      'SELECT * FROM organizations WHERE organization_name = $1',
+      [organization]
+    );
+
+    if (orgCheck.rows.length === 0) {
+      console.log('Organization not found:', organization);
+      await client.query('ROLLBACK');
+      return res.status(400).json({ message: 'Organization does not exist' });
+    }
+
+    // Check if user already exists with email
     const userCheck = await client.query(
-      'SELECT * FROM users WHERE email = $1 OR username = $2',
-      [email, username]
+      'SELECT * FROM users WHERE email = $1',
+      [email]
     );
 
     if (userCheck.rows.length > 0) {
+      console.log('User already exists with email:', email);
       await client.query('ROLLBACK');
-      return res.status(400).json({ message: 'User with this email or username already exists' });
+      return res.status(400).json({ message: 'User with this email already exists' });
     }
 
-    // Insert new user
+    // Insert new user with just the name field
     const result = await client.query(
       `INSERT INTO users (name, username, email, organization, password, user_type, created_at)
        VALUES ($1, $2, $3, $4, $5, $6, NOW())
        RETURNING *`,
-      [name, username, email, organization, password, user_type]
+      [
+        name, // Just store the full name
+        username,
+        email,
+        organization,
+        password,
+        userType
+      ]
     );
 
     await client.query('COMMIT');

@@ -34,9 +34,7 @@ const Dashboard = () => {
     organization: '',
     userType: '',
     email: '',
-    name: '',
-    username: '',  // Add this
-    password: ''   // Add this
+    name: ''
   });
   const [snackbar, setSnackbar] = useState({
     open: false,
@@ -98,9 +96,7 @@ const Dashboard = () => {
   };
 
   const handleSubmit = async () => {
-    // Check all required fields
-    if (!formData.organization || !formData.userType || !formData.email || 
-        !formData.name || !formData.username || !formData.password) {
+    if (!formData.organization || !formData.userType || !formData.email || !formData.name) {
       setSnackbar({
         open: true,
         message: 'Please fill in all fields',
@@ -111,12 +107,10 @@ const Dashboard = () => {
   
     try {
       const response = await axios.post('http://localhost:5000/api/users', {
-        name: formData.name,
+        name: formData.name, // Send the full name directly
         email: formData.email,
         organization: formData.organization,
-        user_type: formData.userType,
-        username: formData.username,
-        password: formData.password
+        user_type: formData.userType
       }, {
         headers: {
           Authorization: `Bearer ${localStorage.getItem('token')}`
@@ -142,12 +136,14 @@ const Dashboard = () => {
     }
   };
 
-  
+
   const handleCloseSnackbar = () => {
     setSnackbar({ ...snackbar, open: false });
   };
 
   const filteredUsers = users.filter(user =>
+    (user.first_name?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+    (user.last_name?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
     (user.username?.toLowerCase() || '').includes(searchTerm.toLowerCase())
   );
 
@@ -307,79 +303,79 @@ const Dashboard = () => {
           <Dialog open={openDialog} onClose={handleCloseDialog} maxWidth="sm" fullWidth>
             <DialogTitle>Add New Orgination</DialogTitle>
             <DialogContent>
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 2 }}>
-              <FormControl fullWidth>
-                  <InputLabel>Select Organization</InputLabel>
-                  <Select
-                    name="organization"
-                    value={formData.organization}
-                    onChange={handleChange}
-                    label="Select Organization"
-                  >
-                    {organizations.length > 0 ? (
-                      organizations.map((org) => (
-                        <MenuItem key={org.organization_name} value={org.organization_name}>
-                          {org.organization_name}
-                        </MenuItem>
-                      ))
-                    ) : (
-                      <MenuItem disabled>No organizations available</MenuItem>
-                    )}
-                  </Select>
-                </FormControl>
-                <FormControl fullWidth>
-                  <InputLabel>User Type</InputLabel>
-                  <Select
-                    name="userType"
-                    value={formData.userType}
-                    onChange={handleChange}
-                    label="User Type"
-                  >
-                    <MenuItem value="admin">Admin</MenuItem>
-                    <MenuItem value="user">User</MenuItem>
-                  </Select>
-                </FormControl>
-                <TextField
-                  label="Email"
-                  name="email"
-                  type="email"
-                  value={formData.email}
-                  onChange={handleChange}
-                  fullWidth
-                  required
-                />
-                <TextField
-                  label="Full Name"
-                  name="name"
-                  value={formData.name}
-                  onChange={handleChange}
-                  fullWidth
-                  required
-                />
+  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 2 }}>
+    <FormControl fullWidth>
+      <InputLabel>Select Organization</InputLabel>
+      <Select
+        name="organization"
+        value={formData.organization}
+        onChange={handleChange}
+        label="Select Organization"
+      >
+        {organizations.length > 0 ? (
+          organizations.map((org) => (
+            <MenuItem key={org.organization_name} value={org.organization_name}>
+              {org.organization_name}
+            </MenuItem>
+          ))
+        ) : (
+          <MenuItem disabled>No organizations available</MenuItem>
+        )}
+      </Select>
+    </FormControl>
 
+    <FormControl fullWidth>
+      <InputLabel>User Type</InputLabel>
+      <Select
+        name="userType"
+        value={formData.userType}
+        onChange={handleChange}
+        label="User Type"
+      >
+        <MenuItem value="admin">Admin</MenuItem>
+        <MenuItem value="user">User</MenuItem>
+      </Select>
+    </FormControl>
 
-                <TextField
-                      label="Username"
-                      name="username"
-                      value={formData.username}
-                      onChange={handleChange}
-                      fullWidth
-                      required
-                />
+    <TextField
+      label="Full Name"
+      name="name"
+      value={formData.name}
+      onChange={handleChange}
+      fullWidth
+      required
+    />
 
+    <TextField
+      label="Username"
+      name="username"
+      value={formData.username}
+      onChange={handleChange}
+      fullWidth
+      required
+    />
 
-                <TextField
-                  label="Password"
-                  name="password"
-                  type="password"
-                  value={formData.password}
-                  onChange={handleChange}
-                  fullWidth
-                  required
-                />
+    <TextField
+      label="Email"
+      name="email"
+      type="email"
+      value={formData.email}
+      onChange={handleChange}
+      fullWidth
+      required
+    />
 
-              </Box>
-            </DialogContent>
+    <TextField
+      label="Password"
+      name="password"
+      type="password"
+      value={formData.password}
+      onChange={handleChange}
+      fullWidth
+      required
+    />
+  </Box>
+</DialogContent>
             <DialogActions>
               <Button onClick={handleCloseDialog}>Cancel</Button>
               <Button onClick={handleSubmit} variant="contained" color="primary">

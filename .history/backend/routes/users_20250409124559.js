@@ -24,7 +24,7 @@ router.get('/', async (req, res) => {
 
 // Create a new user
 router.post('/', async (req, res) => {
-  const { organization, user_type, email, name, username, password } = req.body;
+  const { organization, userType, email, name, username, password } = req.body;
   
   console.log('Received user creation request:', req.body);
   
@@ -52,7 +52,7 @@ router.post('/', async (req, res) => {
       `INSERT INTO users (name, username, email, organization, password, user_type, created_at)
        VALUES ($1, $2, $3, $4, $5, $6, NOW())
        RETURNING *`,
-      [name, username, email, organization, password, user_type]
+      [name, username, email, organization, password, userType]
     );
 
     await client.query('COMMIT');

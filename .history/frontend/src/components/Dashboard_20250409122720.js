@@ -34,9 +34,7 @@ const Dashboard = () => {
     organization: '',
     userType: '',
     email: '',
-    name: '',
-    username: '',  // Add this
-    password: ''   // Add this
+    name: ''
   });
   const [snackbar, setSnackbar] = useState({
     open: false,
@@ -98,9 +96,7 @@ const Dashboard = () => {
   };
 
   const handleSubmit = async () => {
-    // Check all required fields
-    if (!formData.organization || !formData.userType || !formData.email || 
-        !formData.name || !formData.username || !formData.password) {
+    if (!formData.organization || !formData.userType || !formData.email || !formData.name) {
       setSnackbar({
         open: true,
         message: 'Please fill in all fields',
@@ -111,12 +107,10 @@ const Dashboard = () => {
   
     try {
       const response = await axios.post('http://localhost:5000/api/users', {
-        name: formData.name,
+        name: formData.name, // Send the full name directly
         email: formData.email,
         organization: formData.organization,
-        user_type: formData.userType,
-        username: formData.username,
-        password: formData.password
+        user_type: formData.userType
       }, {
         headers: {
           Authorization: `Bearer ${localStorage.getItem('token')}`
@@ -148,6 +142,8 @@ const Dashboard = () => {
   };
 
   const filteredUsers = users.filter(user =>
+    (user.first_name?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+    (user.last_name?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
     (user.username?.toLowerCase() || '').includes(searchTerm.toLowerCase())
   );
 
@@ -365,18 +361,7 @@ const Dashboard = () => {
                       onChange={handleChange}
                       fullWidth
                       required
-                />
-
-
-                <TextField
-                  label="Password"
-                  name="password"
-                  type="password"
-                  value={formData.password}
-                  onChange={handleChange}
-                  fullWidth
-                  required
-                />
+                    />
 
               </Box>
             </DialogContent>
