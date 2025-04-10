@@ -104,11 +104,65 @@ mainPool.connect((err, client, release) => {
   release();
 });
 
+// // Initialize database
+// const initializeDatabase = async () => {
+//   try {
+//     // First create the database if it doesn't exist
+//     await createDatabase();
+
+//     // Create superadmins table if not exists
+//     await mainPool.query(`
+//       CREATE TABLE IF NOT EXISTS superadmins (
+//         id SERIAL PRIMARY KEY,
+//         name VARCHAR(255) NOT NULL,
+//         mobile_no VARCHAR(20) NOT NULL,
+//         address TEXT NOT NULL,
+//         email VARCHAR(255) NOT NULL UNIQUE,
+//         organization VARCHAR(255) NOT NULL,
+//         username VARCHAR(255) NOT NULL UNIQUE,
+//         password VARCHAR(255) NOT NULL,
+//         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+//       )
+//     `);
+
+//     // Create users table if not exists
+//     await mainPool.query(`
+//         CREATE TABLE IF NOT EXISTS users (
+//         id SERIAL PRIMARY KEY,
+//         name VARCHAR(255) NOT NULL,
+//         username VARCHAR(255) NOT NULL UNIQUE,
+//         email VARCHAR(255) NOT NULL UNIQUE,
+//         password VARCHAR(255) NOT NULL,
+//         organization VARCHAR(255) NOT NULL,
+//         user_type VARCHAR(50) NOT NULL,
+//         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+//       );
+//     `);
+
+//     // ✅ Create organizations table if not exists
+//     await mainPool.query(`
+//       CREATE TABLE IF NOT EXISTS organizations (
+//         id SERIAL PRIMARY KEY,
+//         organization_name VARCHAR(255) NOT NULL UNIQUE,
+//         owner_name VARCHAR(255) NOT NULL,
+//         domain VARCHAR(255) NOT NULL,
+//         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+//       )
+//     `);
+
+//     console.log('Database tables initialized successfully');
+//   } catch (err) {
+//     console.error('Error initializing database:', err);
+//   }
+// };
 // Initialize database
 const initializeDatabase = async () => {
   try {
     // First create the database if it doesn't exist
     await createDatabase();
+
+    // Enable uuid-ossp extension
+    await mainPool.query(`CREATE EXTENSION IF NOT EXISTS "uuid-ossp";`);
 
     // Create superadmins table if not exists
     await mainPool.query(`
@@ -125,10 +179,10 @@ const initializeDatabase = async () => {
       )
     `);
 
-    // Create users table if not exists
+    // Create users table with UUID primary key
     await mainPool.query(`
-        CREATE TABLE IF NOT EXISTS users (
-        id SERIAL PRIMARY KEY,
+      CREATE TABLE IF NOT EXISTS users (
+        user_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
         name VARCHAR(255) NOT NULL,
         username VARCHAR(255) NOT NULL UNIQUE,
         email VARCHAR(255) NOT NULL UNIQUE,
@@ -139,7 +193,7 @@ const initializeDatabase = async () => {
       );
     `);
 
-    // ✅ Create organizations table if not exists
+    // Create organizations table
     await mainPool.query(`
       CREATE TABLE IF NOT EXISTS organizations (
         id SERIAL PRIMARY KEY,
@@ -155,6 +209,7 @@ const initializeDatabase = async () => {
     console.error('Error initializing database:', err);
   }
 };
+
 
 // Initialize database
 initializeDatabase();

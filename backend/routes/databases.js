@@ -60,7 +60,7 @@ router.post('/', upload.single('csvFile'), async (req, res) => {
       user: process.env.DB_USER || 'postgres',
       host: process.env.DB_HOST || 'localhost',
       database: 'postgres',
-      password: process.env.DB_PASSWORD || 'postgres',
+      password: process.env.DB_PASSWORD || 'pass',
       port: process.env.DB_PORT || 5432,
     });
 
