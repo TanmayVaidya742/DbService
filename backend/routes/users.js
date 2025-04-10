@@ -2,6 +2,8 @@ const express = require('express');
 const router = express.Router();
 const { Pool } = require('pg');
 require('dotenv').config();
+const jwt = require('jsonwebtoken');
+const bcrypt = require('bcrypt');
 
 const pool = new Pool({
   user: process.env.DB_USER,
@@ -23,11 +25,61 @@ router.get('/', async (req, res) => {
 });
 
 // Create a new user
+// router.post('/', async (req, res) => {
+//   const { organization, user_type, email, name, username, password } = req.body;
+  
+//   console.log('Received user creation request:', req.body);
+  
+//   if (!organization || !user_type || !email || !name || !username || !password) {
+//     return res.status(400).json({ message: 'All fields are required' });
+//   }
+
+//   const client = await pool.connect();
+//   try {
+//     await client.query('BEGIN');
+
+//     // Check if user exists with email or username
+//     const userCheck = await client.query(
+//       'SELECT * FROM users WHERE email = $1 OR username = $2',
+//       [email, username]
+//     );
+
+//     if (userCheck.rows.length > 0) {
+//       await client.query('ROLLBACK');
+//       return res.status(400).json({ message: 'User with this email or username already exists' });
+//     }
+
+//     // Insert new user
+//     const result = await client.query(
+//       `INSERT INTO users (name, username, email, organization, password, user_type, created_at)
+//        VALUES ($1, $2, $3, $4, $5, $6, NOW())
+//        RETURNING *`,
+//       [name, username, email, organization, password, user_type]
+//     );
+
+//     await client.query('COMMIT');
+
+//     res.status(201).json({
+//       message: 'User created successfully',
+//       user: result.rows[0]
+//     });
+//   } catch (error) {
+//     await client.query('ROLLBACK');
+//     console.error('Error creating user:', error);
+//     res.status(500).json({ 
+//       message: 'Error creating user',
+//       error: error.message
+//     });
+//   } finally {
+//     client.release();
+//   }
+// });
+// Create a new user
 router.post('/', async (req, res) => {
   const { organization, user_type, email, name, username, password } = req.body;
-  
+
   console.log('Received user creation request:', req.body);
-  
+
   if (!organization || !user_type || !email || !name || !username || !password) {
     return res.status(400).json({ message: 'All fields are required' });
   }
@@ -47,12 +99,15 @@ router.post('/', async (req, res) => {
       return res.status(400).json({ message: 'User with this email or username already exists' });
     }
 
-    // Insert new user
+    // ✅ Hash the password before storing
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    // Insert new user with hashed password
     const result = await client.query(
       `INSERT INTO users (name, username, email, organization, password, user_type, created_at)
        VALUES ($1, $2, $3, $4, $5, $6, NOW())
        RETURNING *`,
-      [name, username, email, organization, password, user_type]
+      [name, username, email, organization, hashedPassword, user_type]
     );
 
     await client.query('COMMIT');
@@ -72,5 +127,6 @@ router.post('/', async (req, res) => {
     client.release();
   }
 });
+
 
 module.exports = router; 
