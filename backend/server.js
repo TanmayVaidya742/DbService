@@ -166,6 +166,11 @@ app.use('/api/organizations', organizationsRoutes);
 app.use('/api/databases', databasesRoutes);
 app.use('/api/superadmin', superadminRoutes);
 
+const { verifyToken } = require('./middleware/authMiddleware');
+app.get('/api/protected', verifyToken, (req, res) => {
+  res.json({ message: `Welcome, ${req.user.username}!`, user_type: req.user.user_type });
+});
+
 const port = process.env.PORT || 5000;
 app.listen(port, () => {
   console.log(`Server is running on port ${port}`);
