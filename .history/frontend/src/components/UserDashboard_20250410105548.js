@@ -112,6 +112,10 @@ const UserDashboard = () => {
           <ListItemIcon><GroupsIcon /></ListItemIcon>
           <ListItemText primary="Organizations" />
         </ListItem>
+        <ListItem button onClick={() => navigate('/users')}>
+          <ListItemIcon><PersonIcon /></ListItemIcon>
+          <ListItemText primary="Users" />
+        </ListItem>
       </List>
     </div>
   );

@@ -2,12 +2,13 @@ import React, { useState } from 'react';
 import {
   Box, Drawer, AppBar, Toolbar, Typography, IconButton,
   List, ListItem, ListItemIcon, ListItemText, Divider, Container,
-  Button, Paper, Snackbar, Alert
+  Button, Paper, Snackbar, Alert, MenuItem, Select, FormControl, InputLabel,
+  Dialog, DialogTitle, DialogContent, DialogActions, TextField
 } from '@mui/material';
 import {
   Menu as MenuIcon, Settings as SettingsIcon,
   Dashboard as DashboardIcon, Groups as GroupsIcon,
-  Person as PersonIcon, Storage as StorageIcon
+  Person as PersonIcon, Storage as StorageIcon, Add as AddIcon
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
@@ -23,14 +24,23 @@ const StyledPaper = styled(Paper)(({ theme }) => ({
   backgroundColor: '#ffffff',
 }));
 
+// Static organization options
+const ORGANIZATIONS = [
+  { organization_name: 'Organization 1' },
+  { organization_name: 'Organization 2' },
+  { organization_name: 'Organization 3' },
+  { organization_name: 'Organization 4' }
+];
+
 const UserDashboard = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
   const navigate = useNavigate();
   const [openDialog, setOpenDialog] = useState(false);
-  const [databaseFormData, setDatabaseFormData] = useState({
-    databaseName: '',
-    tableName: '',
-    csvFile: null
+  const [formData, setFormData] = useState({
+    organization: '',
+    userType: '',
+    email: '',
+    name: ''
   });
   const [snackbar, setSnackbar] = useState({
     open: false,
@@ -43,41 +53,37 @@ const UserDashboard = () => {
   const handleOpenDialog = () => setOpenDialog(true);
   const handleCloseDialog = () => {
     setOpenDialog(false);
-    setDatabaseFormData({
-      databaseName: '',
-      tableName: '',
-      csvFile: null
+    setFormData({
+      organization: '',
+      userType: '',
+      email: '',
+      name: ''
     });
   };
 
-  const handleDatabaseChange = (e) => {
-    setDatabaseFormData({ ...databaseFormData, [e.target.name]: e.target.value });
+  const handleChange = (e) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handleDatabaseFileChange = (e) => {
-    setDatabaseFormData({ ...databaseFormData, csvFile: e.target.files[0] });
+  const handleFileChange = (e) => {
+    if (e.target.files && e.target.files[0]) {
+      setFormData({ ...formData, csvFile: e.target.files[0] });
+    }
   };
 
-  const handleDatabaseSubmit = async () => {
-    if (!databaseFormData.databaseName || !databaseFormData.tableName || !databaseFormData.csvFile) {
+  const handleSubmit = async () => {
+    if (!formData.organization || !formData.userType || !formData.email || !formData.name) {
       setSnackbar({
         open: true,
-        message: 'Please fill in all fields and upload a CSV file',
+        message: 'Please fill in all fields',
         severity: 'error'
       });
       return;
     }
 
     try {
-      const formData = new FormData();
-      formData.append('databaseName', databaseFormData.databaseName);
-      formData.append('tableName', databaseFormData.tableName);
-      formData.append('csvFile', databaseFormData.csvFile);
-
-      const response = await axios.post('http://localhost:5000/api/databases', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data'
-        }
+      const response = await axios.post('http://localhost:5000/api/users', {
+        ...formData,
       });
       
       setSnackbar({
@@ -88,10 +94,10 @@ const UserDashboard = () => {
       
       handleCloseDialog();
     } catch (error) {
-      console.error('Error creating database:', error);
+      console.error('Error adding user:', error);
       setSnackbar({
         open: true,
-        message: error.response?.data?.message || 'Error creating database',
+        message: error.response?.data?.message || 'Error adding user',
         severity: 'error'
       });
     }
@@ -108,9 +114,17 @@ const UserDashboard = () => {
       </Toolbar>
       <Divider />
       <List>
+        <ListItem button onClick={() => navigate('/dashboard')}>
+          <ListItemIcon><DashboardIcon /></ListItemIcon>
+          <ListItemText primary="Dashboard" />
+        </ListItem>
         <ListItem button onClick={() => navigate('/organizations')}>
           <ListItemIcon><GroupsIcon /></ListItemIcon>
           <ListItemText primary="Organizations" />
+        </ListItem>
+        <ListItem button onClick={() => navigate('/users')}>
+          <ListItemIcon><PersonIcon /></ListItemIcon>
+          <ListItemText primary="Users" />
         </ListItem>
       </List>
     </div>
@@ -183,16 +197,63 @@ const UserDashboard = () => {
             </Button>
           </Box>
         </Container>
-        
-        <AddDatabaseDialog
-          open={openDialog}
-          onClose={handleCloseDialog}
-          formData={databaseFormData}
-          onChange={handleDatabaseChange}
-          onFileChange={handleDatabaseFileChange}
-          onSubmit={handleDatabaseSubmit}
-        />
-        
+        <Dialog open={openDialog} onClose={handleCloseDialog} maxWidth="sm" fullWidth>
+          <DialogTitle>Add New User</DialogTitle>
+          <DialogContent>
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 2 }}>
+              <FormControl fullWidth>
+                <InputLabel>Select Organization</InputLabel>
+                <Select
+                  name="organization"
+                  value={formData.organization}
+                  onChange={handleChange}
+                  label="Select Organization"
+                >
+                  {ORGANIZATIONS.map((org) => (
+                    <MenuItem key={org.organization_name} value={org.organization_name}>
+                      {org.organization_name}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+              <FormControl fullWidth>
+                <InputLabel>User Type</InputLabel>
+                <Select
+                  name="userType"
+                  value={formData.userType}
+                  onChange={handleChange}
+                  label="User Type"
+                >
+                  <MenuItem value="admin">Admin</MenuItem>
+                  <MenuItem value="user">User</MenuItem>
+                </Select>
+              </FormControl>
+              <TextField
+                label="Email"
+                name="email"
+                type="email"
+                value={formData.email}
+                onChange={handleChange}
+                fullWidth
+                required
+              />
+              <TextField
+                label="Full Name"
+                name="name"
+                value={formData.name}
+                onChange={handleChange}
+                fullWidth
+                required
+              />
+            </Box>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={handleCloseDialog}>Cancel</Button>
+            <Button onClick={handleSubmit} variant="contained" color="primary">
+              Add User
+            </Button>
+          </DialogActions>
+        </Dialog>
         <Snackbar
           open={snackbar.open}
           autoHideDuration={6000}
