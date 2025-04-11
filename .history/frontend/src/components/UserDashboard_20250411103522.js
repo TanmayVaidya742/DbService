@@ -1,15 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   Box, Drawer, AppBar, Toolbar, Typography, IconButton,
   List, ListItem, ListItemIcon, ListItemText, Divider, Container,
-  Button, Paper, Snackbar, Alert, Table, TableBody, TableCell,
-  TableContainer, TableHead, TableRow, Chip, Dialog, DialogTitle,
-  DialogContent, DialogContentText, DialogActions
+  Button, Paper, Snackbar, Alert
 } from '@mui/material';
 import {
   Menu as MenuIcon, Settings as SettingsIcon,
-  Groups as GroupsIcon, Storage as StorageIcon,
-  Visibility as VisibilityIcon, ContentCopy as ContentCopyIcon
+  Dashboard as DashboardIcon, Groups as GroupsIcon,
+  Person as PersonIcon, Storage as StorageIcon
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
@@ -23,7 +21,6 @@ const StyledPaper = styled(Paper)(({ theme }) => ({
   borderRadius: '16px',
   boxShadow: '0 6px 20px rgba(0,0,0,0.05)',
   backgroundColor: '#ffffff',
-  marginTop: theme.spacing(3),
 }));
 
 const UserDashboard = () => {
@@ -40,27 +37,6 @@ const UserDashboard = () => {
     message: '',
     severity: 'success'
   });
-  const [databases, setDatabases] = useState([]);
-  const [openApiKeyDialog, setOpenApiKeyDialog] = useState(false);
-  const [currentApiKey, setCurrentApiKey] = useState('');
-
-  useEffect(() => {
-    fetchDatabases();
-  }, []);
-
-  const fetchDatabases = async () => {
-    try {
-      const response = await axios.get('http://localhost:5000/api/databases');
-      setDatabases(response.data);
-    } catch (error) {
-      console.error('Error fetching databases:', error);
-      setSnackbar({
-        open: true,
-        message: 'Failed to fetch databases',
-        severity: 'error'
-      });
-    }
-  };
 
   const handleDrawerToggle = () => setMobileOpen(!mobileOpen);
 
@@ -110,7 +86,6 @@ const UserDashboard = () => {
         severity: 'success'
       });
       
-      fetchDatabases();
       handleCloseDialog();
     } catch (error) {
       console.error('Error creating database:', error);
@@ -120,21 +95,6 @@ const UserDashboard = () => {
         severity: 'error'
       });
     }
-  };
-
-  const handleShowApiKey = (apiKey) => {
-    setCurrentApiKey(apiKey);
-    setOpenApiKeyDialog(true);
-  };
-
-  const handleCopyApiKey = () => {
-    navigator.clipboard.writeText(currentApiKey);
-    setSnackbar({
-      open: true,
-      message: 'API key copied to clipboard!',
-      severity: 'success'
-    });
-    setOpenApiKeyDialog(false);
   };
 
   const handleCloseSnackbar = () => {
@@ -148,13 +108,9 @@ const UserDashboard = () => {
       </Toolbar>
       <Divider />
       <List>
-      {/* <ListItem button onClick={() => navigate('/userDashboard')}>
+        <ListItem button onClick={() => navigate('/organizations')}>
           <ListItemIcon><GroupsIcon /></ListItemIcon>
-          <ListItemText primary="userDashboard" />
-        </ListItem> */}
-        <ListItem button onClick={() => navigate('/Dashboard')}>
-          <ListItemIcon><GroupsIcon /></ListItemIcon>
-          <ListItemText primary="Dashboard" />
+          <ListItemText primary="Organizations" />
         </ListItem>
       </List>
     </div>
@@ -226,59 +182,6 @@ const UserDashboard = () => {
               Create Database
             </Button>
           </Box>
-
-          <StyledPaper>
-            <Typography variant="h6" gutterBottom sx={{ mb: 3 }}>
-              Your Databases
-            </Typography>
-            <TableContainer>
-              <Table>
-                <TableHead>
-                  <TableRow>
-                    <TableCell>Database Name</TableCell>
-                    <TableCell>Tables</TableCell>
-                    <TableCell>API Key</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {databases.map((db) => (
-                    <TableRow key={db.name}>
-                      <TableCell>{db.name}</TableCell>
-                      <TableCell>
-                        {db.tables.map((table) => (
-                          <Chip
-                            key={table}
-                            label={table}
-                            sx={{ mr: 1, mb: 1 }}
-                            color="primary"
-                          />
-                        ))}
-                      </TableCell>
-                      <TableCell>
-                        {db.apiKey && (
-                          <Button
-                            variant="outlined"
-                            startIcon={<VisibilityIcon />}
-                            onClick={() => handleShowApiKey(db.apiKey)}
-                            sx={{
-                              textTransform: 'none',
-                              borderColor: '#7C3AED',
-                              color: '#7C3AED',
-                              '&:hover': {
-                                borderColor: '#6D28D9',
-                              },
-                            }}
-                          >
-                            Show API Key
-                          </Button>
-                        )}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </TableContainer>
-          </StyledPaper>
         </Container>
         
         <AddDatabaseDialog
@@ -289,41 +192,6 @@ const UserDashboard = () => {
           onFileChange={handleDatabaseFileChange}
           onSubmit={handleDatabaseSubmit}
         />
-        
-        <Dialog open={openApiKeyDialog} onClose={() => setOpenApiKeyDialog(false)}>
-          <DialogTitle>API Key</DialogTitle>
-          <DialogContent>
-            <DialogContentText>
-              Here is your API key for this database. Keep it secure and don't share it with others.
-            </DialogContentText>
-            <Box sx={{
-              mt: 2,
-              p: 2,
-              backgroundColor: '#f5f5f5',
-              borderRadius: '4px',
-              wordBreak: 'break-all',
-              fontFamily: 'monospace'
-            }}>
-              {currentApiKey}
-            </Box>
-          </DialogContent>
-          <DialogActions>
-            <Button onClick={() => setOpenApiKeyDialog(false)}>Close</Button>
-            <Button 
-              onClick={handleCopyApiKey}
-              startIcon={<ContentCopyIcon />}
-              variant="contained"
-              sx={{
-                backgroundColor: '#7C3AED',
-                '&:hover': {
-                  backgroundColor: '#6D28D9',
-                },
-              }}
-            >
-              Copy
-            </Button>
-          </DialogActions>
-        </Dialog>
         
         <Snackbar
           open={snackbar.open}

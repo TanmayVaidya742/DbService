@@ -148,13 +148,9 @@ const UserDashboard = () => {
       </Toolbar>
       <Divider />
       <List>
-      {/* <ListItem button onClick={() => navigate('/userDashboard')}>
+        <ListItem button onClick={() => navigate('/organizations')}>
           <ListItemIcon><GroupsIcon /></ListItemIcon>
-          <ListItemText primary="userDashboard" />
-        </ListItem> */}
-        <ListItem button onClick={() => navigate('/Dashboard')}>
-          <ListItemIcon><GroupsIcon /></ListItemIcon>
-          <ListItemText primary="Dashboard" />
+          <ListItemText primary="Organizations" />
         </ListItem>
       </List>
     </div>

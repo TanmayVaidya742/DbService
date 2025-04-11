@@ -166,9 +166,9 @@ const Dashboard = () => {
           <ListItemIcon><GroupsIcon /></ListItemIcon>
           <ListItemText primary="Organizations" />
         </ListItem>
-        <ListItem button onClick={() => navigate('/UserDashboard')}>
+        <ListItem button onClick={() => navigate('/UserDash')}>
           <ListItemIcon><PersonIcon /></ListItemIcon>
-          <ListItemText primary="Users Dashboard" />
+          <ListItemText primary="Users" />
         </ListItem>
       </List>
     </div>

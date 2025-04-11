@@ -152,9 +152,9 @@ const UserDashboard = () => {
           <ListItemIcon><GroupsIcon /></ListItemIcon>
           <ListItemText primary="userDashboard" />
         </ListItem> */}
-        <ListItem button onClick={() => navigate('/Dashboard')}>
+        <ListItem button onClick={() => navigate('/organizations')}>
           <ListItemIcon><GroupsIcon /></ListItemIcon>
-          <ListItemText primary="Dashboard" />
+          <ListItemText primary="Organizations" />
         </ListItem>
       </List>
     </div>
