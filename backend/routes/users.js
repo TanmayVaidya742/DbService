@@ -76,11 +76,11 @@ router.get('/', async (req, res) => {
 // });
 // Create a new user
 router.post('/', async (req, res) => {
-  const { organization, user_type, email, name, username, password } = req.body;
+  const { organization, email, name, username, password } = req.body;
 
   console.log('Received user creation request:', req.body);
 
-  if (!organization || !user_type || !email || !name || !username || !password) {
+  if (!organization || !email || !name || !username || !password) {
     return res.status(400).json({ message: 'All fields are required' });
   }
 
@@ -104,10 +104,10 @@ router.post('/', async (req, res) => {
 
     // Insert new user with hashed password
     const result = await client.query(
-      `INSERT INTO users (name, username, email, organization, password, user_type, created_at)
-       VALUES ($1, $2, $3, $4, $5, $6, NOW())
+      `INSERT INTO users (name, username, email, organization, password, created_at)
+       VALUES ($1, $2, $3, $4, $5, NOW())
        RETURNING *`,
-      [name, username, email, organization, hashedPassword, user_type]
+      [name, username, email, organization, hashedPassword]
     );
 
     await client.query('COMMIT');
