@@ -11,6 +11,7 @@ const usersRoutes = require('./routes/users');
 const organizationsRoutes = require('./routes/organizations');
 const databasesRoutes = require('./routes/databases');
 const superadminRoutes = require('./routes/superadmin');
+const accessRoutes = require('./routes/access'); // ✅ Add this route
 
 const app = express();
 
@@ -220,6 +221,7 @@ app.use('/api/users', usersRoutes);
 app.use('/api/organizations', organizationsRoutes);
 app.use('/api/databases', databasesRoutes);
 app.use('/api/superadmin', superadminRoutes);
+app.use('/access', accessRoutes); // ✅ Dynamic CRUD API route
 
 const { verifyToken } = require('./middleware/authMiddleware');
 app.get('/api/protected', verifyToken, (req, res) => {

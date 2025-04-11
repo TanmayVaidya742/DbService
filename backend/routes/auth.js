@@ -334,6 +334,7 @@ router.post('/login', async (req, res) => {
       return res.json({
         user: {
           id: user.id,
+          user_id: user.user_id,
           username: user.username,
           name: user.name,
           email: user.email,
