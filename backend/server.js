@@ -11,6 +11,7 @@ const usersRoutes = require('./routes/users');
 const organizationsRoutes = require('./routes/organizations');
 const databasesRoutes = require('./routes/databases');
 const superadminRoutes = require('./routes/superadmin');
+const databaseApiRoutes = require('./routes/databaseAPI');
 
 const app = express();
 
@@ -134,7 +135,6 @@ const initializeDatabase = async () => {
         email VARCHAR(255) NOT NULL UNIQUE,
         password VARCHAR(255) NOT NULL,
         organization VARCHAR(255) NOT NULL,
-        user_type VARCHAR(50) NOT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
     `);
@@ -165,15 +165,22 @@ app.use('/api/users', usersRoutes);
 app.use('/api/organizations', organizationsRoutes);
 app.use('/api/databases', databasesRoutes);
 app.use('/api/superadmin', superadminRoutes);
+app.use('/api/data', databaseApiRoutes);
+
+app.get('/', (request, response) => {
+  console.log('Incoming Request: ', request.url);
+  response.json({ status: 'SUCCESS', message: "Server is running" })
+});
+
 
 const { verifyToken } = require('./middleware/authMiddleware');
 app.get('/api/protected', verifyToken, (req, res) => {
-  res.json({ message: `Welcome, ${req.user.username}!`, user_type: req.user.user_type });
+  res.json({ message: `Welcome, ${req.user.username}!` });
 });
 
 const port = process.env.PORT || 5000;
 app.listen(port, () => {
-  console.log(`Server is running on port ${port}`);
+  console.log(`Server is running on port ${port}`)
 });
 
 // Export the mainPool for use in other files

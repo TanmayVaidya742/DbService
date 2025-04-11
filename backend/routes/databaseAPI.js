@@ -21,7 +21,7 @@ const validateApiKey = async (req, res, next) => {
       port: process.env.DB_PORT || 5432,
     });
 
-    // Check all databases for this API key
+    // Get list of all databases
     const databases = await tempPool.query(`
       SELECT datname FROM pg_database 
       WHERE datistemplate = false AND datname NOT IN ('postgres')
@@ -40,23 +40,35 @@ const validateApiKey = async (req, res, next) => {
       });
 
       try {
-        const result = await dbPool.query(
-          'SELECT database_name, table_name FROM api_keys WHERE key = $1 LIMIT 1',
-          [apiKey]
-        );
-        
-        if (result.rows.length > 0) {
-          dbConfig = {
-            database: db.datname,
-            table: result.rows[0].table_name,
-            pool: dbPool
-          };
-          break;
+        // Check if api_keys table exists
+        const tableExists = await dbPool.query(`
+          SELECT EXISTS (
+            SELECT FROM information_schema.tables 
+            WHERE table_name = 'api_keys'
+          )
+        `);
+
+        if (tableExists.rows[0].exists) {
+          const result = await dbPool.query(
+            'SELECT database_name, table_name FROM api_keys WHERE key = $1 LIMIT 1',
+            [apiKey]
+          );
+          
+          if (result.rows.length > 0) {
+            dbConfig = {
+              database: db.datname,
+              table: result.rows[0].table_name,
+              pool: dbPool // Keep this pool for subsequent queries
+            };
+            break;
+          }
         }
       } catch (err) {
-        console.log(`Database ${db.datname} doesn't have api_keys table`);
+        console.log(`Error checking database ${db.datname}:`, err.message);
       } finally {
-        if (!dbConfig) await dbPool.end(); // Only end if we're not using this pool
+        if (!dbConfig) {
+          await dbPool.end(); // Only end if we're not using this pool
+        }
       }
     }
 
@@ -80,8 +92,8 @@ router.use(validateApiKey);
 
 // CRUD Operations
 
-// GET - Read data
-router.get('/data', async (req, res) => {
+// GET - Read all data
+router.get('/', async (req, res) => {
   try {
     const { pool, table } = req.dbConfig;
     const query = `SELECT * FROM ${table}`;
@@ -93,12 +105,42 @@ router.get('/data', async (req, res) => {
   }
 });
 
+// GET - Read single record
+router.get('/:id', async (req, res) => {
+  try {
+    const { pool, table } = req.dbConfig;
+    const { id } = req.params;
+    
+    const query = `SELECT * FROM ${table} WHERE id = $1`;
+    const result = await pool.query(query, [id]);
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Record not found' });
+    }
+    
+    res.json(result.rows[0]);
+  } catch (error) {
+    console.error('Error fetching record:', error);
+    res.status(500).json({ error: 'Failed to fetch record' });
+  }
+});
+
 // POST - Create data
-router.post('/data', async (req, res) => {
+router.post('/', async (req, res) => {
+  let client;
   try {
     const { pool, table } = req.dbConfig;
     const data = req.body;
-    
+
+    // Validate request body
+    if (!data || Object.keys(data).length === 0) {
+      return res.status(400).json({ error: 'Request body cannot be empty' });
+    }
+
+    // Get a client from the pool
+    client = await pool.connect();
+
+    // Prepare query
     const columns = Object.keys(data).join(', ');
     const values = Object.values(data);
     const placeholders = values.map((_, i) => `$${i + 1}`).join(', ');
@@ -108,17 +150,35 @@ router.post('/data', async (req, res) => {
       VALUES (${placeholders}) 
       RETURNING *
     `;
+
+    // Execute query
+    const result = await client.query(query, values);
     
-    const result = await pool.query(query, values);
     res.status(201).json(result.rows[0]);
   } catch (error) {
-    console.error('Error creating data:', error);
-    res.status(500).json({ error: 'Failed to create data' });
+    console.error('Error creating data:', {
+      message: error.message,
+      stack: error.stack,
+      body: req.body,
+      timestamp: new Date().toISOString()
+    });
+    
+    res.status(500).json({ 
+      error: 'Failed to create data',
+      details: process.env.NODE_ENV === 'development' 
+        ? error.message 
+        : 'Internal server error'
+    });
+  } finally {
+    if (client) {
+      client.release();
+    }
   }
 });
 
 // PUT - Update data
-router.put('/data/:id', async (req, res) => {
+router.put('/:id', async (req, res) => {
+  let client;
   try {
     const { pool, table } = req.dbConfig;
     const { id } = req.params;
@@ -137,7 +197,8 @@ router.put('/data/:id', async (req, res) => {
       RETURNING *
     `;
     
-    const result = await pool.query(query, values);
+    client = await pool.connect();
+    const result = await client.query(query, values);
     
     if (result.rows.length === 0) {
       return res.status(404).json({ error: 'Record not found' });
@@ -147,11 +208,16 @@ router.put('/data/:id', async (req, res) => {
   } catch (error) {
     console.error('Error updating data:', error);
     res.status(500).json({ error: 'Failed to update data' });
+  } finally {
+    if (client) {
+      client.release();
+    }
   }
 });
 
 // DELETE - Delete data
-router.delete('/data/:id', async (req, res) => {
+router.delete('/:id', async (req, res) => {
+  let client;
   try {
     const { pool, table } = req.dbConfig;
     const { id } = req.params;
@@ -162,7 +228,8 @@ router.delete('/data/:id', async (req, res) => {
       RETURNING *
     `;
     
-    const result = await pool.query(query, [id]);
+    client = await pool.connect();
+    const result = await client.query(query, [id]);
     
     if (result.rows.length === 0) {
       return res.status(404).json({ error: 'Record not found' });
@@ -172,6 +239,10 @@ router.delete('/data/:id', async (req, res) => {
   } catch (error) {
     console.error('Error deleting data:', error);
     res.status(500).json({ error: 'Failed to delete data' });
+  } finally {
+    if (client) {
+      client.release();
+    }
   }
 });
 
