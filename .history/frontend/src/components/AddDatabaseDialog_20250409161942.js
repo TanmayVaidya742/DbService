@@ -153,7 +153,7 @@ const AddDatabaseDialog = ({ open, onClose, formData, onChange, onFileChange, on
             },
           }}
         >
-          Create
+          Create Database
         </Button>
       </DialogActions>
     </StyledDialog>

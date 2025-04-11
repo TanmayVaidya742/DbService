@@ -48,6 +48,8 @@ router.post('/', upload.single('csvFile'), async (req, res) => {
   let dbPool = null;
 
   try {
+    console.log('Received request:', { databaseName, tableName, file: csvFile?.originalname });
+
     // Validate required fields
     if (!databaseName || !tableName || !csvFile) {
       throw new Error('Database name, table name, and CSV file are required');
@@ -68,17 +70,44 @@ router.post('/', upload.single('csvFile'), async (req, res) => {
       port: process.env.DB_PORT || 5432,
     });
 
-    // Create new database
-    await tempPool.query(`CREATE DATABASE ${databaseName}`);
+    // Test connection
+    await tempPool.query('SELECT 1');
+    console.log('Successfully connected to PostgreSQL');
 
-    // Connect to the new database
-    dbPool = new Pool({
-      user: process.env.DB_USER || 'postgres',
-      host: process.env.DB_HOST || 'localhost',
-      database: databaseName,
-      password: process.env.DB_PASSWORD || 'postgres',
-      port: process.env.DB_PORT || 5432,
-    });
+    // Check if database exists
+    const dbExists = await tempPool.query(
+      "SELECT 1 FROM pg_database WHERE datname = $1",
+      [databaseName]
+    );
+
+    if (dbExists.rows.length > 0) {
+      console.log(`Database ${databaseName} already exists`);
+      // Database exists, connect to it
+      dbPool = new Pool({
+        user: process.env.DB_USER || 'postgres',
+        host: process.env.DB_HOST || 'localhost',
+        database: databaseName,
+        password: process.env.DB_PASSWORD || 'postgres',
+        port: process.env.DB_PORT || 5432,
+      });
+    } else {
+      // Create new database
+      await tempPool.query(`CREATE DATABASE ${databaseName}`);
+      console.log(`Created database: ${databaseName}`);
+
+      // Connect to the new database
+      dbPool = new Pool({
+        user: process.env.DB_USER || 'postgres',
+        host: process.env.DB_HOST || 'localhost',
+        database: databaseName,
+        password: process.env.DB_PASSWORD || 'postgres',
+        port: process.env.DB_PORT || 5432,
+      });
+    }
+
+    // Test connection to database
+    await dbPool.query('SELECT 1');
+    console.log(`Successfully connected to database ${databaseName}`);
 
     // Read CSV file to get column names
     const columns = [];
@@ -103,6 +132,7 @@ router.post('/', upload.single('csvFile'), async (req, res) => {
       )
     `;
     await dbPool.query(createTableQuery);
+    console.log(`Created table: ${tableName}`);
 
     // Create API key table and store API key
     const apiKey = generateApiKey();
@@ -119,6 +149,7 @@ router.post('/', upload.single('csvFile'), async (req, res) => {
       'INSERT INTO api_keys (key, database_name, table_name) VALUES ($1, $2, $3)',
       [apiKey, databaseName, tableName]
     );
+    console.log('Generated and stored API key');
 
     // Insert data from CSV
     let insertedRows = 0;
@@ -140,6 +171,7 @@ router.post('/', upload.single('csvFile'), async (req, res) => {
         .on('end', resolve);
     });
 
+    console.log(`Inserted ${insertedRows} rows into ${tableName}`);
     fs.unlinkSync(csvFile.path);
     
     res.status(201).json({
@@ -172,77 +204,4 @@ router.post('/', upload.single('csvFile'), async (req, res) => {
   }
 });
 
-// New route to fetch all databases
-router.get('/', async (req, res) => {
-  let tempPool = null;
-  try {
-    tempPool = new Pool({
-      user: process.env.DB_USER || 'postgres',
-      host: process.env.DB_HOST || 'localhost',
-      database: 'postgres',
-      password: process.env.DB_PASSWORD || 'postgres',
-      port: process.env.DB_PORT || 5432,
-    });
-
-    // Get all non-system databases
-    const databases = await tempPool.query(`
-      SELECT datname FROM pg_database 
-      WHERE datistemplate = false AND datname NOT IN ('postgres')
-    `);
-
-    // For each database, check if it has an api_keys table (created by our app)
-    const userDatabases = [];
-    for (const db of databases.rows) {
-      const dbPool = new Pool({
-        user: process.env.DB_USER || 'postgres',
-        host: process.env.DB_HOST || 'localhost',
-        database: db.datname,
-        password: process.env.DB_PASSWORD || 'postgres',
-        port: process.env.DB_PORT || 5432,
-      });
-
-      try {
-        // Check if this database has an api_keys table
-        const hasApiKeyTable = await dbPool.query(`
-          SELECT EXISTS (
-            SELECT FROM information_schema.tables 
-            WHERE table_name = 'api_keys'
-          )
-        `);
-
-        if (hasApiKeyTable.rows[0].exists) {
-          // Get tables (excluding api_keys)
-          const tables = await dbPool.query(`
-            SELECT table_name 
-            FROM information_schema.tables 
-            WHERE table_schema = 'public' 
-            AND table_name != 'api_keys'
-          `);
-
-          // Get API key
-          const apiKey = await dbPool.query(`
-            SELECT key FROM api_keys LIMIT 1
-          `);
-
-          userDatabases.push({
-            name: db.datname,
-            tables: tables.rows.map(t => t.table_name),
-            apiKey: apiKey.rows[0]?.key || null
-          });
-        }
-      } catch (err) {
-        console.log(`Database ${db.datname} is not a user database (no api_keys table)`);
-      } finally {
-        await dbPool.end();
-      }
-    }
-
-    res.json(userDatabases);
-  } catch (error) {
-    console.error('Error fetching databases:', error);
-    res.status(500).json({ error: 'Failed to fetch databases' });
-  } finally {
-    if (tempPool) await tempPool.end().catch(console.error);
-  }
-});
 module.exports = router;

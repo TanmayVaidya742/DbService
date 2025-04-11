@@ -190,28 +190,19 @@ router.get('/', async (req, res) => {
       WHERE datistemplate = false AND datname NOT IN ('postgres')
     `);
 
-    // For each database, check if it has an api_keys table (created by our app)
-    const userDatabases = [];
-    for (const db of databases.rows) {
-      const dbPool = new Pool({
-        user: process.env.DB_USER || 'postgres',
-        host: process.env.DB_HOST || 'localhost',
-        database: db.datname,
-        password: process.env.DB_PASSWORD || 'postgres',
-        port: process.env.DB_PORT || 5432,
-      });
+    // For each database, get its tables and API key
+    const databasesWithDetails = await Promise.all(
+      databases.rows.map(async (db) => {
+        const dbPool = new Pool({
+          user: process.env.DB_USER || 'postgres',
+          host: process.env.DB_HOST || 'localhost',
+          database: db.datname,
+          password: process.env.DB_PASSWORD || 'postgres',
+          port: process.env.DB_PORT || 5432,
+        });
 
-      try {
-        // Check if this database has an api_keys table
-        const hasApiKeyTable = await dbPool.query(`
-          SELECT EXISTS (
-            SELECT FROM information_schema.tables 
-            WHERE table_name = 'api_keys'
-          )
-        `);
-
-        if (hasApiKeyTable.rows[0].exists) {
-          // Get tables (excluding api_keys)
+        try {
+          // Get tables
           const tables = await dbPool.query(`
             SELECT table_name 
             FROM information_schema.tables 
@@ -224,20 +215,25 @@ router.get('/', async (req, res) => {
             SELECT key FROM api_keys LIMIT 1
           `);
 
-          userDatabases.push({
+          await dbPool.end();
+
+          return {
             name: db.datname,
             tables: tables.rows.map(t => t.table_name),
             apiKey: apiKey.rows[0]?.key || null
-          });
+          };
+        } catch (err) {
+          await dbPool.end();
+          return {
+            name: db.datname,
+            tables: [],
+            apiKey: null
+          };
         }
-      } catch (err) {
-        console.log(`Database ${db.datname} is not a user database (no api_keys table)`);
-      } finally {
-        await dbPool.end();
-      }
-    }
+      })
+    );
 
-    res.json(userDatabases);
+    res.json(databasesWithDetails);
   } catch (error) {
     console.error('Error fetching databases:', error);
     res.status(500).json({ error: 'Failed to fetch databases' });
@@ -245,4 +241,5 @@ router.get('/', async (req, res) => {
     if (tempPool) await tempPool.end().catch(console.error);
   }
 });
+
 module.exports = router;
