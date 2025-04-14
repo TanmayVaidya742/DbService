@@ -11,7 +11,8 @@ const usersRoutes = require('./routes/users');
 const organizationsRoutes = require('./routes/organizations');
 const databasesRoutes = require('./routes/databases');
 const superadminRoutes = require('./routes/superadmin');
-const accessRoutes = require('./routes/access'); // ✅ Add this route
+const accessRoutes = require('./routes/access');
+const { verifyToken } = require('./middleware/authMiddleware'); // Moved to top
 
 const app = express();
 
@@ -56,8 +57,12 @@ const dbConfig = {
   host: process.env.DB_HOST || 'localhost',
   database: process.env.DB_NAME || 'postgres',
   password: process.env.DB_PASSWORD || 'ptspl1234',
+  database: process.env.DB_NAME || 'superadmin_db', // Changed from 'postgres'
+  password: process.env.DB_PASSWORD || 'postgres',
   port: process.env.DB_PORT || 5432,
 };
+
+
 
 console.log('Connecting with user:', dbConfig.user);
 console.log('Database host:', dbConfig.host);
@@ -105,57 +110,11 @@ mainPool.connect((err, client, release) => {
   release();
 });
 
-// // Initialize database
-// const initializeDatabase = async () => {
-//   try {
-//     // First create the database if it doesn't exist
-//     await createDatabase();
 
-//     // Create superadmins table if not exists
-//     await mainPool.query(`
-//       CREATE TABLE IF NOT EXISTS superadmins (
-//         id SERIAL PRIMARY KEY,
-//         name VARCHAR(255) NOT NULL,
-//         mobile_no VARCHAR(20) NOT NULL,
-//         address TEXT NOT NULL,
-//         email VARCHAR(255) NOT NULL UNIQUE,
-//         organization VARCHAR(255) NOT NULL,
-//         username VARCHAR(255) NOT NULL UNIQUE,
-//         password VARCHAR(255) NOT NULL,
-//         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-//       )
-//     `);
-
-//     // Create users table if not exists
-//     await mainPool.query(`
-//         CREATE TABLE IF NOT EXISTS users (
-//         id SERIAL PRIMARY KEY,
-//         name VARCHAR(255) NOT NULL,
-//         username VARCHAR(255) NOT NULL UNIQUE,
-//         email VARCHAR(255) NOT NULL UNIQUE,
-//         password VARCHAR(255) NOT NULL,
-//         organization VARCHAR(255) NOT NULL,
-//         user_type VARCHAR(50) NOT NULL,
-//         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-//       );
-//     `);
-
-//     // ✅ Create organizations table if not exists
-//     await mainPool.query(`
-//       CREATE TABLE IF NOT EXISTS organizations (
-//         id SERIAL PRIMARY KEY,
-//         organization_name VARCHAR(255) NOT NULL UNIQUE,
-//         owner_name VARCHAR(255) NOT NULL,
-//         domain VARCHAR(255) NOT NULL,
-//         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-//       )
-//     `);
-
-//     console.log('Database tables initialized successfully');
-//   } catch (err) {
-//     console.error('Error initializing database:', err);
-//   }
-// };
+app.use((req, res, next) => {
+  req.mainPool = mainPool; // Attach the pool to the request object
+  next();
+});
 // Initialize database
 const initializeDatabase = async () => {
   try {
@@ -204,14 +163,33 @@ const initializeDatabase = async () => {
       )
     `);
 
+    await mainPool.query(`
+      CREATE TABLE IF NOT EXISTS db_collection (
+        dbid UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+        dbname VARCHAR(255) NOT NULL UNIQUE,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        user_id UUID NOT NULL REFERENCES users(user_id),
+        apikey TEXT NOT NULL UNIQUE
+      )
+    `);
+
+    // Create table_collection table
+    await mainPool.query(`
+      CREATE TABLE IF NOT EXISTS table_collection (
+        tableid UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+        dbid UUID NOT NULL REFERENCES db_collection(dbid),
+        tablename VARCHAR(255) NOT NULL,
+        schema JSONB NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE(dbid, tablename)
+      )
+    `);
+
     console.log('Database tables initialized successfully');
   } catch (err) {
     console.error('Error initializing database:', err);
   }
 };
-
-
-
 
 // Initialize database
 initializeDatabase();
@@ -220,18 +198,18 @@ initializeDatabase();
 app.use('/api/auth', authRoutes);
 app.use('/api/users', usersRoutes);
 app.use('/api/organizations', organizationsRoutes);
-app.use('/api/databases', databasesRoutes);
+app.use('/api/databases', verifyToken, databasesRoutes);
 app.use('/api/superadmin', superadminRoutes);
+app.use('/api/access', accessRoutes); // Added access routes
 
-const { verifyToken } = require('./middleware/authMiddleware');
 app.get('/api/protected', verifyToken, (req, res) => {
   res.json({ message: `Welcome, ${req.user.username}!` });
 });
 
 const port = process.env.PORT || 5000;
 app.listen(port, () => {
-  console.log(`Server is running on port ${port}`)
+  console.log(`Server is running on port ${port}`);
 });
 
 // Export the mainPool for use in other files
-module.exports = { mainPool }; 
+module.exports = { mainPool };
