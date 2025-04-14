@@ -59,7 +59,16 @@ const UserDashboard = () => {
           Authorization: `Bearer ${localStorage.getItem('token')}`
         }
       });
-      setDatabases(response.data);
+      
+      // Transform the data to match your existing table structure
+      const transformedData = response.data.map(db => ({
+        name: db.dbname,
+        tables: db.tables.filter(t => t.tablename).map(t => t.tablename),
+        apiKey: db.apikey,
+        dbid: db.dbid
+      }));
+      
+      setDatabases(transformedData);
     } catch (error) {
       console.error('Error fetching databases:', error);
       setSnackbar({

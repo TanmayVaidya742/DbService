@@ -104,14 +104,17 @@ router.post('/login', async (req, res) => {
       return res.status(401).json({ message: 'Invalid credentials' });
     }
 
-    // Create token
+    // Create token with consistent structure
+    const tokenPayload = {
+      user_id: isSuperadmin ? user.rows[0].id : user.rows[0].user_id,
+      username: user.rows[0].username,
+      email: user.rows[0].email,
+      user_type: isSuperadmin ? 'superadmin' : 'user'
+    };
+
     const token = jwt.sign(
-      { 
-        id: user.rows[0].id || user.rows[0].user_id, 
-        username: user.rows[0].username,
-        user_type: isSuperadmin ? 'superadmin' : 'user'
-      }, 
-      process.env.JWT_SECRET, 
+      tokenPayload, 
+      process.env.JWT_SECRET || 'fallback-secret-key',
       { expiresIn: '1h' }
     );
 
