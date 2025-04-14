@@ -4,12 +4,13 @@ import {
   List, ListItem, ListItemIcon, ListItemText, Divider, Container,
   Button, Paper, Snackbar, Alert, Table, TableBody, TableCell,
   TableContainer, TableHead, TableRow, Chip, Dialog, DialogTitle,
-  DialogContent, DialogContentText, DialogActions
+  DialogContent, DialogContentText, DialogActions, Menu, MenuItem
 } from '@mui/material';
 import {
   Menu as MenuIcon, Settings as SettingsIcon,
   Groups as GroupsIcon, Storage as StorageIcon,
-  Visibility as VisibilityIcon, ContentCopy as ContentCopyIcon
+  Visibility as VisibilityIcon, ContentCopy as ContentCopyIcon,
+  MoreVert as MoreVertIcon
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
@@ -33,7 +34,8 @@ const UserDashboard = () => {
   const [databaseFormData, setDatabaseFormData] = useState({
     databaseName: '',
     tableName: '',
-    csvFile: null
+    csvFile: null,
+    columns: []
   });
   const [snackbar, setSnackbar] = useState({
     open: false,
@@ -43,6 +45,19 @@ const UserDashboard = () => {
   const [databases, setDatabases] = useState([]);
   const [openApiKeyDialog, setOpenApiKeyDialog] = useState(false);
   const [currentApiKey, setCurrentApiKey] = useState('');
+  const [anchorEl, setAnchorEl] = useState(null);
+  const [selectedDb, setSelectedDb] = useState(null);
+  const openMenu = Boolean(anchorEl);
+
+  const handleMenuClick = (event, db) => {
+    setAnchorEl(event.currentTarget);
+    setSelectedDb(db);
+  };
+
+  const handleMenuClose = () => {
+    setAnchorEl(null);
+    setSelectedDb(null);
+  };
 
   useEffect(() => {
     fetchDatabases();
@@ -50,15 +65,20 @@ const UserDashboard = () => {
 
   const fetchDatabases = async () => {
     try {
-      const response = await axios.get('http://localhost:5000/api/databases');
+      const response = await axios.get('http://localhost:5000/api/databases', {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem('token')}`
+        }
+      });
       setDatabases(response.data);
     } catch (error) {
       console.error('Error fetching databases:', error);
       setSnackbar({
         open: true,
-        message: 'Failed to fetch databases',
+        message: error.response?.data?.error || 'Failed to fetch databases',
         severity: 'error'
       });
+      setDatabases([]);
     }
   };
 
@@ -82,41 +102,94 @@ const UserDashboard = () => {
     setDatabaseFormData({ ...databaseFormData, csvFile: e.target.files[0] });
   };
 
-  const handleDatabaseSubmit = async () => {
-    if (!databaseFormData.databaseName || !databaseFormData.tableName || !databaseFormData.csvFile) {
+  const handleDatabaseSubmit = async (formDataWithColumns) => {
+    if (!formDataWithColumns.databaseName || !formDataWithColumns.tableName) {
       setSnackbar({
         open: true,
-        message: 'Please fill in all fields and upload a CSV file',
+        message: 'Database name and table name are required',
         severity: 'error'
       });
       return;
     }
-
+  
+    const hasColumns = formDataWithColumns.columns && formDataWithColumns.columns.some(col => col.name.trim());
+    if (!hasColumns && !formDataWithColumns.csvFile) {
+      setSnackbar({
+        open: true,
+        message: 'Either define columns or upload a CSV file',
+        severity: 'error'
+      });
+      return;
+    }
+  
+    if (hasColumns) {
+      for (const column of formDataWithColumns.columns) {
+        if (!/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(column.name)) {
+          setSnackbar({
+            open: true,
+            message: 'Column names must start with a letter or underscore and contain only letters, numbers, and underscores',
+            severity: 'error'
+          });
+          return;
+        }
+      }
+    }
+  
     try {
       const formData = new FormData();
-      formData.append('databaseName', databaseFormData.databaseName);
-      formData.append('tableName', databaseFormData.tableName);
-      formData.append('csvFile', databaseFormData.csvFile);
-
+      formData.append('databaseName', formDataWithColumns.databaseName);
+      formData.append('tableName', formDataWithColumns.tableName);
+      
+      if (formDataWithColumns.csvFile) {
+        formData.append('csvFile', formDataWithColumns.csvFile);
+      }
+      
+      if (formDataWithColumns.columns && formDataWithColumns.columns.length > 0) {
+        formData.append('columns', JSON.stringify(formDataWithColumns.columns));
+      }
+  
+      setSnackbar({
+        open: true,
+        message: 'Creating database...',
+        severity: 'info',
+        autoHideDuration: null
+      });
+  
       const response = await axios.post('http://localhost:5000/api/databases', formData, {
         headers: {
-          'Content-Type': 'multipart/form-data'
-        }
+          'Content-Type': 'multipart/form-data',
+          Authorization: `Bearer ${localStorage.getItem('token')}`
+        },
+        timeout: 30000
       });
-      
+  
       setSnackbar({
         open: true,
-        message: response.data.message,
+        message: 'Database created successfully!',
         severity: 'success'
       });
-      
-      fetchDatabases();
+  
+      await fetchDatabases();
       handleCloseDialog();
+  
+      if (response.data.apiKey) {
+        setCurrentApiKey(response.data.apiKey);
+        setOpenApiKeyDialog(true);
+      }
+  
     } catch (error) {
       console.error('Error creating database:', error);
+      
+      let errorMessage = 'Error creating database';
+      if (error.response) {
+        errorMessage = error.response.data.error || error.response.data.message || errorMessage;
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+  
       setSnackbar({
         open: true,
-        message: error.response?.data?.message || 'Error creating database',
+        message: errorMessage,
         severity: 'error'
       });
     }
@@ -141,6 +214,50 @@ const UserDashboard = () => {
     setSnackbar({ ...snackbar, open: false });
   };
 
+  const handleInsert = (db) => {
+    handleMenuClose();
+    console.log('Insert action for', db.name);
+    setSnackbar({
+      open: true,
+      message: `Insert action initiated for ${db.name}`,
+      severity: 'info'
+    });
+    // Implement your insert logic here
+  };
+
+  const handleDelete = (db) => {
+    handleMenuClose();
+    console.log('Delete action for', db.name);
+    setSnackbar({
+      open: true,
+      message: `Delete action initiated for ${db.name}`,
+      severity: 'warning'
+    });
+    // Implement your delete logic here
+  };
+
+  const handleUpdate = (db) => {
+    handleMenuClose();
+    console.log('Update action for', db.name);
+    setSnackbar({
+      open: true,
+      message: `Update action initiated for ${db.name}`,
+      severity: 'info'
+    });
+    // Implement your update logic here
+  };
+
+  const handleRead = (db) => {
+    handleMenuClose();
+    console.log('Read action for', db.name);
+    setSnackbar({
+      open: true,
+      message: `Read action initiated for ${db.name}`,
+      severity: 'info'
+    });
+    // Implement your read logic here
+  };
+
   const drawer = (
     <div>
       <Toolbar>
@@ -148,14 +265,7 @@ const UserDashboard = () => {
       </Toolbar>
       <Divider />
       <List>
-      {/* <ListItem button onClick={() => navigate('/userDashboard')}>
-          <ListItemIcon><GroupsIcon /></ListItemIcon>
-          <ListItemText primary="userDashboard" />
-        </ListItem> */}
-        <ListItem button onClick={() => navigate('/Dashboard')}>
-          <ListItemIcon><GroupsIcon /></ListItemIcon>
-          <ListItemText primary="Dashboard" />
-        </ListItem>
+        {/* Navigation items would go here */}
       </List>
     </div>
   );
@@ -238,6 +348,7 @@ const UserDashboard = () => {
                     <TableCell>Database Name</TableCell>
                     <TableCell>Tables</TableCell>
                     <TableCell>API Key</TableCell>
+                    <TableCell>Actions</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
@@ -273,6 +384,16 @@ const UserDashboard = () => {
                           </Button>
                         )}
                       </TableCell>
+                      <TableCell>
+                        <IconButton
+                          aria-label="more"
+                          aria-controls="long-menu"
+                          aria-haspopup="true"
+                          onClick={(e) => handleMenuClick(e, db)}
+                        >
+                          <MoreVertIcon />
+                        </IconButton>
+                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -280,7 +401,18 @@ const UserDashboard = () => {
             </TableContainer>
           </StyledPaper>
         </Container>
-        
+
+        <Menu
+          anchorEl={anchorEl}
+          open={openMenu}
+          onClose={handleMenuClose}
+        >
+          <MenuItem onClick={() => handleInsert(selectedDb)}>Insert</MenuItem>
+          <MenuItem onClick={() => handleDelete(selectedDb)}>Delete</MenuItem>
+          <MenuItem onClick={() => handleUpdate(selectedDb)}>Update</MenuItem>
+          <MenuItem onClick={() => handleRead(selectedDb)}>Read</MenuItem>
+        </Menu>
+
         <AddDatabaseDialog
           open={openDialog}
           onClose={handleCloseDialog}
@@ -289,7 +421,7 @@ const UserDashboard = () => {
           onFileChange={handleDatabaseFileChange}
           onSubmit={handleDatabaseSubmit}
         />
-        
+
         <Dialog open={openApiKeyDialog} onClose={() => setOpenApiKeyDialog(false)}>
           <DialogTitle>API Key</DialogTitle>
           <DialogContent>
@@ -309,7 +441,7 @@ const UserDashboard = () => {
           </DialogContent>
           <DialogActions>
             <Button onClick={() => setOpenApiKeyDialog(false)}>Close</Button>
-            <Button 
+            <Button
               onClick={handleCopyApiKey}
               startIcon={<ContentCopyIcon />}
               variant="contained"
@@ -324,7 +456,7 @@ const UserDashboard = () => {
             </Button>
           </DialogActions>
         </Dialog>
-        
+
         <Snackbar
           open={snackbar.open}
           autoHideDuration={6000}

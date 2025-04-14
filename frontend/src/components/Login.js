@@ -55,82 +55,79 @@ const Login = () => {
     if (error) setError('');
   };
 
-//   const handleSubmit = async (e) => {
-//     e.preventDefault();
-    
-//     // Validate username is not empty
-//     if (!formData.username.trim()) {
-//       setError('Please enter your username');
-//       return;
-//     }
+  //   const handleSubmit = async (e) => {
+  //     e.preventDefault();
 
-//     try {
-//       console.log('Attempting login with:', formData);
-//       const res = await axios.post('http://localhost:5000/api/auth/login', formData);
-//       console.log('Login response:', res.data);
-//       localStorage.setItem('token', res.data.token);
-//       localStorage.setItem('user', JSON.stringify(res.data.user));
-//       // setSuccess(true);
-//       // setTimeout(() => navigate('/dashboard'), 2000);
-//       setSuccess(true);
+  //     // Validate username is not empty
+  //     if (!formData.username.trim()) {
+  //       setError('Please enter your username');
+  //       return;
+  //     }
 
-// // Redirect based on user_type
-// setTimeout(() => {
-//   if (res.data.user.user_type === 'superadmin') {
-//     navigate('/dashboard');
-//   } else if (res.data.user.user_type === 'user') {
-//     navigate('/userdashboard');
-//   } else {
-//     setError('Unknown user type');
-//   }
-// }, 2000);
+  //     try {
+  //       console.log('Attempting login with:', formData);
+  //       const res = await axios.post('http://localhost:5000/api/auth/login', formData);
+  //       console.log('Login response:', res.data);
+  //       localStorage.setItem('token', res.data.token);
+  //       localStorage.setItem('user', JSON.stringify(res.data.user));
+  //       // setSuccess(true);
+  //       // setTimeout(() => navigate('/dashboard'), 2000);
+  //       setSuccess(true);
 
-//     } catch (err) {
-//       console.error('Login error details:', {
-//         message: err.message,
-//         response: err.response?.data,
-//         status: err.response?.status
-//       });
-//       setError(err.response?.data?.message || 'Login failed. Please check your credentials.');
-//     }
-//   };
+  // // Redirect based on user_type
+  // setTimeout(() => {
+  //   if (res.data.user.user_type === 'superadmin') {
+  //     navigate('/dashboard');
+  //   } else if (res.data.user.user_type === 'user') {
+  //     navigate('/userdashboard');
+  //   } else {
+  //     setError('Unknown user type');
+  //   }
+  // }, 2000);
 
-const handleSubmit = async (e) => {
-  e.preventDefault();
+  //     } catch (err) {
+  //       console.error('Login error details:', {
+  //         message: err.message,
+  //         response: err.response?.data,
+  //         status: err.response?.status
+  //       });
+  //       setError(err.response?.data?.message || 'Login failed. Please check your credentials.');
+  //     }
+  //   };
 
-  if (!formData.username.trim()) {
-    setError('Please enter your username');
-    return;
-  }
+  const handleSubmit = async (e) => {
+    e.preventDefault();
 
-  try {
-    const res = await axios.post('http://localhost:5000/api/auth/login', formData);
+    if (!formData.username.trim()) {
+      setError('Please enter your username');
+      return;
+    }
 
-    localStorage.setItem('token', res.data.token);
-    localStorage.setItem('user', JSON.stringify(res.data.user));
-    setSuccess(true);
+    try {
+      const res = await axios.post('http://localhost:5000/api/auth/login', formData);
 
-    // Redirect based on user_type
-    setTimeout(() => {
-      const userType = res.data.user.user_type;
-      if (userType === 'superadmin') {
-        navigate('/dashboard');
-      } else if (userType === 'user') {
-        navigate('/userdashboard');
-      } else {
-        setError('Unknown user type');
-      }
-    }, 2000);
-  } catch (err) {
-    console.error('Login error details:', {
-      message: err.message,
-      response: err.response?.data,
-      status: err.response?.status
-    });
-    setError(err.response?.data?.message || 'Login failed. Please check your credentials.');
-  }
-};
+      localStorage.setItem('token', res.data.token);
+      localStorage.setItem('user', JSON.stringify(res.data.user));
+      setSuccess(true);
 
+      // Redirect based on user_type
+      setTimeout(() => {
+        const userType = res.data.user.user_type;
+        if (userType === 'superadmin') {
+          navigate('/dashboard');
+        } else {
+          navigate('/userdashboard');
+        }
+      }, 2000);
+    } catch (err) {
+      console.error('Login error details:', {
+        message: err.message,
+        response: err.response?.data,
+        status: err.response?.status
+      });
+      setError(err.response?.data?.message || 'Login failed. Please check your credentials.');
+    }
+  };
 
   return (
     <MainSection>
@@ -163,7 +160,7 @@ const handleSubmit = async (e) => {
                   gutterBottom
                   sx={{ fontWeight: 600, color: '#111827' }}
                 >
-                  Superadmin Login
+                  Login
                 </Typography>
 
                 <Box component="form" onSubmit={handleSubmit} noValidate sx={{ mt: 3 }}>

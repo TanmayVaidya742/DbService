@@ -1,48 +1,43 @@
 import React, { useState, useEffect } from 'react';
 import {
-  Box,
-  Typography,
-  List,
-  ListItem,
-  ListItemText,
-  ListItemSecondaryAction,
-  Divider,
-  Chip,
-  CircularProgress,
-  Grid,
-  Card,
-  CardContent,
-  CardHeader,
-  Avatar,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogContentText,
-  DialogActions,
-  Button,
-  ListItemAvatar,
+  Box, Drawer, AppBar, Toolbar, Typography, IconButton,
+  List, ListItem, ListItemText, ListItemSecondaryAction,
+  Divider, Chip, CircularProgress, Grid, Card, CardContent,
+  CardHeader, Avatar, Dialog, DialogTitle, DialogContent,
+  DialogContentText, DialogActions, Button, ListItemAvatar,
+  ListItemIcon
 } from '@mui/material';
-import { Email as EmailIcon, Business as BusinessIcon, Person as PersonIcon } from '@mui/icons-material';
+import {
+  Menu as MenuIcon,
+  Dashboard as DashboardIcon,
+  Groups as GroupsIcon,
+  Person as PersonIcon,
+  Email as EmailIcon,
+  Business as BusinessIcon,
+  Settings as SettingsIcon
+} from '@mui/icons-material';
+import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 
+const drawerWidth = 240;
+
 const Organizations = () => {
-  const [organizations, setOrganizations] = useState([]);
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const navigate = useNavigate();
+  const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [selectedUser, setSelectedUser] = useState(null);
   const [openDialog, setOpenDialog] = useState(false);
 
+  const handleDrawerToggle = () => setMobileOpen(!mobileOpen);
+
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // Fetch organizations with their users
-        const [orgsResponse, usersResponse] = await Promise.all([
-          axios.get('http://localhost:5000/api/organizations'),
-          axios.get('http://localhost:5000/api/users')
-        ]);
+        const response = await axios.get('http://localhost:5000/api/users');
 
-        // Group users by organization
-        const usersByOrg = usersResponse.data.reduce((acc, user) => {
+        const usersByOrg = response.data.reduce((acc, user) => {
           if (!acc[user.organization]) {
             acc[user.organization] = [];
           }
@@ -50,17 +45,16 @@ const Organizations = () => {
           return acc;
         }, {});
 
-        // Combine organization data with their users
-        const orgsWithUsers = orgsResponse.data.map(org => ({
-          ...org,
-          users: usersByOrg[org.organization_name] || []
+        const orgsWithUsers = Object.keys(usersByOrg).map(orgName => ({
+          organization_name: orgName,
+          users: usersByOrg[orgName]
         }));
 
-        setOrganizations(orgsWithUsers);
+        setUsers(orgsWithUsers);
         setLoading(false);
       } catch (err) {
         console.error('Error fetching data:', err);
-        setError('Failed to load organizations and users');
+        setError('Failed to load users');
         setLoading(false);
       }
     };
@@ -77,6 +71,25 @@ const Organizations = () => {
     setOpenDialog(false);
     setSelectedUser(null);
   };
+
+  const drawer = (
+    <div>
+      <Toolbar>
+        <Typography variant="h6">1SPOC</Typography>
+      </Toolbar>
+      <Divider />
+      <List>
+        <ListItem button onClick={() => navigate('/dashboard')}>
+          <ListItemIcon><DashboardIcon /></ListItemIcon>
+          <ListItemText primary="Dashboard" />
+        </ListItem>
+        <ListItem button onClick={() => navigate('/organizations')}>
+          <ListItemIcon><GroupsIcon /></ListItemIcon>
+          <ListItemText primary="Organizations" />
+        </ListItem>
+      </List>
+    </div>
+  );
 
   if (loading) {
     return (
@@ -95,130 +108,179 @@ const Organizations = () => {
   }
 
   return (
-    <Box sx={{ p: 3 }}>
-      <Typography variant="h4" gutterBottom>
-        Organizations
-      </Typography>
-      
-      <Grid container spacing={3}>
-        {organizations.map((org) => (
-          <Grid item xs={12} key={org.id}>
-            <Card sx={{ mb: 3 }}>
-              <CardHeader
-                avatar={
-                  <Avatar sx={{ bgcolor: 'primary.main' }}>
-                    <BusinessIcon />
-                  </Avatar>
-                }
-                title={org.organization_name}
-                subheader={`Owner: ${org.owner_name}`}
-                action={
-                  <Chip
-                    label={`${org.users.length} Users`}
-                    color="primary"
-                    sx={{ ml: 1 }}
+    <Box sx={{ display: 'flex', backgroundColor: '#f4f6f8', minHeight: '100vh' }}>
+      <AppBar
+        position="fixed"
+        sx={{
+          backgroundColor: '#7C3AED',
+          width: { sm: `calc(100% - ${drawerWidth}px)` },
+          ml: { sm: `${drawerWidth}px` },
+          boxShadow: 'none'
+        }}
+      >
+        <Toolbar>
+          <IconButton
+            color="inherit"
+            edge="start"
+            onClick={handleDrawerToggle}
+            sx={{ mr: 2, display: { sm: 'none' } }}
+          >
+            <MenuIcon />
+          </IconButton>
+          <Typography variant="h6" sx={{ flexGrow: 1 }}>Organizations</Typography>
+          <IconButton color="inherit"><SettingsIcon /></IconButton>
+        </Toolbar>
+      </AppBar>
+
+      <Box component="nav" sx={{ width: { sm: drawerWidth }, flexShrink: { sm: 0 } }}>
+        <Drawer
+          variant="temporary"
+          open={mobileOpen}
+          onClose={handleDrawerToggle}
+          ModalProps={{ keepMounted: true }}
+          sx={{ display: { xs: 'block', sm: 'none' }, '& .MuiDrawer-paper': { width: drawerWidth } }}
+        >
+          {drawer}
+        </Drawer>
+        <Drawer
+          variant="permanent"
+          sx={{ display: { xs: 'none', sm: 'block' }, '& .MuiDrawer-paper': { width: drawerWidth } }}
+          open
+        >
+          {drawer}
+        </Drawer>
+      </Box>
+
+      <Box component="main" sx={{ flexGrow: 1, p: 3, width: { sm: `calc(100% - ${drawerWidth}px)` } }}>
+        <Toolbar />
+        <Box sx={{ p: 3 }}>
+          <Typography variant="h4" gutterBottom>
+            Organizations
+          </Typography>
+
+          <Grid container spacing={3}>
+            {users.map((org) => (
+              <Grid item xs={12} key={org.organization_name}>
+                <Card sx={{ mb: 3 }}>
+                  <CardHeader
+                    avatar={
+                      <Avatar sx={{ bgcolor: 'primary.main' }}>
+                        <BusinessIcon />
+                      </Avatar>
+                    }
+                    title={org.organization_name}
+                    subheader={`${org.users.length} Users`}
+                    action={
+                      <Chip
+                        label={org.organization_name}
+                        color="primary"
+                        sx={{ ml: 1 }}
+                      />
+                    }
                   />
-                }
-              />
-              <CardContent>
-                <List sx={{ width: '100%' }}>
-                  {org.users.map((user, index) => (
-                    <React.Fragment key={user.id}>
-                      <ListItem 
-                        sx={{ 
-                          py: 2,
-                          cursor: 'pointer',
-                          '&:hover': {
-                            backgroundColor: 'action.hover',
-                          },
-                        }}
-                        onClick={() => handleUserClick(user)}
-                      >
-                        <ListItemAvatar>
-                          <Avatar>
-                            <PersonIcon />
-                          </Avatar>
-                        </ListItemAvatar>
-                        <ListItemText
-                          primary={user.name}
-                          secondary={
-                            <Box component="span" sx={{ display: 'flex', alignItems: 'center' }}>
-                              <EmailIcon fontSize="small" sx={{ mr: 1 }} />
-                              {user.email}
-                            </Box>
-                          }
-                        />
-                        <ListItemSecondaryAction>
-                          <Chip
-                            label={user.user_type}
-                            color="secondary"
-                            size="small"
-                          />
-                        </ListItemSecondaryAction>
-                      </ListItem>
-                      {index < org.users.length - 1 && <Divider />}
-                    </React.Fragment>
-                  ))}
-                  {org.users.length === 0 && (
-                    <ListItem>
-                      <ListItemText primary="No users in this organization" />
-                    </ListItem>
-                  )}
-                </List>
-              </CardContent>
-            </Card>
+                  <CardContent>
+                    <List sx={{ width: '100%' }}>
+                      {org.users.map((user, index) => (
+                        <React.Fragment key={user.user_id}>
+                          <ListItem
+                            sx={{
+                              py: 2,
+                              cursor: 'pointer',
+                              '&:hover': {
+                                backgroundColor: 'action.hover',
+                              },
+                            }}
+                            onClick={() => handleUserClick(user)}
+                          >
+                            <ListItemAvatar>
+                              <Avatar>
+                                <PersonIcon />
+                              </Avatar>
+                            </ListItemAvatar>
+                            <ListItemText
+                              primary={user.name}
+                              secondary={
+                                <Box component="span" sx={{ display: 'flex', alignItems: 'center' }}>
+                                  <EmailIcon fontSize="small" sx={{ mr: 1 }} />
+                                  {user.email}
+                                </Box>
+                              }
+                            />
+                            <ListItemSecondaryAction>
+                              <Chip
+                                label={user.username}
+                                color="secondary"
+                                size="small"
+                              />
+                            </ListItemSecondaryAction>
+                          </ListItem>
+                          {index < org.users.length - 1 && <Divider />}
+                        </React.Fragment>
+                      ))}
+                      {org.users.length === 0 && (
+                        <ListItem>
+                          <ListItemText primary="No users in this organization" />
+                        </ListItem>
+                      )}
+                    </List>
+                  </CardContent>
+                </Card>
+              </Grid>
+            ))}
           </Grid>
-        ))}
-      </Grid>
 
-      {/* User Details Dialog */}
-      <Dialog open={openDialog} onClose={handleCloseDialog}>
-        {selectedUser && (
-          <>
-            <DialogTitle>User Details</DialogTitle>
-            <DialogContent>
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 2 }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                  <Avatar sx={{ width: 56, height: 56 }}>
-                    <PersonIcon fontSize="large" />
-                  </Avatar>
-                  <Box>
-                    <Typography variant="h6">{selectedUser.name}</Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      {selectedUser.email}
-                    </Typography>
+          {/* User Details Dialog */}
+          <Dialog open={openDialog} onClose={handleCloseDialog}>
+            {selectedUser && (
+              <>
+                <DialogTitle>User Details</DialogTitle>
+                <DialogContent>
+                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 2 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                      <Avatar sx={{ width: 56, height: 56 }}>
+                        <PersonIcon fontSize="large" />
+                      </Avatar>
+                      <Box>
+                        <Typography variant="h6">{selectedUser.name}</Typography>
+                        <Typography variant="body2" color="text.secondary">
+                          {selectedUser.email}
+                        </Typography>
+                      </Box>
+                    </Box>
+
+                    <Box>
+                      <Typography variant="subtitle2" color="text.secondary">Username</Typography>
+                      <Typography variant="body1">{selectedUser.username}</Typography>
+                    </Box>
+
+                    <Box>
+                      <Typography variant="subtitle2" color="text.secondary">Organization</Typography>
+                      <Typography variant="body1">{selectedUser.organization}</Typography>
+                    </Box>
+
+                    <Box>
+                      <Typography variant="subtitle2" color="text.secondary">User ID</Typography>
+                      <Typography variant="body1">{selectedUser.user_id}</Typography>
+                    </Box>
+
+                    <Box>
+                      <Typography variant="subtitle2" color="text.secondary">Created At</Typography>
+                      <Typography variant="body1">
+                        {new Date(selectedUser.created_at).toLocaleString()}
+                      </Typography>
+                    </Box>
                   </Box>
-                </Box>
-                
-                <Box>
-                  <Typography variant="subtitle2" color="text.secondary">User Type</Typography>
-                  <Typography variant="body1">{selectedUser.user_type}</Typography>
-                </Box>
-
-                <Box>
-                  <Typography variant="subtitle2" color="text.secondary">Organization</Typography>
-                  <Typography variant="body1">{selectedUser.organization}</Typography>
-                </Box>
-
-                <Box>
-                  <Typography variant="subtitle2" color="text.secondary">Branch</Typography>
-                  <Typography variant="body1">{selectedUser.branch}</Typography>
-                </Box>
-
-                <Box>
-                  <Typography variant="subtitle2" color="text.secondary">Username</Typography>
-                  <Typography variant="body1">{selectedUser.username}</Typography>
-                </Box>
-              </Box>
-            </DialogContent>
-            <DialogActions>
-              <Button onClick={handleCloseDialog}>Close</Button>
-            </DialogActions>
-          </>
-        )}
-      </Dialog>
+                </DialogContent>
+                <DialogActions>
+                  <Button onClick={handleCloseDialog}>Close</Button>
+                </DialogActions>
+              </>
+            )}
+          </Dialog>
+        </Box>
+      </Box>
     </Box>
   );
 };
 
-export default Organizations; 
+export default Organizations;

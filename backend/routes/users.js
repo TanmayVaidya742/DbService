@@ -188,10 +188,10 @@ router.post('/', async (req, res) => {
 
     // Insert user and return the created user
     const result = await client.query(
-      `INSERT INTO users (name, username, email, organization, password, user_type, created_at)
-       VALUES ($1, $2, $3, $4, $5, $6, NOW())
-       RETURNING user_id, name, username, email, organization, user_type, created_at`,
-      [name, username, email, organization, hashedPassword, user_type]
+      `INSERT INTO users (name, username, email, organization, password,created_at)
+       VALUES ($1, $2, $3, $4, $5, NOW())
+       RETURNING user_id, name, username, email, organization,created_at`,
+      [name, username, email, organization, hashedPassword]
     );
 
     await client.query('COMMIT');

@@ -50,10 +50,10 @@ const StyledPaper = styled(Paper)(({ theme }) => ({
 
 // Static organization options
 const ORGANIZATIONS = [
-  { organization_name: 'pinnacle.in' },
+  { organization_name: 'idfc.in' },
   { organization_name: 'hdfc.in' },
-  { organization_name: 'icici.in' },
-  { organization_name: 'axis.in' },
+  // { organization_name: 'icici.in' },
+  // { organization_name: 'axis.in' },
   { organization_name: 'sbi.in' }
 ];
 
@@ -67,8 +67,10 @@ const Register = () => {
     organization: '',
     username: '',
     password: '',
-    confirmPassword: ''
+    confirmPassword: '',
+    user_type: 'superadmin' // Default to superadmin for registration form
   });
+
   const [errors, setErrors] = useState({});
   const [snackbar, setSnackbar] = useState({
     open: false,
@@ -190,50 +192,50 @@ const Register = () => {
                 <Box component="form" onSubmit={handleSubmit} noValidate sx={{ mt: 3 }}>
                   <Grid container spacing={2}>
                     <Grid item xs={12} sm={6}>
-                      <TextField 
-                        required 
-                        fullWidth 
-                        label="Full Name" 
-                        name="name" 
-                        value={formData.name} 
+                      <TextField
+                        required
+                        fullWidth
+                        label="Full Name"
+                        name="name"
+                        value={formData.name}
                         onChange={handleChange}
                         error={!!errors.name}
                         helperText={errors.name}
                       />
                     </Grid>
                     <Grid item xs={12} sm={6}>
-                      <TextField 
-                        required 
-                        fullWidth 
-                        label="Mobile Number" 
-                        name="mobileNo" 
-                        value={formData.mobileNo} 
+                      <TextField
+                        required
+                        fullWidth
+                        label="Mobile Number"
+                        name="mobileNo"
+                        value={formData.mobileNo}
                         onChange={handleChange}
                         error={!!errors.mobileNo}
                         helperText={errors.mobileNo}
                       />
                     </Grid>
                     <Grid item xs={12}>
-                      <TextField 
-                        required 
-                        fullWidth 
-                        label="Address" 
-                        name="address" 
-                        multiline 
-                        rows={3} 
-                        value={formData.address} 
+                      <TextField
+                        required
+                        fullWidth
+                        label="Address"
+                        name="address"
+                        multiline
+                        rows={3}
+                        value={formData.address}
                         onChange={handleChange}
                         error={!!errors.address}
                         helperText={errors.address}
                       />
                     </Grid>
                     <Grid item xs={12} sm={6}>
-                      <TextField 
-                        required 
-                        fullWidth 
-                        label="Email Address" 
-                        name="email" 
-                        value={formData.email} 
+                      <TextField
+                        required
+                        fullWidth
+                        label="Email Address"
+                        name="email"
+                        value={formData.email}
                         onChange={handleChange}
                         error={!!errors.email}
                         helperText={errors.email}
@@ -260,38 +262,38 @@ const Register = () => {
                       </FormControl>
                     </Grid>
                     <Grid item xs={12} sm={6}>
-                      <TextField 
-                        required 
-                        fullWidth 
-                        label="Username" 
-                        name="username" 
-                        value={formData.username} 
+                      <TextField
+                        required
+                        fullWidth
+                        label="Username"
+                        name="username"
+                        value={formData.username}
                         onChange={handleChange}
                         error={!!errors.username}
                         helperText={errors.username}
                       />
                     </Grid>
                     <Grid item xs={12} sm={6}>
-                      <TextField 
-                        required 
-                        fullWidth 
-                        type="password" 
-                        label="Password" 
-                        name="password" 
-                        value={formData.password} 
+                      <TextField
+                        required
+                        fullWidth
+                        type="password"
+                        label="Password"
+                        name="password"
+                        value={formData.password}
                         onChange={handleChange}
                         error={!!errors.password}
                         helperText={errors.password}
                       />
                     </Grid>
                     <Grid item xs={12}>
-                      <TextField 
-                        required 
-                        fullWidth 
-                        type="password" 
-                        label="Confirm Password" 
-                        name="confirmPassword" 
-                        value={formData.confirmPassword} 
+                      <TextField
+                        required
+                        fullWidth
+                        type="password"
+                        label="Confirm Password"
+                        name="confirmPassword"
+                        value={formData.confirmPassword}
                         onChange={handleChange}
                         error={!!errors.confirmPassword}
                         helperText={errors.confirmPassword}
