@@ -88,7 +88,7 @@ const UserDashboard = () => {
         severity: 'info',
         autoHideDuration: null
       });
-
+  
       const response = await axios.post(
         `http://localhost:5000/api/databases/${dbName}/create-table`,
         formData,
@@ -99,14 +99,28 @@ const UserDashboard = () => {
           }
         }
       );
-
+  
       setSnackbar({
         open: true,
         message: 'Table created successfully!',
         severity: 'success'
       });
-
-      await fetchDatabases();
+  
+      // Update the specific database in state
+      setDatabases(prevDatabases => {
+        return prevDatabases.map(db => {
+          if (db.name === dbName) {
+            // Get the new table name from the form data
+            const tableName = formData.get('tableName');
+            return {
+              ...db,
+              tables: [...db.tables, tableName]
+            };
+          }
+          return db;
+        });
+      });
+  
     } catch (error) {
       console.error('Error creating table:', error);
       setSnackbar({
@@ -116,7 +130,6 @@ const UserDashboard = () => {
       });
     }
   };
-
   const handleDrawerToggle = () => setMobileOpen(!mobileOpen);
 
   const handleOpenDialog = () => setOpenDialog(true);

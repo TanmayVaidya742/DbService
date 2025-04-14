@@ -98,7 +98,6 @@ const CreateTableDialog = ({ open, onClose, dbName, onSubmit }) => {
   const handleColumnChange = (index, field, value) => {
     const newColumns = [...columns];
     
-    // Ensure only one primary key can be selected
     if (field === 'isPrimary' && value === true) {
       newColumns.forEach(col => col.isPrimary = false);
     }
@@ -154,6 +153,10 @@ const CreateTableDialog = ({ open, onClose, dbName, onSubmit }) => {
     
     onSubmit(dbName, formData);
     onClose();
+    // Reset form
+    setTableName('');
+    setCsvFile(null);
+    setColumns([{ name: '', type: 'TEXT', isPrimary: false, isNotNull: false, isUnique: false, defaultValue: '' }]);
   };
 
   return (

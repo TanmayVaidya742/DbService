@@ -5,7 +5,6 @@ function verifyToken(req, res, next) {
   const authHeader = req.headers['authorization'];
   const token = authHeader && authHeader.split(' ')[1];
 
-  console.log('Received token:', token); // Debug logging
 
   if (!token) {
     console.log('No token provided');
@@ -21,7 +20,6 @@ function verifyToken(req, res, next) {
       });
     }
     
-    console.log('Decoded token:', decoded); // Debug logging
     
     // Handle both superadmin (id) and regular users (user_id)
     if (!decoded.id && !decoded.user_id) {

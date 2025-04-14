@@ -244,8 +244,10 @@ router.post('/:dbName/create-table', upload.single('csvFile'), async (req, res) 
   const { tableName, columns } = req.body;
   const { dbName } = req.params;
   const csvFile = req.file;
+  const userId = req.user.user_id;
 
   let dbPool = null;
+  let client = null;
 
   try {
     // Validate inputs
@@ -276,6 +278,7 @@ router.post('/:dbName/create-table', upload.single('csvFile'), async (req, res) 
     });
 
     let tableColumns = [];
+    let schema = {};
 
     if (csvFile) {
       await new Promise((resolve, reject) => {
@@ -285,6 +288,7 @@ router.post('/:dbName/create-table', upload.single('csvFile'), async (req, res) 
             headers.forEach(header => {
               const cleanHeader = header.replace(/[^a-zA-Z0-9_]/g, '_').toLowerCase();
               tableColumns.push(`${cleanHeader} TEXT`);
+              schema[cleanHeader] = 'TEXT';
             });
             resolve();
           })
@@ -292,11 +296,39 @@ router.post('/:dbName/create-table', upload.single('csvFile'), async (req, res) 
       });
     } else {
       tableColumns = parsedColumns.map(col => `${col.name} ${col.type}`);
+      parsedColumns.forEach(col => {
+        schema[col.name] = col.type;
+      });
     }
 
     // Create the table
     const createTableQuery = `CREATE TABLE ${tableName} (${tableColumns.join(', ')})`;
     await dbPool.query(createTableQuery);
+
+    // Connect to main database to store metadata
+    client = await req.mainPool.connect();
+    await client.query('BEGIN');
+
+    // Get the dbid for this database
+    const dbResult = await client.query(
+      'SELECT dbid FROM db_collection WHERE dbname = $1 AND user_id = $2',
+      [dbName, userId]
+    );
+
+    if (dbResult.rows.length === 0) {
+      throw new Error('Database not found in metadata');
+    }
+
+    const dbid = dbResult.rows[0].dbid;
+
+    // Insert into table_collection
+    await client.query(
+      `INSERT INTO table_collection (dbid, tablename, schema)
+       VALUES ($1, $2, $3)`,
+      [dbid, tableName, schema]
+    );
+
+    await client.query('COMMIT');
 
     // Delete uploaded file if exists
     if (csvFile) {
@@ -304,12 +336,23 @@ router.post('/:dbName/create-table', upload.single('csvFile'), async (req, res) 
     }
 
     res.status(201).json({
-      message: `Table '${tableName}' created successfully in database '${dbName}'`
+      message: `Table '${tableName}' created successfully in database '${dbName}'`,
+      dbid: dbid
     });
 
   } catch (error) {
     console.error('Error creating table in existing DB:', error);
+    if (client) {
+      try {
+        await client.query('ROLLBACK');
+      } catch (rollbackError) {
+        console.error('Error rolling back transaction:', rollbackError);
+      }
+    }
     res.status(500).json({ error: error.message });
+  } finally {
+    if (dbPool) await dbPool.end().catch(console.error);
+    if (client) client.release();
   }
 });
 
