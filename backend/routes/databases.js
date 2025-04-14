@@ -236,5 +236,78 @@ router.get('/', async (req, res) => {
     if (tempPool) await tempPool.end().catch(console.error);
   }
 });
+// Add this route to your existing database routes
+router.post('/:dbName/create-table', upload.single('csvFile'), async (req, res) => {
+  const { tableName, columns } = req.body;
+  const { dbName } = req.params;
+  const csvFile = req.file;
+
+  let dbPool = null;
+
+  try {
+    // Validate inputs
+    if (!dbName || !tableName) {
+      throw new Error('Database name and table name are required');
+    }
+
+    let parsedColumns = [];
+    if (columns) {
+      try {
+        parsedColumns = JSON.parse(columns);
+      } catch (err) {
+        throw new Error('Invalid columns format');
+      }
+    }
+
+    if (parsedColumns.length === 0 && !csvFile) {
+      throw new Error('Either columns or CSV file must be provided');
+    }
+
+    // Connect to the existing database
+    dbPool = new Pool({
+      user: process.env.DB_USER || 'postgres',
+      host: process.env.DB_HOST || 'localhost',
+      database: dbName,
+      password: process.env.DB_PASSWORD || 'postgres',
+      port: process.env.DB_PORT || 5432,
+    });
+
+    let tableColumns = [];
+
+    if (csvFile) {
+      await new Promise((resolve, reject) => {
+        fs.createReadStream(csvFile.path)
+          .pipe(csv())
+          .on('headers', (headers) => {
+            headers.forEach(header => {
+              const cleanHeader = header.replace(/[^a-zA-Z0-9_]/g, '_').toLowerCase();
+              tableColumns.push(`${cleanHeader} TEXT`);
+            });
+            resolve();
+          })
+          .on('error', reject);
+      });
+    } else {
+      tableColumns = parsedColumns.map(col => `${col.name} ${col.type}`);
+    }
+
+    // Create the table
+    const createTableQuery = `CREATE TABLE ${tableName} (${tableColumns.join(', ')})`;
+    await dbPool.query(createTableQuery);
+
+    // Delete uploaded file if exists
+    if (csvFile) {
+      fs.unlinkSync(csvFile.path);
+    }
+
+    res.status(201).json({
+      message: `Table '${tableName}' created successfully in database '${dbName}'`
+    });
+
+  } catch (error) {
+    console.error('Error creating table in existing DB:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
 
 module.exports = router;
