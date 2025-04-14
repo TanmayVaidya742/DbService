@@ -4,17 +4,17 @@ import {
   List, ListItem, ListItemIcon, ListItemText, Divider, Container,
   Button, Paper, Snackbar, Alert, Table, TableBody, TableCell,
   TableContainer, TableHead, TableRow, Chip, Dialog, DialogTitle,
-  DialogContent, DialogContentText, DialogActions, Menu, MenuItem
+  DialogContent, DialogContentText, DialogActions
 } from '@mui/material';
 import {
   Menu as MenuIcon, Settings as SettingsIcon,
-  Groups as GroupsIcon, Storage as StorageIcon,
-  Visibility as VisibilityIcon, ContentCopy as ContentCopyIcon,
-  MoreVert as MoreVertIcon
+  Storage as StorageIcon,
+  Visibility as VisibilityIcon, ContentCopy as ContentCopyIcon
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import AddDatabaseDialog from './AddDatabaseDialog';
+import CreateTableDialog from './CreateTableDialog';
 import { styled } from '@mui/material/styles';
 
 const drawerWidth = 240;
@@ -31,6 +31,8 @@ const UserDashboard = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
   const navigate = useNavigate();
   const [openDialog, setOpenDialog] = useState(false);
+  const [openTableDialog, setOpenTableDialog] = useState(false);
+  const [selectedDatabase, setSelectedDatabase] = useState('');
   const [databaseFormData, setDatabaseFormData] = useState({
     databaseName: '',
     tableName: '',
@@ -45,19 +47,6 @@ const UserDashboard = () => {
   const [databases, setDatabases] = useState([]);
   const [openApiKeyDialog, setOpenApiKeyDialog] = useState(false);
   const [currentApiKey, setCurrentApiKey] = useState('');
-  const [anchorEl, setAnchorEl] = useState(null);
-  const [selectedDb, setSelectedDb] = useState(null);
-  const openMenu = Boolean(anchorEl);
-
-  const handleMenuClick = (event, db) => {
-    setAnchorEl(event.currentTarget);
-    setSelectedDb(db);
-  };
-
-  const handleMenuClose = () => {
-    setAnchorEl(null);
-    setSelectedDb(null);
-  };
 
   useEffect(() => {
     fetchDatabases();
@@ -70,7 +59,16 @@ const UserDashboard = () => {
           Authorization: `Bearer ${localStorage.getItem('token')}`
         }
       });
-      setDatabases(response.data);
+      
+      // Transform the data to match your existing table structure
+      const transformedData = response.data.map(db => ({
+        name: db.dbname,
+        tables: db.tables.filter(t => t.tablename).map(t => t.tablename),
+        apiKey: db.apikey,
+        dbid: db.dbid
+      }));
+      
+      setDatabases(transformedData);
     } catch (error) {
       console.error('Error fetching databases:', error);
       setSnackbar({
@@ -79,6 +77,43 @@ const UserDashboard = () => {
         severity: 'error'
       });
       setDatabases([]);
+    }
+  };
+
+  const handleCreateTable = async (dbName, formData) => {
+    try {
+      setSnackbar({
+        open: true,
+        message: 'Creating table...',
+        severity: 'info',
+        autoHideDuration: null
+      });
+
+      const response = await axios.post(
+        `http://localhost:5000/api/databases/${dbName}/create-table`,
+        formData,
+        {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+            Authorization: `Bearer ${localStorage.getItem('token')}`
+          }
+        }
+      );
+
+      setSnackbar({
+        open: true,
+        message: 'Table created successfully!',
+        severity: 'success'
+      });
+
+      await fetchDatabases();
+    } catch (error) {
+      console.error('Error creating table:', error);
+      setSnackbar({
+        open: true,
+        message: error.response?.data?.error || 'Failed to create table',
+        severity: 'error'
+      });
     }
   };
 
@@ -214,50 +249,6 @@ const UserDashboard = () => {
     setSnackbar({ ...snackbar, open: false });
   };
 
-  const handleInsert = (db) => {
-    handleMenuClose();
-    console.log('Insert action for', db.name);
-    setSnackbar({
-      open: true,
-      message: `Insert action initiated for ${db.name}`,
-      severity: 'info'
-    });
-    // Implement your insert logic here
-  };
-
-  const handleDelete = (db) => {
-    handleMenuClose();
-    console.log('Delete action for', db.name);
-    setSnackbar({
-      open: true,
-      message: `Delete action initiated for ${db.name}`,
-      severity: 'warning'
-    });
-    // Implement your delete logic here
-  };
-
-  const handleUpdate = (db) => {
-    handleMenuClose();
-    console.log('Update action for', db.name);
-    setSnackbar({
-      open: true,
-      message: `Update action initiated for ${db.name}`,
-      severity: 'info'
-    });
-    // Implement your update logic here
-  };
-
-  const handleRead = (db) => {
-    handleMenuClose();
-    console.log('Read action for', db.name);
-    setSnackbar({
-      open: true,
-      message: `Read action initiated for ${db.name}`,
-      severity: 'info'
-    });
-    // Implement your read logic here
-  };
-
   const drawer = (
     <div>
       <Toolbar>
@@ -385,14 +376,21 @@ const UserDashboard = () => {
                         )}
                       </TableCell>
                       <TableCell>
-                        <IconButton
-                          aria-label="more"
-                          aria-controls="long-menu"
-                          aria-haspopup="true"
-                          onClick={(e) => handleMenuClick(e, db)}
+                        <Button
+                          variant="contained"
+                          onClick={() => {
+                            setSelectedDatabase(db.name);
+                            setOpenTableDialog(true);
+                          }}
+                          sx={{
+                            backgroundColor: '#7C3AED',
+                            '&:hover': {
+                              backgroundColor: '#6D28D9',
+                            },
+                          }}
                         >
-                          <MoreVertIcon />
-                        </IconButton>
+                          Create Table
+                        </Button>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -402,17 +400,6 @@ const UserDashboard = () => {
           </StyledPaper>
         </Container>
 
-        <Menu
-          anchorEl={anchorEl}
-          open={openMenu}
-          onClose={handleMenuClose}
-        >
-          <MenuItem onClick={() => handleInsert(selectedDb)}>Insert</MenuItem>
-          <MenuItem onClick={() => handleDelete(selectedDb)}>Delete</MenuItem>
-          <MenuItem onClick={() => handleUpdate(selectedDb)}>Update</MenuItem>
-          <MenuItem onClick={() => handleRead(selectedDb)}>Read</MenuItem>
-        </Menu>
-
         <AddDatabaseDialog
           open={openDialog}
           onClose={handleCloseDialog}
@@ -420,6 +407,13 @@ const UserDashboard = () => {
           onChange={handleDatabaseChange}
           onFileChange={handleDatabaseFileChange}
           onSubmit={handleDatabaseSubmit}
+        />
+
+        <CreateTableDialog
+          open={openTableDialog}
+          onClose={() => setOpenTableDialog(false)}
+          dbName={selectedDatabase}
+          onSubmit={handleCreateTable}
         />
 
         <Dialog open={openApiKeyDialog} onClose={() => setOpenApiKeyDialog(false)}>
