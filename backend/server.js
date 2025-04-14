@@ -12,7 +12,6 @@ const organizationsRoutes = require('./routes/organizations');
 const databasesRoutes = require('./routes/databases');
 const superadminRoutes = require('./routes/superadmin');
 const accessRoutes = require('./routes/access'); // ✅ Add this route
-const databaseApiRoutes = require('./routes/databaseAPI');
 
 const app = express();
 
@@ -210,6 +209,8 @@ const initializeDatabase = async () => {
     console.error('Error initializing database:', err);
   }
 };
+
+
 
 
 // Initialize database

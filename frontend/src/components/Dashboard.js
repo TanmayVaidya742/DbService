@@ -25,18 +25,23 @@ const StyledPaper = styled(Paper)(({ theme }) => ({
   backgroundColor: '#ffffff',
 }));
 
+// Static organization options
+const ORGANIZATIONS = [
+  { organization_name: 'idfc.in' },
+  { organization_name: 'hdfc.in' },
+  { organization_name: 'sbi.in' }
+];
+
 const Dashboard = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
   const navigate = useNavigate();
   const [openDialog, setOpenDialog] = useState(false);
-  const [organizations, setOrganizations] = useState([]);
   const [formData, setFormData] = useState({
     organization: '',
-    userType: '',
     email: '',
     name: '',
-    username: '',  // Add this
-    password: ''   // Add this
+    username: '',
+    password: ''
   });
   const [snackbar, setSnackbar] = useState({
     open: false,
@@ -44,35 +49,15 @@ const Dashboard = () => {
     severity: 'success'
   });
 
-  const [open, setOpen] = useState(false);
-
   const [users, setUsers] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
 
   const handleDrawerToggle = () => setMobileOpen(!mobileOpen);
 
   useEffect(() => {
-    fetchOrganizations();
     fetchUsers();
   }, []);
 
-  const fetchOrganizations = async () => {
-    try {
-      const response = await axios.get('http://localhost:5000/api/superadmin', {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem('token')}`
-        }
-      });
-      setOrganizations([{ organization_name: response.data.organization }]);
-    } catch (error) {
-      console.error('Error fetching organizations:', error);
-      setSnackbar({
-        open: true,
-        message: 'Error fetching organizations',
-        severity: 'error'
-      });
-    }
-  };
   const fetchUsers = async () => {
     try {
       const res = await axios.get('http://localhost:5000/api/users');
@@ -87,9 +72,10 @@ const Dashboard = () => {
     setOpenDialog(false);
     setFormData({
       organization: '',
-      userType: '',
       email: '',
-      name: ''
+      name: '',
+      username: '',
+      password: ''
     });
   };
 
@@ -98,8 +84,7 @@ const Dashboard = () => {
   };
 
   const handleSubmit = async () => {
-    // Check all required fields
-    if (!formData.organization || !formData.userType || !formData.email || 
+    if (!formData.organization || !formData.email || 
         !formData.name || !formData.username || !formData.password) {
       setSnackbar({
         open: true,
@@ -114,7 +99,6 @@ const Dashboard = () => {
         name: formData.name,
         email: formData.email,
         organization: formData.organization,
-        user_type: formData.userType,
         username: formData.username,
         password: formData.password
       }, {
@@ -142,7 +126,6 @@ const Dashboard = () => {
     }
   };
 
-  
   const handleCloseSnackbar = () => {
     setSnackbar({ ...snackbar, open: false });
   };
@@ -166,10 +149,10 @@ const Dashboard = () => {
           <ListItemIcon><GroupsIcon /></ListItemIcon>
           <ListItemText primary="Organizations" />
         </ListItem>
-        <ListItem button onClick={() => navigate('/UserDashboard')}>
+        {/* <ListItem button onClick={() => navigate('/UserDashboard')}>
           <ListItemIcon><PersonIcon /></ListItemIcon>
           <ListItemText primary="Users Dashboard" />
-        </ListItem>
+        </ListItem> */}
       </List>
     </div>
   );
@@ -240,7 +223,7 @@ const Dashboard = () => {
                   },
                 }}
               >
-                Add Orgination
+                Add organization
               </Button>
             </Box>
 
@@ -275,7 +258,8 @@ const Dashboard = () => {
                   <TableRow>
                     <TableCell>Name</TableCell>
                     <TableCell>Username</TableCell>
-                    <TableCell>Orgination</TableCell>
+                    <TableCell>Email</TableCell>
+                    <TableCell>Organization</TableCell>
                     <TableCell>Time checked in</TableCell>
                   </TableRow>
                 </TableHead>
@@ -285,16 +269,22 @@ const Dashboard = () => {
                       <TableCell>
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                           <Box sx={{
-                            width: 32, height: 32, borderRadius: '50%',
-                            backgroundColor: '#7C3AED', color: '#fff',
-                            display: 'flex', alignItems: 'center', justifyContent: 'center'
+                            width: 32, 
+                            height: 32, 
+                            borderRadius: '50%',
+                            backgroundColor: '#7C3AED', 
+                            color: '#fff',
+                            display: 'flex', 
+                            alignItems: 'center', 
+                            justifyContent: 'center'
                           }}>
-                            {user.first_name?.[0]}
+                            {user.name?.[0]?.toUpperCase()}
                           </Box>
-                          {`${user.first_name || ''} ${user.last_name || ''}`}
+                          {user.name || ''}
                         </Box>
                       </TableCell>
                       <TableCell>{user.username || ''}</TableCell>
+                      <TableCell>{user.email || ''}</TableCell>
                       <TableCell>{user.organization || ''}</TableCell>
                       <TableCell>{user.created_at ? new Date(user.created_at).toLocaleTimeString() : ''}</TableCell>
                     </TableRow>
@@ -305,10 +295,10 @@ const Dashboard = () => {
           </StyledPaper>
 
           <Dialog open={openDialog} onClose={handleCloseDialog} maxWidth="sm" fullWidth>
-            <DialogTitle>Add New Orgination</DialogTitle>
+            <DialogTitle>Add New Organization</DialogTitle>
             <DialogContent>
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 2 }}>
-              <FormControl fullWidth>
+                <FormControl fullWidth>
                   <InputLabel>Select Organization</InputLabel>
                   <Select
                     name="organization"
@@ -316,27 +306,11 @@ const Dashboard = () => {
                     onChange={handleChange}
                     label="Select Organization"
                   >
-                    {organizations.length > 0 ? (
-                      organizations.map((org) => (
-                        <MenuItem key={org.organization_name} value={org.organization_name}>
-                          {org.organization_name}
-                        </MenuItem>
-                      ))
-                    ) : (
-                      <MenuItem disabled>No organizations available</MenuItem>
-                    )}
-                  </Select>
-                </FormControl>
-                <FormControl fullWidth>
-                  <InputLabel>User Type</InputLabel>
-                  <Select
-                    name="userType"
-                    value={formData.userType}
-                    onChange={handleChange}
-                    label="User Type"
-                  >
-                    <MenuItem value="admin">Admin</MenuItem>
-                    <MenuItem value="user">User</MenuItem>
+                    {ORGANIZATIONS.map((org) => (
+                      <MenuItem key={org.organization_name} value={org.organization_name}>
+                        {org.organization_name}
+                      </MenuItem>
+                    ))}
                   </Select>
                 </FormControl>
                 <TextField
@@ -356,18 +330,14 @@ const Dashboard = () => {
                   fullWidth
                   required
                 />
-
-
                 <TextField
-                      label="Username"
-                      name="username"
-                      value={formData.username}
-                      onChange={handleChange}
-                      fullWidth
-                      required
+                  label="Username"
+                  name="username"
+                  value={formData.username}
+                  onChange={handleChange}
+                  fullWidth
+                  required
                 />
-
-
                 <TextField
                   label="Password"
                   name="password"
@@ -377,13 +347,12 @@ const Dashboard = () => {
                   fullWidth
                   required
                 />
-
               </Box>
             </DialogContent>
             <DialogActions>
               <Button onClick={handleCloseDialog}>Cancel</Button>
               <Button onClick={handleSubmit} variant="contained" color="primary">
-                Add User
+                Add organization
               </Button>
             </DialogActions>
           </Dialog>
