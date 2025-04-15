@@ -5,7 +5,9 @@ const fs = require('fs');
 const path = require('path');
 const { Pool } = require('pg');
 const csv = require('csv-parser');
+const { verifyToken } = require('../middleware/authMiddleware'); // Add this line
 require('dotenv').config();
+
 
 // Ensure uploads directory exists
 const uploadsDir = path.join(__dirname, '../uploads');
@@ -310,6 +312,86 @@ router.post('/:dbName/create-table', upload.single('csvFile'), async (req, res) 
   } catch (error) {
     console.error('Error creating table in existing DB:', error);
     res.status(500).json({ error: error.message });
+  }
+});
+
+
+
+
+router.get('/:dbName', verifyToken, async (req, res) => {
+  const { dbName } = req.params;
+  const userId = req.user.user_id;
+  let client = null;
+
+  try {
+    client = await req.mainPool.connect();
+    
+    // Get database details with tables
+    const result = await client.query(`
+      SELECT 
+        db.dbid,
+        db.dbname,
+        db.apikey,
+        db.created_at,
+        json_agg(
+          json_build_object(
+            'tableid', t.tableid,
+            'tablename', t.tablename,
+            'schema', t.schema,
+            'created_at', t.created_at
+          )
+        ) as tables
+      FROM db_collection db
+      LEFT JOIN table_collection t ON db.dbid = t.dbid
+      WHERE db.dbname = $1 AND db.user_id = $2
+      GROUP BY db.dbid, db.dbname, db.apikey, db.created_at
+    `, [dbName, userId]);
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Database not found' });
+    }
+
+    res.json(result.rows[0]);
+  } catch (error) {
+    console.error('Error fetching database details:', error);
+    res.status(500).json({ error: 'Failed to fetch database details' });
+  } finally {
+    if (client) client.release();
+  }
+});
+
+router.get('/:dbName/tables', verifyToken, async (req, res) => {
+  const { dbName } = req.params;
+  const userId = req.user.user_id;
+  let client = null;
+
+  try {
+    client = await req.mainPool.connect();
+    
+    // First get the dbid for this database
+    const dbResult = await client.query(
+      'SELECT dbid FROM db_collection WHERE dbname = $1 AND user_id = $2',
+      [dbName, userId]
+    );
+
+    if (dbResult.rows.length === 0) {
+      return res.status(404).json({ error: 'Database not found' });
+    }
+
+    const dbid = dbResult.rows[0].dbid;
+
+    // Then get all tables for this database
+    const tablesResult = await client.query(
+      'SELECT tableid, tablename, schema, created_at FROM table_collection WHERE dbid = $1',
+      [dbid]
+    );
+
+    res.json(tablesResult.rows);
+  } catch (error) {
+    console.error('Error fetching tables:', error);
+    res.status(500).json({ error: 'Failed to fetch tables' });
+  } finally {
+    if (client) client.release();
   }
 });
 
