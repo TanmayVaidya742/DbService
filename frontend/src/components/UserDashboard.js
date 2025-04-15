@@ -17,6 +17,8 @@ import AddDatabaseDialog from './AddDatabaseDialog';
 import CreateTableDialog from './CreateTableDialog';
 import { styled } from '@mui/material/styles';
 
+import { Person as PersonIcon } from '@mui/icons-material';
+
 const drawerWidth = 240;
 
 const StyledPaper = styled(Paper)(({ theme }) => ({
@@ -249,6 +251,13 @@ const UserDashboard = () => {
     setSnackbar({ ...snackbar, open: false });
   };
 
+
+  // Add this function to handle row click
+const handleRowClick = (dbName) => {
+  navigate(`/database/${dbName}`);
+};
+
+
   const drawer = (
     <div>
       <Toolbar>
@@ -256,7 +265,10 @@ const UserDashboard = () => {
       </Toolbar>
       <Divider />
       <List>
-        {/* Navigation items would go here */}
+         <ListItem button onClick={() => navigate('/UserDashboard')}>
+          <ListItemIcon><PersonIcon /></ListItemIcon>
+          <ListItemText primary="Users Dashboard" />
+        </ListItem>
       </List>
     </div>
   );
@@ -344,55 +356,69 @@ const UserDashboard = () => {
                 </TableHead>
                 <TableBody>
                   {databases.map((db) => (
-                    <TableRow key={db.name}>
-                      <TableCell>{db.name}</TableCell>
-                      <TableCell>
-                        {db.tables.map((table) => (
-                          <Chip
-                            key={table}
-                            label={table}
-                            sx={{ mr: 1, mb: 1 }}
-                            color="primary"
-                          />
-                        ))}
-                      </TableCell>
-                      <TableCell>
-                        {db.apiKey && (
-                          <Button
-                            variant="outlined"
-                            startIcon={<VisibilityIcon />}
-                            onClick={() => handleShowApiKey(db.apiKey)}
-                            sx={{
-                              textTransform: 'none',
-                              borderColor: '#7C3AED',
-                              color: '#7C3AED',
-                              '&:hover': {
-                                borderColor: '#6D28D9',
-                              },
-                            }}
-                          >
-                            Show API Key
-                          </Button>
-                        )}
-                      </TableCell>
-                      <TableCell>
+                    <TableRow 
+                    key={db.name}
+                    hover
+                    onClick={() => handleRowClick(db.name)}
+                    sx={{ 
+                      cursor: 'pointer',
+                      '&:hover': {
+                        backgroundColor: 'rgba(124, 58, 237, 0.08)'
+                      }
+                    }}
+                  >
+                    <TableCell>{db.name}</TableCell>
+                    <TableCell>
+                      {db.tables.map((table) => (
+                        <Chip
+                          key={table}
+                          label={table}
+                          sx={{ mr: 1, mb: 1 }}
+                          color="primary"
+                        />
+                      ))}
+                    </TableCell>
+                    <TableCell>
+                      {db.apiKey && (
                         <Button
-                          variant="contained"
-                          onClick={() => {
-                            setSelectedDatabase(db.name);
-                            setOpenTableDialog(true);
+                          variant="outlined"
+                          startIcon={<VisibilityIcon />}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleShowApiKey(db.apiKey);
                           }}
                           sx={{
-                            backgroundColor: '#7C3AED',
+                            textTransform: 'none',
+                            borderColor: '#7C3AED',
+                            color: '#7C3AED',
                             '&:hover': {
-                              backgroundColor: '#6D28D9',
+                              borderColor: '#6D28D9',
                             },
                           }}
                         >
-                          Create Table
+                          Show API Key
                         </Button>
-                      </TableCell>
-                    </TableRow>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      <Button
+                        variant="contained"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedDatabase(db.name);
+                          setOpenTableDialog(true);
+                        }}
+                        sx={{
+                          backgroundColor: '#7C3AED',
+                          '&:hover': {
+                            backgroundColor: '#6D28D9',
+                          },
+                        }}
+                      >
+                        Create Table
+                      </Button>
+                    </TableCell>
+                  </TableRow>
                   ))}
                 </TableBody>
               </Table>

@@ -8,6 +8,7 @@ import LandingPage from './components/LandingPage';
 import UserDashboard from './components/UserDashboard';
 import Organizations from './components/Organizations';
 import axios from 'axios';
+import DatabaseDetails from './components/DatabaseDetails';
 
 const theme = createTheme({
   palette: {
@@ -72,6 +73,8 @@ function App() {
           />
           <Route path="/userdashboard" element={<UserDashboard />} />
           <Route path="/organizations" element={<Organizations />} />
+          <Route path="/database/:dbName" element={<DatabaseDetails />} />
+
         </Routes>
       </Router>
     </ThemeProvider>
