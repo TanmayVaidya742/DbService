@@ -1,4 +1,3 @@
-  // Dashboard.jsx
 import React, { useState, useEffect } from 'react';
 import {
   Box, Drawer, AppBar, Toolbar, Typography, IconButton,
@@ -10,7 +9,7 @@ import {
 import {
   Menu as MenuIcon, Add as AddIcon, Settings as SettingsIcon,
   Dashboard as DashboardIcon, Search as SearchIcon, Person as PersonIcon,
-  Groups as GroupsIcon
+  Groups as GroupsIcon, Delete as DeleteIcon
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
@@ -51,6 +50,7 @@ const Dashboard = () => {
 
   const [users, setUsers] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
+  const [loading, setLoading] = useState(false);
 
   const handleDrawerToggle = () => setMobileOpen(!mobileOpen);
 
@@ -59,11 +59,19 @@ const Dashboard = () => {
   }, []);
 
   const fetchUsers = async () => {
+    setLoading(true);
     try {
       const res = await axios.get('http://localhost:5000/api/users');
       setUsers(res.data);
     } catch (err) {
       console.error('Error fetching users:', err);
+      setSnackbar({
+        open: true,
+        message: 'Error fetching users',
+        severity: 'error'
+      });
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -126,6 +134,34 @@ const Dashboard = () => {
     }
   };
 
+  const handleDeleteUser = async (userId) => {
+    try {
+      console.log(`Deleting user with ID: ${userId}`);
+      
+      const response = await axios.delete(`http://localhost:5000/api/users/${userId}`, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+      
+      setSnackbar({
+        open: true,
+        message: 'User deleted successfully',
+        severity: 'success'
+      });
+      
+      // Update users list after deletion
+      setUsers(prevUsers => prevUsers.filter(user => user.user_id !== userId));
+    } catch (error) {
+      console.error('Error deleting user:', error);
+      setSnackbar({
+        open: true,
+        message: error.response?.data?.message || 'Error deleting user',
+        severity: 'error'
+      });
+    }
+  };
+
   const handleCloseSnackbar = () => {
     setSnackbar({ ...snackbar, open: false });
   };
@@ -149,10 +185,6 @@ const Dashboard = () => {
           <ListItemIcon><GroupsIcon /></ListItemIcon>
           <ListItemText primary="Organizations" />
         </ListItem>
-        {/* <ListItem button onClick={() => navigate('/UserDashboard')}>
-          <ListItemIcon><PersonIcon /></ListItemIcon>
-          <ListItemText primary="Users Dashboard" />
-        </ListItem> */}
       </List>
     </div>
   );
@@ -261,34 +293,54 @@ const Dashboard = () => {
                     <TableCell>Email</TableCell>
                     <TableCell>Organization</TableCell>
                     <TableCell>Time checked in</TableCell>
+                    <TableCell>Actions</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {filteredUsers.map((user) => (
-                    <TableRow key={user.id}>
-                      <TableCell>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                          <Box sx={{
-                            width: 32, 
-                            height: 32, 
-                            borderRadius: '50%',
-                            backgroundColor: '#7C3AED', 
-                            color: '#fff',
-                            display: 'flex', 
-                            alignItems: 'center', 
-                            justifyContent: 'center'
-                          }}>
-                            {user.name?.[0]?.toUpperCase()}
-                          </Box>
-                          {user.name || ''}
-                        </Box>
-                      </TableCell>
-                      <TableCell>{user.username || ''}</TableCell>
-                      <TableCell>{user.email || ''}</TableCell>
-                      <TableCell>{user.organization || ''}</TableCell>
-                      <TableCell>{user.created_at ? new Date(user.created_at).toLocaleTimeString() : ''}</TableCell>
+                  {loading ? (
+                    <TableRow>
+                      <TableCell colSpan={6} align="center">Loading users...</TableCell>
                     </TableRow>
-                  ))}
+                  ) : filteredUsers.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={6} align="center">No users found</TableCell>
+                    </TableRow>
+                  ) : (
+                    filteredUsers.map((user) => (
+                      <TableRow key={user.user_id}>
+                        <TableCell>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                            <Box sx={{
+                              width: 32, 
+                              height: 32, 
+                              borderRadius: '50%',
+                              backgroundColor: '#7C3AED', 
+                              color: '#fff',
+                              display: 'flex', 
+                              alignItems: 'center', 
+                              justifyContent: 'center'
+                            }}>
+                              {user.name?.[0]?.toUpperCase()}
+                            </Box>
+                            {user.name || ''}
+                          </Box>
+                        </TableCell>
+                        <TableCell>{user.username || ''}</TableCell>
+                        <TableCell>{user.email || ''}</TableCell>
+                        <TableCell>{user.organization || ''}</TableCell>
+                        <TableCell>{user.created_at ? new Date(user.created_at).toLocaleTimeString() : ''}</TableCell>
+                        <TableCell>
+                          <IconButton 
+                            onClick={() => handleDeleteUser(user.user_id)}
+                            color="error"
+                            aria-label="delete user"
+                          >
+                            <DeleteIcon />
+                          </IconButton>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
                 </TableBody>
               </Table>
             </TableContainer>
