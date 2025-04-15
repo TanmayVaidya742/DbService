@@ -76,86 +76,46 @@ const DatabaseDetails = () => {
 
 	/**
 	 * 
-	 * @param {string} dbName 
-	 * @param {string} tableName 
-	 * @param {'read' | 'insert' | 'delete' | 'update' } action 
+	 * @param {*} dbName 
+	 * @param {*} tableName 
+	 * @param {string} action 
 	 */
-	const generateandCopyUrlByActionType = (dbName, tableName, action) => {
-		const baseUrl = process.env.REACT_APP_SERVER_BASE_URL;
-		const queryRoute = process.env.REACT_APP_QUERY_ROUTE || '/api/query';
-	  
-		let url = '';
-		let method = '';
-	  
-		switch(action) {
-		  case 'read':
-			url = `${baseUrl}${queryRoute}/${dbName}/${tableName}/get`;
-			method = 'POST';
-			break;
-		  case 'insert':
-			url = `${baseUrl}${queryRoute}/${dbName}/${tableName}/insert`;
-			method = 'POST';
-			break;
-		  case 'update':
-			url = `${baseUrl}${queryRoute}/${dbName}/${tableName}/update`;
-			method = 'POST';
-			break;
-		  case 'delete':
-			url = `${baseUrl}${queryRoute}/${dbName}/${tableName}/delete`;
-			method = 'POST';
-			break;
-		  default:
-			console.error('Invalid action!!');
-			return;
-		}
-	  
-		// Copy to clipboard
-		navigator.clipboard.writeText(url)
-		  .then(() => {
-			setSnackbar({
-			  open: true,
-			  message: `${method} ${url} copied to clipboard!`,
-			  severity: 'success'
-			});
-		  })
-		  .catch(err => {
-			console.error('Failed to copy URL: ', err);
-			setSnackbar({
-			  open: true,
-			  message: 'Failed to copy URL to clipboard',
-			  severity: 'error'
-			});
-		  });
-	  
-		return url;
-	  };
+	const generateandCopyUrlByActionType = (dbName, tableName, action) => {};
 
-	  const handleMenuAction = (action) => {
-		generateandCopyUrlByActionType(dbName, currentTable.tablename, action);
+	const handleMenuAction = (action) => {
 		handleMenuClose();
-		
-		// Optional: Show additional info based on action
-		let message = '';
 		switch (action) {
-		  case 'read':
-			message = 'Send a POST request with filter object in body';
-			break;
-		  case 'insert':
-			message = 'Send a POST request with data object in body';
-			break;
-		  case 'update':
-			message = 'Send a POST request with filter and data objects in body';
-			break;
-		  case 'delete':
-			message = 'Send a POST request with filter object in body';
-			break;
+			case 'read':
+				navigate(`/database/${dbName}/table/${currentTable.tablename}`);
+				break;
+			case 'insert':
+				// Handle insert action
+				setSnackbar({
+					open: true,
+					message: `Insert action for table ${currentTable.tablename}`,
+					severity: 'info'
+				});
+				break;
+			case 'update':
+				// Handle update action
+				setSnackbar({
+					open: true,
+					message: `Update action for table ${currentTable.tablename}`,
+					severity: 'info'
+				});
+				break;
+			case 'delete':
+				// Handle delete action
+				setSnackbar({
+					open: true,
+					message: `Delete action for table ${currentTable.tablename}`,
+					severity: 'info'
+				});
+				break;
+			default:
+				break;
 		}
-		
-		setSnackbar(prev => ({
-		  ...prev,
-		  message: `${prev.message}\n${message}`
-		}));
-	  };
+	};
 
 	const drawer = (
 		<div>

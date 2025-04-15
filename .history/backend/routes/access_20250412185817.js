@@ -182,11 +182,11 @@ const { mainPool } = require('../mainpool/db');
 
 // ✅ Middleware to validate API key
 const validateApiKey = async (req, res, next) => {
-  const apiKey = req.headers['api-key'];
+  const apiKey = req.headers['x-api-key'];
   if (!apiKey) return res.status(401).json({ error: 'API key missing' });
 
   try {
-    const result = await mainPool.query('SELECT * FROM db_collection WHERE apikey = $1', [apiKey]);
+    const result = await mainPool.query('SELECT * FROM users WHERE user_id = $1', [apiKey]);
     if (result.rows.length === 0) return res.status(403).json({ error: 'Invalid API key' });
 
     req.user = result.rows[0];
