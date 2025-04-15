@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Container,
@@ -10,11 +10,6 @@ import {
   Alert,
   Grid,
   Paper,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  FormHelperText,
 } from '@mui/material';
 import { styled } from '@mui/material/styles';
 import axios from 'axios';
@@ -48,15 +43,6 @@ const StyledPaper = styled(Paper)(({ theme }) => ({
   backgroundColor: '#ffffff',
 }));
 
-// Static organization options
-const ORGANIZATIONS = [
-  { organization_name: 'idfc.in' },
-  { organization_name: 'hdfc.in' },
-  // { organization_name: 'icici.in' },
-  // { organization_name: 'axis.in' },
-  { organization_name: 'sbi.in' }
-];
-
 const Register = () => {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
@@ -68,7 +54,7 @@ const Register = () => {
     username: '',
     password: '',
     confirmPassword: '',
-    user_type: 'superadmin' // Default to superadmin for registration form
+    user_type: 'superadmin'
   });
 
   const [errors, setErrors] = useState({});
@@ -84,6 +70,7 @@ const Register = () => {
       ...prev,
       [name]: value
     }));
+    
     // Clear error when user starts typing
     if (errors[name]) {
       setErrors(prev => ({
@@ -233,6 +220,18 @@ const Register = () => {
                       <TextField
                         required
                         fullWidth
+                        label="Organization"
+                        name="organization"
+                        value={formData.organization}
+                        onChange={handleChange}
+                        error={!!errors.organization}
+                        helperText={errors.organization}
+                      />
+                    </Grid>
+                    <Grid item xs={12} sm={6}>
+                      <TextField
+                        required
+                        fullWidth
                         label="Email Address"
                         name="email"
                         value={formData.email}
@@ -240,26 +239,6 @@ const Register = () => {
                         error={!!errors.email}
                         helperText={errors.email}
                       />
-                    </Grid>
-                    <Grid item xs={12} sm={6}>
-                      <FormControl fullWidth required error={!!errors.organization}>
-                        <InputLabel>Organization</InputLabel>
-                        <Select
-                          name="organization"
-                          value={formData.organization}
-                          onChange={handleChange}
-                          label="Organization"
-                        >
-                          {ORGANIZATIONS.map((org) => (
-                            <MenuItem key={org.organization_name} value={org.organization_name}>
-                              {org.organization_name}
-                            </MenuItem>
-                          ))}
-                        </Select>
-                        {errors.organization && (
-                          <FormHelperText error>{errors.organization}</FormHelperText>
-                        )}
-                      </FormControl>
                     </Grid>
                     <Grid item xs={12} sm={6}>
                       <TextField

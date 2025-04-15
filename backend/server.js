@@ -55,10 +55,10 @@ const upload = multer({
 const dbConfig = {
   user: process.env.DB_USER || 'postgres',
   host: process.env.DB_HOST || 'localhost',
-  database: process.env.DB_NAME || 'postgres',
+ 
   password: process.env.DB_PASSWORD || 'ptspl1234',
   database: process.env.DB_NAME || 'superadmin_db', // Changed from 'postgres'
-  password: process.env.DB_PASSWORD || 'postgres',
+ 
   port: process.env.DB_PORT || 5432,
 };
 
