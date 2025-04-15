@@ -200,7 +200,7 @@ app.use('/api/users', usersRoutes);
 app.use('/api/organizations', organizationsRoutes);
 app.use('/api/databases', verifyToken, databasesRoutes);
 app.use('/api/superadmin', superadminRoutes);
-app.use('/api/query', accessRoutes); // Added access routes
+app.use('/api/access', accessRoutes); // Added access routes
 
 app.get('/api/protected', verifyToken, (req, res) => {
   res.json({ message: `Welcome, ${req.user.username}!` });

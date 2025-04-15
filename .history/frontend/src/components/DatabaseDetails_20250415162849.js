@@ -130,32 +130,40 @@ const DatabaseDetails = () => {
 		return url;
 	  };
 
-	  const handleMenuAction = (action) => {
-		generateandCopyUrlByActionType(dbName, currentTable.tablename, action);
+	const handleMenuAction = (action) => {
 		handleMenuClose();
-		
-		// Optional: Show additional info based on action
-		let message = '';
 		switch (action) {
-		  case 'read':
-			message = 'Send a POST request with filter object in body';
-			break;
-		  case 'insert':
-			message = 'Send a POST request with data object in body';
-			break;
-		  case 'update':
-			message = 'Send a POST request with filter and data objects in body';
-			break;
-		  case 'delete':
-			message = 'Send a POST request with filter object in body';
-			break;
+			case 'read':
+				navigate(`/database/${dbName}/table/${currentTable.tablename}`);
+				break;
+			case 'insert':
+				// Handle insert action
+				setSnackbar({
+					open: true,
+					message: `Insert action for table ${currentTable.tablename}`,
+					severity: 'info'
+				});
+				break;
+			case 'update':
+				// Handle update action
+				setSnackbar({
+					open: true,
+					message: `Update action for table ${currentTable.tablename}`,
+					severity: 'info'
+				});
+				break;
+			case 'delete':
+				// Handle delete action
+				setSnackbar({
+					open: true,
+					message: `Delete action for table ${currentTable.tablename}`,
+					severity: 'info'
+				});
+				break;
+			default:
+				break;
 		}
-		
-		setSnackbar(prev => ({
-		  ...prev,
-		  message: `${prev.message}\n${message}`
-		}));
-	  };
+	};
 
 	const drawer = (
 		<div>
