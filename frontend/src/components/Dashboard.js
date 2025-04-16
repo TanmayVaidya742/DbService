@@ -19,9 +19,9 @@ const drawerWidth = 240;
 
 const StyledPaper = styled(Paper)(({ theme }) => ({
   padding: theme.spacing(3),
-  borderRadius: '16px',
-  boxShadow: '0 6px 20px rgba(0,0,0,0.05)',
-  backgroundColor: '#ffffff',
+  borderRadius: 'var(--border-radius)',
+  boxShadow: 'var(--shadow-lg)',
+  backgroundColor: 'var(--bg-paper)',
 }));
 
 // Static organization options
@@ -150,7 +150,6 @@ const Dashboard = () => {
         severity: 'success'
       });
       
-      // Update users list after deletion
       setUsers(prevUsers => prevUsers.filter(user => user.user_id !== userId));
     } catch (error) {
       console.error('Error deleting user:', error);
@@ -190,11 +189,11 @@ const Dashboard = () => {
   );
 
   return (
-    <Box sx={{ display: 'flex', backgroundColor: '#f4f6f8', minHeight: '100vh' }}>
+    <Box sx={{ display: 'flex', backgroundColor: 'var(--bg-secondary)', minHeight: '100vh' }}>
       <AppBar
         position="fixed"
         sx={{
-          backgroundColor: '#7C3AED',
+          backgroundColor: 'var(--primary-color)',
           width: { sm: `calc(100% - ${drawerWidth}px)` },
           ml: { sm: `${drawerWidth}px` },
           boxShadow: 'none'
@@ -238,20 +237,19 @@ const Dashboard = () => {
         <Toolbar />
         <Container maxWidth="lg">
           <StyledPaper>
-            {/* Action Bar */}
             <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 3 }}>
               <Button
                 variant="contained"
                 startIcon={<AddIcon />}
                 onClick={handleOpenDialog}
                 sx={{
-                  backgroundColor: '#7C3AED',
+                  backgroundColor: 'var(--primary-color)',
                   borderRadius: '12px',
                   px: 4,
                   py: 1.5,
                   fontSize: '1rem',
                   '&:hover': {
-                    backgroundColor: '#6D28D9',
+                    backgroundColor: 'var(--primary-hover)',
                   },
                 }}
               >
@@ -259,7 +257,6 @@ const Dashboard = () => {
               </Button>
             </Box>
 
-            {/* Search */}
             <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
               <TextField
                 fullWidth
@@ -268,22 +265,21 @@ const Dashboard = () => {
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 InputProps={{
-                  startAdornment: <SearchIcon sx={{ mr: 1, color: 'text.secondary' }} />,
-                  sx: { borderRadius: '10px' },
+                  startAdornment: <SearchIcon sx={{ mr: 1, color: 'var(--text-secondary)' }} />,
+                  sx: { borderRadius: 'var(--border-radius)' },
                 }}
               />
               <Button variant="outlined" sx={{
-                borderColor: '#7C3AED',
-                color: '#7C3AED',
-                borderRadius: '10px',
+                borderColor: 'var(--primary-color)',
+                color: 'var(--primary-color)',
+                borderRadius: 'var(--border-radius)',
                 '&:hover': {
-                  backgroundColor: 'rgba(124, 58, 237, 0.05)',
-                  borderColor: '#6D28D9'
+                  backgroundColor: 'var(--primary-light)',
+                  borderColor: 'var(--primary-hover)'
                 }
               }}>Filters</Button>
             </Box>
 
-            {/* User Table */}
             <TableContainer>
               <Table>
                 <TableHead>
@@ -314,8 +310,8 @@ const Dashboard = () => {
                               width: 32, 
                               height: 32, 
                               borderRadius: '50%',
-                              backgroundColor: '#7C3AED', 
-                              color: '#fff',
+                              backgroundColor: 'var(--primary-color)', 
+                              color: 'var(--primary-text)',
                               display: 'flex', 
                               alignItems: 'center', 
                               justifyContent: 'center'

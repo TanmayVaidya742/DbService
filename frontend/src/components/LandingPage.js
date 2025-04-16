@@ -7,7 +7,7 @@ const MainSection = styled('section')({
   minHeight: '100vh',
   position: 'relative',
   overflow: 'hidden',
-  backgroundColor: '#ffffff',
+  backgroundColor: 'var(--bg-primary)',
 });
 
 const WaveBackground = styled('div')({
@@ -32,7 +32,7 @@ const NavContent = styled('div')({
 
 const NavButtons = styled('div')({
   display: 'flex',
-  gap: '1rem',
+  gap: 'var(--spacing-unit)',
 });
 
 const MainContent = styled('main')({
@@ -43,7 +43,7 @@ const MainContent = styled('main')({
 
 const ButtonGroup = styled('div')({
   display: 'flex',
-  gap: '1rem',
+  gap: 'var(--spacing-unit)',
   marginTop: '2rem',
 });
 
@@ -54,8 +54,8 @@ const ImageContainer = styled('div')({
   '& img': {
     maxWidth: '90%',
     height: 'auto',
-    borderRadius: '10px',
-    boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
+    borderRadius: 'var(--border-radius)',
+    boxShadow: 'var(--shadow-md)',
     transition: 'transform 0.3s ease',
     '&:hover': {
       transform: 'scale(1.02)',
@@ -80,8 +80,8 @@ const LandingPage = () => {
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 320" style={{ display: 'block' }}>
           <defs>
             <linearGradient id="wave-gradient" x1="0%" y1="0%" x2="100%" y2="0%">
-              <stop offset="0%" stopColor="#8B5CF6" />
-              <stop offset="100%" stopColor="#7C3AED" />
+              <stop offset="0%" stopColor="var(--secondary-color)" />
+              <stop offset="100%" stopColor="var(--primary-color)" />
             </linearGradient>
           </defs>
           <path
@@ -92,17 +92,16 @@ const LandingPage = () => {
         </svg>
       </WaveBackground>
 
-      {/* Navbar */}
       <Navbar>
         <Container maxWidth="lg">
           <NavContent>
             <Typography 
               variant="h5" 
               sx={{ 
-                color: '#374151', 
+                color: 'var(--text-primary)', 
                 fontWeight: 600,
                 cursor: 'pointer',
-                '&:hover': { color: '#7C3AED' }
+                '&:hover': { color: 'var(--primary-color)' }
               }}
               onClick={() => navigate('/')}
             >
@@ -112,14 +111,14 @@ const LandingPage = () => {
               <Button
                 variant="outlined"
                 sx={{ 
-                  borderColor: '#7C3AED',
-                  color: '#7C3AED',
+                  borderColor: 'var(--primary-color)',
+                  color: 'var(--primary-color)',
                   textTransform: 'none',
                   px: 3,
-                  borderRadius: '8px',
+                  borderRadius: 'var(--border-radius)',
                   '&:hover': {
-                    borderColor: '#6D28D9',
-                    backgroundColor: 'rgba(124, 58, 237, 0.04)',
+                    borderColor: 'var(--primary-hover)',
+                    backgroundColor: 'var(--primary-light)',
                   }
                 }}
                 onClick={() => navigate('/register')}
@@ -129,13 +128,13 @@ const LandingPage = () => {
               <Button
                 variant="contained"
                 sx={{ 
-                  bgcolor: '#7C3AED',
-                  color: 'white',
+                  bgcolor: 'var(--primary-color)',
+                  color: 'var(--primary-text)',
                   textTransform: 'none',
                   px: 3,
-                  borderRadius: '8px',
+                  borderRadius: 'var(--border-radius)',
                   '&:hover': {
-                    bgcolor: '#6D28D9',
+                    bgcolor: 'var(--primary-hover)',
                   }
                 }}
                 onClick={() => navigate('/login')}
@@ -147,7 +146,6 @@ const LandingPage = () => {
         </Container>
       </Navbar>
 
-      {/* Main Content */}
       <MainContent>
         <Container maxWidth="lg">
           <Grid 
@@ -155,9 +153,8 @@ const LandingPage = () => {
             spacing={8} 
             alignItems="center" 
             justifyContent="space-between"
-            sx={{ minHeight: 'calc(100vh - 200px)', flexWrap: 'nowrap',    marginRight: '244px'}}
+            sx={{ minHeight: 'calc(100vh - 200px)', flexWrap: 'nowrap', marginRight: '244px'}}
           >
-            {/* Left Content */}
             <Grid item xs={12} md={6} sx={{ display: 'flex', flexDirection: 'column' }}>
               <ContentContainer>
                 <Typography 
@@ -166,7 +163,7 @@ const LandingPage = () => {
                   gutterBottom 
                   sx={{ 
                     fontWeight: 700,
-                    color: '#111827',
+                    color: 'var(--text-primary)',
                     mb: 3,
                     fontSize: { xs: '2.5rem', md: '3.5rem' },
                     lineHeight: 1.2,
@@ -177,7 +174,7 @@ const LandingPage = () => {
                 <Typography 
                   variant="body1" 
                   sx={{ 
-                    color: '#6B7280',
+                    color: 'var(--text-secondary)',
                     mb: 4,
                     fontSize: '1.125rem',
                     lineHeight: 1.7,
@@ -189,15 +186,15 @@ const LandingPage = () => {
                   <Button
                     variant="contained"
                     sx={{ 
-                      bgcolor: '#7C3AED',
-                      color: 'white',
+                      bgcolor: 'var(--primary-color)',
+                      color: 'var(--primary-text)',
                       textTransform: 'none',
                       px: 6,
                       py: 1.5,
                       fontSize: '1.125rem',
-                      borderRadius: '8px',
+                      borderRadius: 'var(--border-radius)',
                       '&:hover': {
-                        bgcolor: '#6D28D9',
+                        bgcolor: 'var(--primary-hover)',
                       },
                     }}
                     onClick={() => navigate('/login')}
@@ -208,7 +205,6 @@ const LandingPage = () => {
               </ContentContainer>
             </Grid>
 
-            {/* Right Image */}
             <Grid item xs={12} md={6} sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
               <ImageContainer>
                 <img 
@@ -226,13 +222,3 @@ const LandingPage = () => {
 };
 
 export default LandingPage;
-
-// Add this to your global CSS or create a new style tag
-const style = document.createElement('style');
-style.textContent = `
-  @keyframes float {
-    0%, 100% { transform: translateY(0); }
-    50% { transform: translateY(-20px); }
-  }
-`;
-document.head.appendChild(style);
