@@ -8,7 +8,7 @@ import {
 } from '@mui/material';
 import {
   Menu as MenuIcon, Settings as SettingsIcon,
-  Storage as StorageIcon,
+  Storage as StorageIcon, Delete as DeleteIcon,
   Visibility as VisibilityIcon, ContentCopy as ContentCopyIcon
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
@@ -49,6 +49,12 @@ const UserDashboard = () => {
   const [databases, setDatabases] = useState([]);
   const [openApiKeyDialog, setOpenApiKeyDialog] = useState(false);
   const [currentApiKey, setCurrentApiKey] = useState('');
+  const [deleteDialog, setDeleteDialog] = useState({
+    open: false,
+    type: '', // 'database' or 'table'
+    name: '',
+    dbName: '' // only for table deletion
+  });
 
   useEffect(() => {
     fetchDatabases();
@@ -62,7 +68,6 @@ const UserDashboard = () => {
         }
       });
       
-      // Transform the data to match your existing table structure
       const transformedData = response.data.map(db => ({
         name: db.dbname,
         tables: db.tables.filter(t => t.tablename).map(t => t.tablename),
@@ -80,6 +85,70 @@ const UserDashboard = () => {
       });
       setDatabases([]);
     }
+  };
+
+  const handleDeleteDatabase = async () => {
+    try {
+      await axios.delete(`http://localhost:5000/api/databases/${deleteDialog.name}`, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+      
+      setSnackbar({
+        open: true,
+        message: 'Database deleted successfully!',
+        severity: 'success'
+      });
+      
+      setDeleteDialog({ ...deleteDialog, open: false });
+      fetchDatabases();
+    } catch (error) {
+      console.error('Error deleting database:', error);
+      setSnackbar({
+        open: true,
+        message: error.response?.data?.error || 'Failed to delete database',
+        severity: 'error'
+      });
+    }
+  };
+
+  const handleDeleteTable = async () => {
+    try {
+      await axios.delete(
+        `http://localhost:5000/api/databases/${deleteDialog.dbName}/tables/${deleteDialog.name}`,
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem('token')}`
+          }
+        }
+      );
+      
+      setSnackbar({
+        open: true,
+        message: 'Table deleted successfully!',
+        severity: 'success'
+      });
+      
+      setDeleteDialog({ ...deleteDialog, open: false });
+      fetchDatabases();
+    } catch (error) {
+      console.error('Error deleting table:', error);
+      setSnackbar({
+        open: true,
+        message: error.response?.data?.error || 'Failed to delete table',
+        severity: 'error'
+      });
+    }
+  };
+
+  const handleDeleteClick = (type, name, dbName = '') => {
+    setDeleteDialog({
+      open: true,
+      type,
+      name,
+      dbName
+    });
   };
 
   const handleCreateTable = async (dbName, formData) => {
@@ -108,11 +177,9 @@ const UserDashboard = () => {
         severity: 'success'
       });
   
-      // Update the specific database in state
       setDatabases(prevDatabases => {
         return prevDatabases.map(db => {
           if (db.name === dbName) {
-            // Get the new table name from the form data
             const tableName = formData.get('tableName');
             return {
               ...db,
@@ -132,6 +199,7 @@ const UserDashboard = () => {
       });
     }
   };
+
   const handleDrawerToggle = () => setMobileOpen(!mobileOpen);
 
   const handleOpenDialog = () => setOpenDialog(true);
@@ -264,12 +332,9 @@ const UserDashboard = () => {
     setSnackbar({ ...snackbar, open: false });
   };
 
-
-  // Add this function to handle row click
-const handleRowClick = (dbName) => {
-  navigate(`/database/${dbName}`);
-};
-
+  const handleRowClick = (dbName) => {
+    navigate(`/database/${dbName}`);
+  };
 
   const drawer = (
     <div>
@@ -370,68 +435,93 @@ const handleRowClick = (dbName) => {
                 <TableBody>
                   {databases.map((db) => (
                     <TableRow 
-                    key={db.name}
-                    hover
-                    onClick={() => handleRowClick(db.name)}
-                    sx={{ 
-                      cursor: 'pointer',
-                      '&:hover': {
-                        backgroundColor: 'rgba(124, 58, 237, 0.08)'
-                      }
-                    }}
-                  >
-                    <TableCell>{db.name}</TableCell>
-                    <TableCell>
-                      {db.tables.map((table) => (
-                        <Chip
-                          key={table}
-                          label={table}
-                          sx={{ mr: 1, mb: 1 }}
-                          color="primary"
-                        />
-                      ))}
-                    </TableCell>
-                    <TableCell>
-                      {db.apiKey && (
-                        <Button
-                          variant="outlined"
-                          startIcon={<VisibilityIcon />}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleShowApiKey(db.apiKey);
-                          }}
-                          sx={{
-                            textTransform: 'none',
-                            borderColor: '#7C3AED',
-                            color: '#7C3AED',
-                            '&:hover': {
-                              borderColor: '#6D28D9',
-                            },
-                          }}
-                        >
-                          Show API Key
-                        </Button>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      <Button
-                        variant="contained"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setSelectedDatabase(db.name);
-                          setOpenTableDialog(true);
-                        }}
-                        sx={{
-                          backgroundColor: '#7C3AED',
-                          '&:hover': {
-                            backgroundColor: '#6D28D9',
-                          },
-                        }}
-                      >
-                        Create Table
-                      </Button>
-                    </TableCell>
-                  </TableRow>
+                      key={db.name}
+                      hover
+                      sx={{ 
+                        cursor: 'pointer',
+                        '&:hover': {
+                          backgroundColor: 'rgba(124, 58, 237, 0.08)'
+                        }
+                      }}
+                    >
+                      <TableCell onClick={() => handleRowClick(db.name)}>{db.name}</TableCell>
+                      <TableCell onClick={() => handleRowClick(db.name)}>
+                        {db.tables.map((table) => (
+                          <Box key={table} sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                            <Chip
+                              label={table}
+                              sx={{ mr: 1 }}
+                              color="primary"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                navigate(`/database/${db.name}/table/${table}`);
+                              }}
+                            />
+                            <IconButton
+                              size="small"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDeleteClick('table', table, db.name);
+                              }}
+                              sx={{ color: 'error.main' }}
+                            >
+                              <DeleteIcon fontSize="small" />
+                            </IconButton>
+                          </Box>
+                        ))}
+                      </TableCell>
+                      <TableCell onClick={() => handleRowClick(db.name)}>
+                        {db.apiKey && (
+                          <Button
+                            variant="outlined"
+                            startIcon={<VisibilityIcon />}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleShowApiKey(db.apiKey);
+                            }}
+                            sx={{
+                              textTransform: 'none',
+                              borderColor: '#7C3AED',
+                              color: '#7C3AED',
+                              '&:hover': {
+                                borderColor: '#6D28D9',
+                              },
+                            }}
+                          >
+                            Show API Key
+                          </Button>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <Box sx={{ display: 'flex', gap: 1 }}>
+                          <Button
+                            variant="contained"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedDatabase(db.name);
+                              setOpenTableDialog(true);
+                            }}
+                            sx={{
+                              backgroundColor: '#7C3AED',
+                              '&:hover': {
+                                backgroundColor: '#6D28D9',
+                              },
+                            }}
+                          >
+                            Create Table
+                          </Button>
+                          <IconButton
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDeleteClick('database', db.name);
+                            }}
+                            sx={{ color: 'error.main' }}
+                          >
+                            <DeleteIcon />
+                          </IconButton>
+                        </Box>
+                      </TableCell>
+                    </TableRow>
                   ))}
                 </TableBody>
               </Table>
@@ -449,10 +539,10 @@ const handleRowClick = (dbName) => {
         />
 
         <CreateTableDialog
-          open={openTableDialog}
-          onClose={() => setOpenTableDialog(false)}
-          dbName={selectedDatabase}
-          onSubmit={handleCreateTable}
+            open={openTableDialog}
+            onClose={() => setOpenTableDialog(false)}
+            dbName={selectedDatabase}
+            onSubmit={handleCreateTable}
         />
 
         <Dialog open={openApiKeyDialog} onClose={() => setOpenApiKeyDialog(false)}>
@@ -486,6 +576,29 @@ const handleRowClick = (dbName) => {
               }}
             >
               Copy
+            </Button>
+          </DialogActions>
+        </Dialog>
+
+        <Dialog open={deleteDialog.open} onClose={() => setDeleteDialog({ ...deleteDialog, open: false })}>
+          <DialogTitle>
+            Delete {deleteDialog.type === 'database' ? 'Database' : 'Table'}
+          </DialogTitle>
+          <DialogContent>
+            <DialogContentText>
+              Are you sure you want to delete {deleteDialog.type} "{deleteDialog.name}"? 
+              This action cannot be undone.
+            </DialogContentText>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setDeleteDialog({ ...deleteDialog, open: false })}>Cancel</Button>
+            <Button
+              onClick={deleteDialog.type === 'database' ? handleDeleteDatabase : handleDeleteTable}
+              color="error"
+              variant="contained"
+              startIcon={<DeleteIcon />}
+            >
+              Delete
             </Button>
           </DialogActions>
         </Dialog>

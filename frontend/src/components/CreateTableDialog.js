@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Dialog,
   DialogTitle,
@@ -34,6 +34,7 @@ import {
   Link as LinkIcon
 } from '@mui/icons-material';
 import { styled } from '@mui/material/styles';
+import axios from 'axios';
 
 const StyledDialog = styled(Dialog)(({ theme }) => ({
   '& .MuiDialogContent-root': {
@@ -80,27 +81,101 @@ const dataTypes = [
   'UUID'
 ];
 
-// Mock function to get available tables - you'll need to replace this with your actual data source
-const getAvailableTables = () => {
-  return ['users', 'products', 'orders', 'categories'];
-};
-
-const CreateTableDialog = ({ open, onClose, dbName, onSubmit, existingTables = [] }) => {
+const CreateTableDialog = ({ open, onClose, dbName, onSubmit }) => {
   const [tableName, setTableName] = useState('');
   const [csvFile, setCsvFile] = useState(null);
-  const [columns, setColumns] = useState([
-    { 
-      name: '', 
-      type: 'TEXT', 
-      isPrimary: false, 
-      isNotNull: false, 
-      isUnique: false, 
-      defaultValue: '',
-      isForeignKey: false,
-      foreignKeyTable: '',
-      foreignKeyColumn: ''
+  const [columns, setColumns] = useState([{ 
+    name: '', 
+    type: 'TEXT', 
+    isPrimary: false, 
+    isNotNull: false, 
+    isUnique: false, 
+    defaultValue: '',
+    isForeignKey: false,
+    foreignKeyTable: '',
+    foreignKeyColumn: ''
+  }]);
+  
+  const [availableTables, setAvailableTables] = useState([]);
+  const [tableColumnsCache, setTableColumnsCache] = useState({});
+  const [loadingTables, setLoadingTables] = useState(false);
+  const [loadingColumns, setLoadingColumns] = useState(false);
+
+  // Fetch tables when dialog opens
+  useEffect(() => {
+    if (open) {
+      fetchAvailableTables();
     }
-  ]);
+  }, [open, dbName]);
+
+  const fetchAvailableTables = async () => {
+    setLoadingTables(true);
+    try {
+      const response = await axios.get(`http://localhost:5000/api/databases/${dbName}/tables`, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+      
+      const tableNames = response.data.map(table => table.tablename).filter(name => name); // Filter out any null/undefined values
+      setAvailableTables(tableNames);
+    } catch (error) {
+      console.error('Failed to fetch tables:', error);
+      setAvailableTables([]);
+    } finally {
+      setLoadingTables(false);
+    }
+  };
+
+  // Get columns for a table
+  const fetchTableColumns = async (tableName) => {
+    if (!tableName) return [];
+    
+    setLoadingColumns(true);
+    try {
+      const response = await axios.get(
+        `http://localhost:5000/api/databases/${dbName}/tables/${tableName}/columns`,
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem('token')}`
+          }
+        }
+      );
+      
+      const columnNames = response.data.map(col => col.column_name);
+      
+      // Update the cache
+      setTableColumnsCache(prev => ({
+        ...prev,
+        [tableName]: columnNames
+      }));
+      
+      return columnNames;
+      
+    } catch (error) {
+      console.error(`Failed to fetch columns for table ${tableName}:`, error);
+      return [];
+    } finally {
+      setLoadingColumns(false);
+    }
+  };
+
+  const handleForeignKeyTableSelect = async (index, tableName) => {
+    // Clear previous foreign key column selection
+    handleColumnChange(index, 'foreignKeyColumn', '');
+    
+    // Set the foreign key table
+    handleColumnChange(index, 'foreignKeyTable', tableName);
+    
+    // Fetch columns if not in cache
+    if (!tableColumnsCache[tableName]) {
+      const columns = await fetchTableColumns(tableName);
+      setTableColumnsCache(prev => ({
+        ...prev,
+        [tableName]: columns
+      }));
+    }
+  };
 
   const handleAddColumn = () => {
     setColumns([...columns, { 
@@ -129,7 +204,6 @@ const CreateTableDialog = ({ open, onClose, dbName, onSubmit, existingTables = [
       newColumns.forEach(col => col.isPrimary = false);
     }
     
-    // Reset foreign key fields if isForeignKey is being set to false
     if (field === 'isForeignKey' && value === false) {
       newColumns[index].foreignKeyTable = '';
       newColumns[index].foreignKeyColumn = '';
@@ -150,7 +224,7 @@ const CreateTableDialog = ({ open, onClose, dbName, onSubmit, existingTables = [
     }
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!tableName) {
       alert('Table name is required');
       return;
@@ -167,7 +241,6 @@ const CreateTableDialog = ({ open, onClose, dbName, onSubmit, existingTables = [
         return;
       }
       
-      // Validate foreign key constraints
       if (column.isForeignKey) {
         if (!column.foreignKeyTable || !column.foreignKeyColumn) {
           alert('Please specify both table and column for foreign key constraints');
@@ -195,9 +268,12 @@ const CreateTableDialog = ({ open, onClose, dbName, onSubmit, existingTables = [
       formData.append('csvFile', csvFile);
     }
     
-    onSubmit(dbName, formData);
+    await onSubmit(dbName, formData);
     onClose();
-    // Reset form
+    resetForm();
+  };
+
+  const resetForm = () => {
     setTableName('');
     setCsvFile(null);
     setColumns([{ 
@@ -211,16 +287,6 @@ const CreateTableDialog = ({ open, onClose, dbName, onSubmit, existingTables = [
       foreignKeyTable: '',
       foreignKeyColumn: ''
     }]);
-  };
-
-  // Mock function to get columns for a table - replace with your actual implementation
-  const getColumnsForTable = (tableName) => {
-    // This would typically come from your database metadata
-    // For now, return some mock columns
-    if (tableName === 'users') return ['id', 'name', 'email'];
-    if (tableName === 'products') return ['id', 'name', 'price'];
-    if (tableName === 'orders') return ['id', 'user_id', 'product_id'];
-    return ['id', 'name'];
   };
 
   return (
@@ -303,7 +369,7 @@ const CreateTableDialog = ({ open, onClose, dbName, onSubmit, existingTables = [
                             <Select
                               value={column.type}
                               onChange={(e) => handleColumnChange(index, 'type', e.target.value)}
-                              disabled={column.isForeignKey} // Disable type change for foreign keys
+                              disabled={column.isForeignKey}
                             >
                               {dataTypes.map((type) => (
                                 <MenuItem key={type} value={type}>{type}</MenuItem>
@@ -318,7 +384,7 @@ const CreateTableDialog = ({ open, onClose, dbName, onSubmit, existingTables = [
                               onChange={(e) => handleColumnChange(index, 'isPrimary', e.target.checked)}
                               icon={<KeyIcon />}
                               checkedIcon={<KeyIcon color="primary" />}
-                              disabled={column.isForeignKey} // Primary keys can't be foreign keys
+                              disabled={column.isForeignKey}
                             />
                           </Tooltip>
                         </TableCell>
@@ -344,7 +410,7 @@ const CreateTableDialog = ({ open, onClose, dbName, onSubmit, existingTables = [
                             value={column.defaultValue}
                             onChange={(e) => handleColumnChange(index, 'defaultValue', e.target.value)}
                             placeholder="Default"
-                            disabled={column.isForeignKey} // Foreign keys typically shouldn't have defaults
+                            disabled={column.isForeignKey}
                           />
                         </TableCell>
                         <TableCell>
@@ -354,41 +420,40 @@ const CreateTableDialog = ({ open, onClose, dbName, onSubmit, existingTables = [
                               onChange={(e) => handleColumnChange(index, 'isForeignKey', e.target.checked)}
                               icon={<LinkIcon />}
                               checkedIcon={<LinkIcon color="secondary" />}
-                              disabled={column.isPrimary} // Primary keys can't be foreign keys
+                              disabled={column.isPrimary}
                             />
                           </Tooltip>
                           {column.isForeignKey && (
                             <Box sx={{ mt: 1 }}>
                               <FormControl fullWidth size="small" sx={{ mb: 1 }}>
-                                <Autocomplete
-                                  options={existingTables.length > 0 ? existingTables : getAvailableTables()}
+                                <Select
                                   value={column.foreignKeyTable}
-                                  onChange={(e, newValue) => handleColumnChange(index, 'foreignKeyTable', newValue)}
-                                  renderInput={(params) => (
-                                    <TextField 
-                                      {...params} 
-                                      label="Reference Table" 
-                                      size="small"
-                                    />
-                                  )}
-                                />
+                                  onChange={(e) => handleForeignKeyTableSelect(index, e.target.value)}
+                                  displayEmpty
+                                  disabled={availableTables.length === 0}
+                                  renderValue={(value) => value || "Select reference table"}
+                                >
+                                  {availableTables.map((tableName) => (
+                                    <MenuItem key={tableName} value={tableName}>
+                                      {tableName}
+                                    </MenuItem>
+                                  ))}
+                                </Select>
                               </FormControl>
                               <FormControl fullWidth size="small">
-                                <Autocomplete
-                                  options={column.foreignKeyTable ? 
-                                    getColumnsForTable(column.foreignKeyTable) : 
-                                    []}
+                                <Select
                                   value={column.foreignKeyColumn}
-                                  onChange={(e, newValue) => handleColumnChange(index, 'foreignKeyColumn', newValue)}
-                                  renderInput={(params) => (
-                                    <TextField 
-                                      {...params} 
-                                      label="Reference Column" 
-                                      size="small"
-                                    />
-                                  )}
-                                  disabled={!column.foreignKeyTable}
-                                />
+                                  onChange={(e) => handleColumnChange(index, 'foreignKeyColumn', e.target.value)}
+                                  displayEmpty
+                                  disabled={!column.foreignKeyTable || !tableColumnsCache[column.foreignKeyTable]}
+                                  renderValue={(value) => value || "Select reference column"}
+                                >
+                                  {column.foreignKeyTable && tableColumnsCache[column.foreignKeyTable]?.map((colName) => (
+                                    <MenuItem key={colName} value={colName}>
+                                      {colName}
+                                    </MenuItem>
+                                  ))}
+                                </Select>
                               </FormControl>
                             </Box>
                           )}

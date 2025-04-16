@@ -437,5 +437,199 @@ router.get('/:dbName/tables', verifyToken, async (req, res) => {
     if (client) client.release();
   }
 });
+// Add these new routes to your existing database routes
 
+// DELETE route to delete a database
+router.delete('/:dbName', verifyToken, async (req, res) => {
+  const { dbName } = req.params;
+  const userId = req.user.user_id;
+  let tempPool = null;
+  let client = null;
+
+  try {
+    // Connect to postgres database first
+    tempPool = new Pool({
+      user: process.env.DB_USER || 'postgres',
+      host: process.env.DB_HOST || 'localhost',
+      database: 'postgres',
+      password: process.env.DB_PASSWORD || 'postgres',
+      port: process.env.DB_PORT || 5432,
+    });
+
+    // Connect to main database to store metadata
+    client = await req.mainPool.connect();
+    await client.query('BEGIN');
+
+    // Get the dbid for this database
+    const dbResult = await client.query(
+      'SELECT dbid FROM db_collection WHERE dbname = $1 AND user_id = $2',
+      [dbName, userId]
+    );
+
+    if (dbResult.rows.length === 0) {
+      return res.status(404).json({ error: 'Database not found' });
+    }
+
+    const dbid = dbResult.rows[0].dbid;
+
+    // Delete from table_collection first (due to foreign key constraint)
+    await client.query(
+      'DELETE FROM table_collection WHERE dbid = $1',
+      [dbid]
+    );
+
+    // Then delete from db_collection
+    await client.query(
+      'DELETE FROM db_collection WHERE dbid = $1',
+      [dbid]
+    );
+
+    // Terminate all connections to the target database first
+    await tempPool.query(`
+      SELECT pg_terminate_backend(pg_stat_activity.pid)
+      FROM pg_stat_activity
+      WHERE pg_stat_activity.datname = $1
+      AND pid <> pg_backend_pid();
+    `, [dbName]);
+    
+    // Then drop the database
+    await tempPool.query(`DROP DATABASE IF EXISTS ${dbName}`);
+
+    await client.query('COMMIT');
+
+    res.json({ message: 'Database deleted successfully' });
+
+  } catch (error) {
+    console.error('Error deleting database:', error);
+    
+    if (client) {
+      try {
+        await client.query('ROLLBACK');
+      } catch (rollbackError) {
+        console.error('Error rolling back transaction:', rollbackError);
+      }
+    }
+    
+    res.status(500).json({ error: error.message });
+  } finally {
+    if (tempPool) await tempPool.end().catch(console.error);
+    if (client) client.release();
+  }
+});
+
+// DELETE route to delete a table
+router.delete('/:dbName/tables/:tableName', verifyToken, async (req, res) => {
+  const { dbName, tableName } = req.params;
+  const userId = req.user.user_id;
+  let dbPool = null;
+  let client = null;
+
+  try {
+    // Connect to the existing database
+    dbPool = new Pool({
+      user: process.env.DB_USER || 'postgres',
+      host: process.env.DB_HOST || 'localhost',
+      database: dbName,
+      password: process.env.DB_PASSWORD || 'postgres',
+      port: process.env.DB_PORT || 5432,
+    });
+
+    // Drop the table
+    await dbPool.query(`DROP TABLE IF EXISTS ${tableName}`);
+
+    // Connect to main database to store metadata
+    client = await req.mainPool.connect();
+    await client.query('BEGIN');
+
+    // Get the dbid for this database
+    const dbResult = await client.query(
+      'SELECT dbid FROM db_collection WHERE dbname = $1 AND user_id = $2',
+      [dbName, userId]
+    );
+
+    if (dbResult.rows.length === 0) {
+      return res.status(404).json({ error: 'Database not found in metadata' });
+    }
+
+    const dbid = dbResult.rows[0].dbid;
+
+    // Delete from table_collection
+    await client.query(
+      'DELETE FROM table_collection WHERE dbid = $1 AND tablename = $2',
+      [dbid, tableName]
+    );
+
+    await client.query('COMMIT');
+
+    res.json({ message: `Table '${tableName}' deleted successfully` });
+
+  } catch (error) {
+    console.error('Error deleting table:', error);
+    
+    if (client) {
+      try {
+        await client.query('ROLLBACK');
+      } catch (rollbackError) {
+        console.error('Error rolling back transaction:', rollbackError);
+      }
+    }
+    
+    res.status(500).json({ error: error.message });
+  } finally {
+    if (dbPool) await dbPool.end().catch(console.error);
+    if (client) client.release();
+  }
+});
+// Add this new route to get columns for a specific table
+router.get('/:dbName/tables/:tableName/columns', verifyToken, async (req, res) => {
+  const { dbName, tableName } = req.params;
+  const userId = req.user.user_id;
+  let dbPool = null;
+  let client = null;
+
+  try {
+    // First verify the user has access to this database
+    client = await req.mainPool.connect();
+    const dbResult = await client.query(
+      'SELECT dbid FROM db_collection WHERE dbname = $1 AND user_id = $2',
+      [dbName, userId]
+    );
+
+    if (dbResult.rows.length === 0) {
+      return res.status(404).json({ error: 'Database not found or access denied' });
+    }
+
+    // Connect to the specific database
+    dbPool = new Pool({
+      user: process.env.DB_USER || 'postgres',
+      host: process.env.DB_HOST || 'localhost',
+      database: dbName,
+      password: process.env.DB_PASSWORD || 'postgres',
+      port: process.env.DB_PORT || 5432,
+    });
+
+    // Query to get column information from the PostgreSQL information schema
+    const columnsResult = await dbPool.query(`
+      SELECT 
+        column_name, 
+        data_type, 
+        is_nullable,
+        column_default
+      FROM 
+        information_schema.columns 
+      WHERE 
+        table_name = $1
+      ORDER BY 
+        ordinal_position
+    `, [tableName]);
+
+    res.json(columnsResult.rows);
+  } catch (error) {
+    console.error('Error fetching table columns:', error);
+    res.status(500).json({ error: 'Failed to fetch table columns' });
+  } finally {
+    if (dbPool) await dbPool.end().catch(console.error);
+    if (client) client.release();
+  }
+});
 module.exports = router;
