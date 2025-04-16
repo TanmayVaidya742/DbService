@@ -23,14 +23,17 @@ import {
   IconButton as MuiIconButton,
   Tooltip,
   Checkbox,
-  FormControlLabel
+  FormControlLabel,
+  Collapse
 } from '@mui/material';
 import { 
   Close as CloseIcon, 
   CloudUpload as CloudUploadIcon,
   Add as AddIcon,
   Delete as DeleteIcon,
-  Key as KeyIcon
+  Key as KeyIcon,
+  ExpandMore as ExpandMoreIcon,
+  ExpandLess as ExpandLessIcon
 } from '@mui/icons-material';
 import { styled } from '@mui/material/styles';
 
@@ -81,17 +84,51 @@ const dataTypes = [
 
 const AddDatabaseDialog = ({ open, onClose, formData, onChange, onFileChange, onSubmit }) => {
   const [columns, setColumns] = useState([
-    { name: '', type: 'TEXT', isPrimary: false, isNotNull: false, isUnique: false, defaultValue: '' }
+    { 
+      name: '', 
+      type: 'TEXT', 
+      isPrimary: false, 
+      isNotNull: false, 
+      isUnique: false, 
+      defaultValue: '',
+      isForeignKey: false,
+      foreignKeyTable: '',
+      foreignKeyColumn: ''
+    }
   ]);
 
+  const [expandedRows, setExpandedRows] = useState({});
+
+  const handleToggleExpand = (index) => {
+    setExpandedRows(prev => ({
+      ...prev,
+      [index]: !prev[index]
+    }));
+  };
+
   const handleAddColumn = () => {
-    setColumns([...columns, { name: '', type: 'TEXT', isPrimary: false, isNotNull: false, isUnique: false, defaultValue: '' }]);
+    setColumns([...columns, { 
+      name: '', 
+      type: 'TEXT', 
+      isPrimary: false, 
+      isNotNull: false, 
+      isUnique: false, 
+      defaultValue: '',
+      isForeignKey: false,
+      foreignKeyTable: '',
+      foreignKeyColumn: ''
+    }]);
   };
 
   const handleRemoveColumn = (index) => {
     const newColumns = [...columns];
     newColumns.splice(index, 1);
     setColumns(newColumns);
+    
+    // Remove from expanded rows if it exists
+    const newExpandedRows = {...expandedRows};
+    delete newExpandedRows[index];
+    setExpandedRows(newExpandedRows);
   };
 
   const handleColumnChange = (index, field, value) => {
@@ -100,6 +137,12 @@ const AddDatabaseDialog = ({ open, onClose, formData, onChange, onFileChange, on
     // Ensure only one primary key can be selected
     if (field === 'isPrimary' && value === true) {
       newColumns.forEach(col => col.isPrimary = false);
+    }
+    
+    // Reset foreign key fields if foreign key is unchecked
+    if (field === 'isForeignKey' && value === false) {
+      newColumns[index].foreignKeyTable = '';
+      newColumns[index].foreignKeyColumn = '';
     }
     
     newColumns[index][field] = value;
@@ -120,6 +163,11 @@ const AddDatabaseDialog = ({ open, onClose, formData, onChange, onFileChange, on
     for (const column of columns) {
       if (column.name.trim() && !/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(column.name)) {
         alert('Column names must start with a letter or underscore and contain only letters, numbers, and underscores');
+        return;
+      }
+      
+      if (column.isForeignKey && (!column.foreignKeyTable || !column.foreignKeyColumn)) {
+        alert('Foreign key requires both table and column references');
         return;
       }
     }
@@ -199,82 +247,139 @@ const AddDatabaseDialog = ({ open, onClose, formData, onChange, onFileChange, on
                 <Table size="small" stickyHeader>
                   <TableHead>
                     <TableRow>
+                      <TableCell width="40px"></TableCell>
                       <TableCell>Column Name</TableCell>
                       <TableCell>Data Type</TableCell>
                       <TableCell>Primary</TableCell>
                       <TableCell>Not Null</TableCell>
                       <TableCell>Unique</TableCell>
                       <TableCell>Default</TableCell>
+                      <TableCell>Foreign Key</TableCell>
                       <TableCell align="right">Actions</TableCell>
                     </TableRow>
                   </TableHead>
                   <TableBody>
                     {columns.map((column, index) => (
-                      <TableRow key={index}>
-                        <TableCell>
-                          <TextField
-                            fullWidth
-                            value={column.name}
-                            onChange={(e) => handleColumnChange(index, 'name', e.target.value)}
-                            placeholder="Column name"
-                          />
-                        </TableCell>
-                        <TableCell>
-                          <FormControl fullWidth size="small">
-                            <Select
-                              value={column.type}
-                              onChange={(e) => handleColumnChange(index, 'type', e.target.value)}
-                            >
-                              {dataTypes.map((type) => (
-                                <MenuItem key={type} value={type}>{type}</MenuItem>
-                              ))}
-                            </Select>
-                          </FormControl>
-                        </TableCell>
-                        <TableCell>
-                          <Tooltip title="Primary Key">
-                            <Checkbox
-                              checked={column.isPrimary}
-                              onChange={(e) => handleColumnChange(index, 'isPrimary', e.target.checked)}
-                              icon={<KeyIcon />}
-                              checkedIcon={<KeyIcon color="primary" />}
+                      <React.Fragment key={index}>
+                        <TableRow>
+                          <TableCell>
+                            {column.isForeignKey && (
+                              <IconButton
+                                size="small"
+                                onClick={() => handleToggleExpand(index)}
+                              >
+                                {expandedRows[index] ? <ExpandLessIcon /> : <ExpandMoreIcon />}
+                              </IconButton>
+                            )}
+                          </TableCell>
+                          <TableCell>
+                            <TextField
+                              fullWidth
+                              value={column.name}
+                              onChange={(e) => handleColumnChange(index, 'name', e.target.value)}
+                              placeholder="Column name"
                             />
-                          </Tooltip>
-                        </TableCell>
-                        <TableCell>
-                          <Tooltip title="Not Null">
-                            <Checkbox
-                              checked={column.isNotNull}
-                              onChange={(e) => handleColumnChange(index, 'isNotNull', e.target.checked)}
+                          </TableCell>
+                          <TableCell>
+                            <FormControl fullWidth size="small">
+                              <Select
+                                value={column.type}
+                                onChange={(e) => handleColumnChange(index, 'type', e.target.value)}
+                              >
+                                {dataTypes.map((type) => (
+                                  <MenuItem key={type} value={type}>{type}</MenuItem>
+                                ))}
+                              </Select>
+                            </FormControl>
+                          </TableCell>
+                          <TableCell>
+                            <Tooltip title="Primary Key">
+                              <Checkbox
+                                checked={column.isPrimary}
+                                onChange={(e) => handleColumnChange(index, 'isPrimary', e.target.checked)}
+                                icon={<KeyIcon />}
+                                checkedIcon={<KeyIcon color="primary" />}
+                              />
+                            </Tooltip>
+                          </TableCell>
+                          <TableCell>
+                            <Tooltip title="Not Null">
+                              <Checkbox
+                                checked={column.isNotNull}
+                                onChange={(e) => handleColumnChange(index, 'isNotNull', e.target.checked)}
+                              />
+                            </Tooltip>
+                          </TableCell>
+                          <TableCell>
+                            <Tooltip title="Unique">
+                              <Checkbox
+                                checked={column.isUnique}
+                                onChange={(e) => handleColumnChange(index, 'isUnique', e.target.checked)}
+                              />
+                            </Tooltip>
+                          </TableCell>
+                          <TableCell>
+                            <TextField
+                              size="small"
+                              value={column.defaultValue}
+                              onChange={(e) => handleColumnChange(index, 'defaultValue', e.target.value)}
+                              placeholder="Default"
                             />
-                          </Tooltip>
-                        </TableCell>
-                        <TableCell>
-                          <Tooltip title="Unique">
-                            <Checkbox
-                              checked={column.isUnique}
-                              onChange={(e) => handleColumnChange(index, 'isUnique', e.target.checked)}
-                            />
-                          </Tooltip>
-                        </TableCell>
-                        <TableCell>
-                          <TextField
-                            size="small"
-                            value={column.defaultValue}
-                            onChange={(e) => handleColumnChange(index, 'defaultValue', e.target.value)}
-                            placeholder="Default"
-                          />
-                        </TableCell>
-                        <TableCell align="right">
-                          <Tooltip title="Remove column">
-                            <MuiIconButton 
-                              onClick={() => handleRemoveColumn(index)}
-                            >
-                              <DeleteIcon />
-                            </MuiIconButton>
-                          </Tooltip>
-                        </TableCell>
-                      </TableRow>
+                          </TableCell>
+                          <TableCell>
+                            <Tooltip title="Foreign Key">
+                              <Checkbox
+                                checked={column.isForeignKey}
+                                onChange={(e) => handleColumnChange(index, 'isForeignKey', e.target.checked)}
+                              />
+                            </Tooltip>
+                          </TableCell>
+                          <TableCell align="right">
+                            <Tooltip title="Remove column">
+                              <MuiIconButton 
+                                onClick={() => handleRemoveColumn(index)}
+                              >
+                                <DeleteIcon />
+                              </MuiIconButton>
+                            </Tooltip>
+                          </TableCell>
+                        </TableRow>
+                        {column.isForeignKey && (
+                          <TableRow>
+                            <TableCell style={{ padding: 0 }} colSpan={9}>
+                              <Collapse in={expandedRows[index]} timeout="auto" unmountOnExit>
+                                <Box sx={{ 
+                                  margin: 1,
+                                  padding: 2,
+                                  backgroundColor: 'rgba(124, 58, 237, 0.05)',
+                                  borderRadius: '4px'
+                                }}>
+                                  <Grid container spacing={2}>
+                                    <Grid item xs={6}>
+                                      <TextField
+                                        fullWidth
+                                        label="Foreign Table"
+                                        value={column.foreignKeyTable}
+                                        onChange={(e) => handleColumnChange(index, 'foreignKeyTable', e.target.value)}
+                                        placeholder="Referenced table name"
+                                      />
+                                    </Grid>
+                                    <Grid item xs={6}>
+                                      <TextField
+                                        fullWidth
+                                        label="Foreign Column"
+                                        value={column.foreignKeyColumn}
+                                        onChange={(e) => handleColumnChange(index, 'foreignKeyColumn', e.target.value)}
+                                        placeholder="Referenced column name"
+                                      />
+                                    </Grid>
+                                  </Grid>
+                                </Box>
+                              </Collapse>
+                            </TableCell>
+                          </TableRow>
+                        )}
+                      </React.Fragment>
                     ))}
                   </TableBody>
                 </Table>
