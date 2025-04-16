@@ -9,6 +9,7 @@ import UserDashboard from './components/UserDashboard';
 import Organizations from './components/Organizations';
 import axios from 'axios';
 import DatabaseDetails from './components/DatabaseDetails';
+import './styles/theme.css';
 
 const theme = createTheme({
   palette: {

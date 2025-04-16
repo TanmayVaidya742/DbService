@@ -23,7 +23,8 @@ import {
   IconButton as MuiIconButton,
   Tooltip,
   Checkbox,
-  Autocomplete
+  Autocomplete,
+  CircularProgress
 } from '@mui/material';
 import { 
   Close as CloseIcon, 
@@ -46,8 +47,8 @@ const StyledDialog = styled(Dialog)(({ theme }) => ({
 }));
 
 const StyledDialogTitle = styled(DialogTitle)(({ theme }) => ({
-  backgroundColor: '#7C3AED',
-  color: 'white',
+  backgroundColor: 'var(--primary-color)',
+  color: 'var(--primary-text)',
   display: 'flex',
   justifyContent: 'space-between',
   alignItems: 'center',
@@ -59,11 +60,11 @@ const FormField = styled(Grid)(({ theme }) => ({
 }));
 
 const UploadButton = styled(Button)(({ theme }) => ({
-  border: '2px dashed #7C3AED',
-  backgroundColor: 'rgba(124, 58, 237, 0.04)',
+  border: '2px dashed var(--primary-color)',
+  backgroundColor: 'var(--primary-light)',
   '&:hover': {
-    backgroundColor: 'rgba(124, 58, 237, 0.08)',
-    border: '2px dashed #6D28D9',
+    backgroundColor: 'var(--primary-light-hover)',
+    border: '2px dashed var(--primary-hover)',
   },
 }));
 
@@ -100,8 +101,8 @@ const CreateTableDialog = ({ open, onClose, dbName, onSubmit }) => {
   const [tableColumnsCache, setTableColumnsCache] = useState({});
   const [loadingTables, setLoadingTables] = useState(false);
   const [loadingColumns, setLoadingColumns] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Fetch tables when dialog opens
   useEffect(() => {
     if (open) {
       fetchAvailableTables();
@@ -117,7 +118,7 @@ const CreateTableDialog = ({ open, onClose, dbName, onSubmit }) => {
         }
       });
       
-      const tableNames = response.data.map(table => table.tablename).filter(name => name); // Filter out any null/undefined values
+      const tableNames = response.data.map(table => table.tablename).filter(name => name);
       setAvailableTables(tableNames);
     } catch (error) {
       console.error('Failed to fetch tables:', error);
@@ -127,7 +128,6 @@ const CreateTableDialog = ({ open, onClose, dbName, onSubmit }) => {
     }
   };
 
-  // Get columns for a table
   const fetchTableColumns = async (tableName) => {
     if (!tableName) return [];
     
@@ -143,15 +143,12 @@ const CreateTableDialog = ({ open, onClose, dbName, onSubmit }) => {
       );
       
       const columnNames = response.data.map(col => col.column_name);
-      
-      // Update the cache
       setTableColumnsCache(prev => ({
         ...prev,
         [tableName]: columnNames
       }));
       
       return columnNames;
-      
     } catch (error) {
       console.error(`Failed to fetch columns for table ${tableName}:`, error);
       return [];
@@ -161,13 +158,9 @@ const CreateTableDialog = ({ open, onClose, dbName, onSubmit }) => {
   };
 
   const handleForeignKeyTableSelect = async (index, tableName) => {
-    // Clear previous foreign key column selection
     handleColumnChange(index, 'foreignKeyColumn', '');
-    
-    // Set the foreign key table
     handleColumnChange(index, 'foreignKeyTable', tableName);
     
-    // Fetch columns if not in cache
     if (!tableColumnsCache[tableName]) {
       const columns = await fetchTableColumns(tableName);
       setTableColumnsCache(prev => ({
@@ -268,9 +261,17 @@ const CreateTableDialog = ({ open, onClose, dbName, onSubmit }) => {
       formData.append('csvFile', csvFile);
     }
     
-    await onSubmit(dbName, formData);
-    onClose();
-    resetForm();
+    setIsSubmitting(true);
+    try {
+      await onSubmit(dbName, formData);
+      resetForm();
+      onClose();
+    } catch (error) {
+      console.error('Error creating table:', error);
+      alert('Failed to create table. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const resetForm = () => {
@@ -303,11 +304,12 @@ const CreateTableDialog = ({ open, onClose, dbName, onSubmit }) => {
       }}
     >
       <StyledDialogTitle>
-        <Typography variant="h6">Create New Table in {dbName}</Typography>
+        <Typography variant="h6" style={{ color: 'var(--primary-text)' }}>Create New Table in {dbName}</Typography>
         <IconButton
           aria-label="close"
           onClick={onClose}
-          sx={{ color: 'white' }}
+          sx={{ color: 'var(--primary-text)' }}
+          disabled={isSubmitting}
         >
           <CloseIcon />
         </IconButton>
@@ -326,7 +328,8 @@ const CreateTableDialog = ({ open, onClose, dbName, onSubmit }) => {
                 onChange={(e) => setTableName(e.target.value)}
                 required
                 variant="outlined"
-                sx={{ '& .MuiOutlinedInput-root': { borderRadius: '8px' } }}
+                disabled={isSubmitting}
+                sx={{ '& .MuiOutlinedInput-root': { borderRadius: 'var(--border-radius)' } }}
               />
             </FormField>
 
@@ -337,8 +340,8 @@ const CreateTableDialog = ({ open, onClose, dbName, onSubmit }) => {
               <Box sx={{ 
                 maxHeight: '300px',
                 overflowY: 'auto',
-                border: '1px solid #eee',
-                borderRadius: '4px'
+                border: '1px solid var(--border-color)',
+                borderRadius: 'var(--border-radius-sm)'
               }}>
                 <Table size="small" stickyHeader>
                   <TableHead>
@@ -362,6 +365,7 @@ const CreateTableDialog = ({ open, onClose, dbName, onSubmit }) => {
                             value={column.name}
                             onChange={(e) => handleColumnChange(index, 'name', e.target.value)}
                             placeholder="Column name"
+                            disabled={isSubmitting}
                           />
                         </TableCell>
                         <TableCell>
@@ -369,7 +373,7 @@ const CreateTableDialog = ({ open, onClose, dbName, onSubmit }) => {
                             <Select
                               value={column.type}
                               onChange={(e) => handleColumnChange(index, 'type', e.target.value)}
-                              disabled={column.isForeignKey}
+                              disabled={column.isForeignKey || isSubmitting}
                             >
                               {dataTypes.map((type) => (
                                 <MenuItem key={type} value={type}>{type}</MenuItem>
@@ -384,7 +388,7 @@ const CreateTableDialog = ({ open, onClose, dbName, onSubmit }) => {
                               onChange={(e) => handleColumnChange(index, 'isPrimary', e.target.checked)}
                               icon={<KeyIcon />}
                               checkedIcon={<KeyIcon color="primary" />}
-                              disabled={column.isForeignKey}
+                              disabled={column.isForeignKey || isSubmitting}
                             />
                           </Tooltip>
                         </TableCell>
@@ -393,6 +397,7 @@ const CreateTableDialog = ({ open, onClose, dbName, onSubmit }) => {
                             <Checkbox
                               checked={column.isNotNull}
                               onChange={(e) => handleColumnChange(index, 'isNotNull', e.target.checked)}
+                              disabled={isSubmitting}
                             />
                           </Tooltip>
                         </TableCell>
@@ -401,6 +406,7 @@ const CreateTableDialog = ({ open, onClose, dbName, onSubmit }) => {
                             <Checkbox
                               checked={column.isUnique}
                               onChange={(e) => handleColumnChange(index, 'isUnique', e.target.checked)}
+                              disabled={isSubmitting}
                             />
                           </Tooltip>
                         </TableCell>
@@ -410,7 +416,7 @@ const CreateTableDialog = ({ open, onClose, dbName, onSubmit }) => {
                             value={column.defaultValue}
                             onChange={(e) => handleColumnChange(index, 'defaultValue', e.target.value)}
                             placeholder="Default"
-                            disabled={column.isForeignKey}
+                            disabled={column.isForeignKey || isSubmitting}
                           />
                         </TableCell>
                         <TableCell>
@@ -420,7 +426,7 @@ const CreateTableDialog = ({ open, onClose, dbName, onSubmit }) => {
                               onChange={(e) => handleColumnChange(index, 'isForeignKey', e.target.checked)}
                               icon={<LinkIcon />}
                               checkedIcon={<LinkIcon color="secondary" />}
-                              disabled={column.isPrimary}
+                              disabled={column.isPrimary || isSubmitting}
                             />
                           </Tooltip>
                           {column.isForeignKey && (
@@ -430,7 +436,7 @@ const CreateTableDialog = ({ open, onClose, dbName, onSubmit }) => {
                                   value={column.foreignKeyTable}
                                   onChange={(e) => handleForeignKeyTableSelect(index, e.target.value)}
                                   displayEmpty
-                                  disabled={availableTables.length === 0}
+                                  disabled={availableTables.length === 0 || isSubmitting}
                                   renderValue={(value) => value || "Select reference table"}
                                 >
                                   {availableTables.map((tableName) => (
@@ -445,7 +451,7 @@ const CreateTableDialog = ({ open, onClose, dbName, onSubmit }) => {
                                   value={column.foreignKeyColumn}
                                   onChange={(e) => handleColumnChange(index, 'foreignKeyColumn', e.target.value)}
                                   displayEmpty
-                                  disabled={!column.foreignKeyTable || !tableColumnsCache[column.foreignKeyTable]}
+                                  disabled={!column.foreignKeyTable || !tableColumnsCache[column.foreignKeyTable] || isSubmitting}
                                   renderValue={(value) => value || "Select reference column"}
                                 >
                                   {column.foreignKeyTable && tableColumnsCache[column.foreignKeyTable]?.map((colName) => (
@@ -460,11 +466,14 @@ const CreateTableDialog = ({ open, onClose, dbName, onSubmit }) => {
                         </TableCell>
                         <TableCell align="right">
                           <Tooltip title="Remove column">
-                            <MuiIconButton 
-                              onClick={() => handleRemoveColumn(index)}
-                            >
-                              <DeleteIcon />
-                            </MuiIconButton>
+                            <span>
+                              <MuiIconButton 
+                                onClick={() => handleRemoveColumn(index)}
+                                disabled={isSubmitting}
+                              >
+                                <DeleteIcon />
+                              </MuiIconButton>
+                            </span>
                           </Tooltip>
                         </TableCell>
                       </TableRow>
@@ -477,6 +486,15 @@ const CreateTableDialog = ({ open, onClose, dbName, onSubmit }) => {
                   startIcon={<AddIcon />} 
                   onClick={handleAddColumn}
                   variant="outlined"
+                  disabled={isSubmitting}
+                  sx={{
+                    borderColor: 'var(--primary-color)',
+                    color: 'var(--primary-color)',
+                    '&:hover': {
+                      borderColor: 'var(--primary-hover)',
+                      backgroundColor: 'var(--primary-light)'
+                    }
+                  }}
                 >
                   Add Column
                 </Button>
@@ -493,13 +511,15 @@ const CreateTableDialog = ({ open, onClose, dbName, onSubmit }) => {
                 id="csv-upload-table"
                 hidden
                 onChange={handleFileChange}
+                disabled={isSubmitting}
               />
               <label htmlFor="csv-upload-table">
                 <UploadButton
                   component="span"
                   fullWidth
                   startIcon={<CloudUploadIcon />}
-                  sx={{ borderRadius: '8px', textTransform: 'none' }}
+                  disabled={isSubmitting}
+                  sx={{ borderRadius: 'var(--border-radius)', textTransform: 'none' }}
                 >
                   Upload CSV File (Optional)
                 </UploadButton>
@@ -509,7 +529,8 @@ const CreateTableDialog = ({ open, onClose, dbName, onSubmit }) => {
                   <Chip
                     label={csvFile.name}
                     onDelete={() => setCsvFile(null)}
-                    sx={{ backgroundColor: '#7C3AED', color: 'white' }}
+                    disabled={isSubmitting}
+                    sx={{ backgroundColor: 'var(--primary-color)', color: 'var(--primary-text)' }}
                   />
                 </Box>
               )}
@@ -521,13 +542,14 @@ const CreateTableDialog = ({ open, onClose, dbName, onSubmit }) => {
         <Button 
           onClick={onClose} 
           color="inherit" 
+          disabled={isSubmitting}
           sx={{ 
-            borderRadius: '8px',
-            borderColor: '#7C3AED',
-            color: '#7C3AED',
+            borderRadius: 'var(--border-radius)',
+            borderColor: 'var(--primary-color)',
+            color: 'var(--primary-color)',
             '&:hover': {
-              borderColor: '#6D28D9',
-              backgroundColor: 'rgba(124, 58, 237, 0.04)',
+              borderColor: 'var(--primary-hover)',
+              backgroundColor: 'var(--primary-light)',
             },
           }}
         >
@@ -536,15 +558,17 @@ const CreateTableDialog = ({ open, onClose, dbName, onSubmit }) => {
         <Button 
           onClick={handleSubmit} 
           variant="contained" 
+          disabled={isSubmitting}
+          startIcon={isSubmitting ? <CircularProgress size={20} color="inherit" /> : null}
           sx={{ 
-            backgroundColor: '#7C3AED', 
-            borderRadius: '8px',
+            backgroundColor: 'var(--primary-color)', 
+            borderRadius: 'var(--border-radius)',
             '&:hover': {
-              backgroundColor: '#6D28D9',
+              backgroundColor: 'var(--primary-hover)',
             },
           }}
         >
-          Create Table
+          {isSubmitting ? 'Creating...' : 'Create Table'}
         </Button>
       </DialogActions>
     </StyledDialog>

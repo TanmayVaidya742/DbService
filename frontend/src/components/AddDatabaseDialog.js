@@ -44,8 +44,8 @@ const StyledDialog = styled(Dialog)(({ theme }) => ({
 }));
 
 const StyledDialogTitle = styled(DialogTitle)(({ theme }) => ({
-  backgroundColor: '#7C3AED',
-  color: 'white',
+  backgroundColor: 'var(--primary-color)',
+  color: 'var(--primary-text)',
   display: 'flex',
   justifyContent: 'space-between',
   alignItems: 'center',
@@ -57,11 +57,11 @@ const FormField = styled(Grid)(({ theme }) => ({
 }));
 
 const UploadButton = styled(Button)(({ theme }) => ({
-  border: '2px dashed #7C3AED',
-  backgroundColor: 'rgba(124, 58, 237, 0.04)',
+  border: '2px dashed var(--primary-color)',
+  backgroundColor: 'var(--primary-light)',
   '&:hover': {
-    backgroundColor: 'rgba(124, 58, 237, 0.08)',
-    border: '2px dashed #6D28D9',
+    backgroundColor: 'var(--primary-light-hover)',
+    border: '2px dashed var(--primary-hover)',
   },
 }));
 
@@ -97,7 +97,6 @@ const AddDatabaseDialog = ({ open, onClose, formData, onChange, onFileChange, on
   const handleColumnChange = (index, field, value) => {
     const newColumns = [...columns];
     
-    // Ensure only one primary key can be selected
     if (field === 'isPrimary' && value === true) {
       newColumns.forEach(col => col.isPrimary = false);
     }
@@ -146,11 +145,11 @@ const AddDatabaseDialog = ({ open, onClose, formData, onChange, onFileChange, on
       }}
     >
       <StyledDialogTitle>
-        <Typography variant="h6">Create New Database</Typography>
+        <Typography variant="h6" style={{ color: 'var(--primary-text)' }}>Create New Database</Typography>
         <IconButton
           aria-label="close"
           onClick={onClose}
-          sx={{ color: 'white' }}
+          sx={{ color: 'var(--primary-text)' }}
         >
           <CloseIcon />
         </IconButton>
@@ -170,7 +169,7 @@ const AddDatabaseDialog = ({ open, onClose, formData, onChange, onFileChange, on
                 onChange={onChange}
                 required
                 variant="outlined"
-                sx={{ '& .MuiOutlinedInput-root': { borderRadius: '8px' } }}
+                sx={{ '& .MuiOutlinedInput-root': { borderRadius: 'var(--border-radius)' } }}
               />
             </FormField>
             <FormField item xs={12}>
@@ -182,7 +181,7 @@ const AddDatabaseDialog = ({ open, onClose, formData, onChange, onFileChange, on
                 onChange={onChange}
                 required
                 variant="outlined"
-                sx={{ '& .MuiOutlinedInput-root': { borderRadius: '8px' } }}
+                sx={{ '& .MuiOutlinedInput-root': { borderRadius: 'var(--border-radius)' } }}
               />
             </FormField>
 
@@ -193,8 +192,8 @@ const AddDatabaseDialog = ({ open, onClose, formData, onChange, onFileChange, on
               <Box sx={{ 
                 maxHeight: '300px',
                 overflowY: 'auto',
-                border: '1px solid #eee',
-                borderRadius: '4px'
+                border: '1px solid var(--border-color)',
+                borderRadius: 'var(--border-radius-sm)'
               }}>
                 <Table size="small" stickyHeader>
                   <TableHead>
@@ -315,7 +314,7 @@ const AddDatabaseDialog = ({ open, onClose, formData, onChange, onFileChange, on
                   component="span"
                   fullWidth
                   startIcon={<CloudUploadIcon />}
-                  sx={{ borderRadius: '8px', textTransform: 'none' }}
+                  sx={{ borderRadius: 'var(--border-radius)', textTransform: 'none' }}
                 >
                   Upload CSV File (Optional)
                 </UploadButton>
@@ -325,7 +324,7 @@ const AddDatabaseDialog = ({ open, onClose, formData, onChange, onFileChange, on
                   <Chip
                     label={formData.csvFile.name}
                     onDelete={() => onChange({ target: { name: 'csvFile', value: null } })}
-                    sx={{ backgroundColor: '#7C3AED', color: 'white' }}
+                    sx={{ backgroundColor: 'var(--primary-color)', color: 'var(--primary-text)' }}
                   />
                 </Box>
               )}
@@ -338,12 +337,12 @@ const AddDatabaseDialog = ({ open, onClose, formData, onChange, onFileChange, on
           onClick={onClose} 
           color="inherit" 
           sx={{ 
-            borderRadius: '8px',
-            borderColor: '#7C3AED',
-            color: '#7C3AED',
+            borderRadius: 'var(--border-radius)',
+            borderColor: 'var(--primary-color)',
+            color: 'var(--primary-color)',
             '&:hover': {
-              borderColor: '#6D28D9',
-              backgroundColor: 'rgba(124, 58, 237, 0.04)',
+              borderColor: 'var(--primary-hover)',
+              backgroundColor: 'var(--primary-light)',
             },
           }}
         >
@@ -353,10 +352,10 @@ const AddDatabaseDialog = ({ open, onClose, formData, onChange, onFileChange, on
           onClick={handleSubmit} 
           variant="contained" 
           sx={{ 
-            backgroundColor: '#7C3AED', 
-            borderRadius: '8px',
+            backgroundColor: 'var(--primary-color)', 
+            borderRadius: 'var(--border-radius)',
             '&:hover': {
-              backgroundColor: '#6D28D9',
+              backgroundColor: 'var(--primary-hover)',
             },
           }}
         >

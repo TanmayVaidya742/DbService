@@ -14,11 +14,10 @@ import {
 import { styled } from '@mui/material/styles';
 import axios from 'axios';
 
-// Styled Components
 const MainSection = styled('section')({
   minHeight: '100vh',
   position: 'relative',
-  backgroundColor: '#ffffff',
+  backgroundColor: 'var(--bg-primary)',
   overflow: 'hidden',
 });
 
@@ -38,8 +37,8 @@ const ContentWrapper = styled('div')({
 
 const StyledPaper = styled(Paper)({
   padding: '2rem',
-  borderRadius: '16px',
-  boxShadow: '0 6px 20px rgba(0,0,0,0.1)',
+  borderRadius: 'var(--border-radius)',
+  boxShadow: 'var(--shadow-lg)',
 });
 
 const Login = () => {
@@ -51,49 +50,8 @@ const Login = () => {
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
-    // Clear error when user starts typing
     if (error) setError('');
   };
-
-  //   const handleSubmit = async (e) => {
-  //     e.preventDefault();
-
-  //     // Validate username is not empty
-  //     if (!formData.username.trim()) {
-  //       setError('Please enter your username');
-  //       return;
-  //     }
-
-  //     try {
-  //       console.log('Attempting login with:', formData);
-  //       const res = await axios.post('http://localhost:5000/api/auth/login', formData);
-  //       console.log('Login response:', res.data);
-  //       localStorage.setItem('token', res.data.token);
-  //       localStorage.setItem('user', JSON.stringify(res.data.user));
-  //       // setSuccess(true);
-  //       // setTimeout(() => navigate('/dashboard'), 2000);
-  //       setSuccess(true);
-
-  // // Redirect based on user_type
-  // setTimeout(() => {
-  //   if (res.data.user.user_type === 'superadmin') {
-  //     navigate('/dashboard');
-  //   } else if (res.data.user.user_type === 'user') {
-  //     navigate('/userdashboard');
-  //   } else {
-  //     setError('Unknown user type');
-  //   }
-  // }, 2000);
-
-  //     } catch (err) {
-  //       console.error('Login error details:', {
-  //         message: err.message,
-  //         response: err.response?.data,
-  //         status: err.response?.status
-  //       });
-  //       setError(err.response?.data?.message || 'Login failed. Please check your credentials.');
-  //     }
-  //   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -110,7 +68,6 @@ const Login = () => {
       localStorage.setItem('user', JSON.stringify(res.data.user));
       setSuccess(true);
 
-      // Redirect based on user_type
       setTimeout(() => {
         const userType = res.data.user.user_type;
         if (userType === 'superadmin') {
@@ -131,13 +88,12 @@ const Login = () => {
 
   return (
     <MainSection>
-      {/* Wave background */}
       <WaveBackground>
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 320" style={{ display: 'block' }}>
           <defs>
             <linearGradient id="wave-gradient" x1="0%" y1="0%" x2="100%" y2="0%">
-              <stop offset="0%" stopColor="#8B5CF6" />
-              <stop offset="100%" stopColor="#7C3AED" />
+              <stop offset="0%" stopColor="var(--secondary-color)" />
+              <stop offset="100%" stopColor="var(--primary-color)" />
             </linearGradient>
           </defs>
           <path
@@ -148,7 +104,6 @@ const Login = () => {
         </svg>
       </WaveBackground>
 
-      {/* Login Form */}
       <ContentWrapper>
         <Container maxWidth="sm">
           <Grid container justifyContent="center">
@@ -158,7 +113,7 @@ const Login = () => {
                   variant="h4"
                   align="center"
                   gutterBottom
-                  sx={{ fontWeight: 600, color: '#111827' }}
+                  sx={{ fontWeight: 600, color: 'var(--text-primary)' }}
                 >
                   Login
                 </Typography>
@@ -196,12 +151,12 @@ const Login = () => {
                     variant="contained"
                     sx={{
                       mt: 3,
-                      bgcolor: '#7C3AED',
+                      bgcolor: 'var(--primary-color)',
                       textTransform: 'none',
-                      fontSize: '1rem',
+                      fontSize: 'var(--font-size-base)',
                       padding: '0.75rem',
-                      borderRadius: '8px',
-                      '&:hover': { bgcolor: '#6D28D9' },
+                      borderRadius: 'var(--border-radius)',
+                      '&:hover': { bgcolor: 'var(--primary-hover)' },
                     }}
                   >
                     Sign In
@@ -213,14 +168,12 @@ const Login = () => {
         </Container>
       </ContentWrapper>
 
-      {/* Snackbar for success */}
       <Snackbar open={success} autoHideDuration={4000}>
         <Alert severity="success" sx={{ width: '100%' }}>
           Login successful! Redirecting to dashboard...
         </Alert>
       </Snackbar>
 
-      {/* Snackbar for error */}
       <Snackbar open={Boolean(error)} autoHideDuration={4000} onClose={() => setError('')}>
         <Alert onClose={() => setError('')} severity="error" sx={{ width: '100%' }}>
           {error}

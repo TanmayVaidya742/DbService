@@ -73,18 +73,26 @@ const Organizations = () => {
   };
 
   const drawer = (
-    <div>
+    <div style={{ backgroundColor: 'var(--bg-paper)' }}>
       <Toolbar>
-        <Typography variant="h6">1SPOC</Typography>
+        <Typography variant="h6" style={{ color: 'var(--text-primary)' }}>1SPOC</Typography>
       </Toolbar>
-      <Divider />
+      <Divider style={{ backgroundColor: 'var(--border-color)' }} />
       <List>
-        <ListItem button onClick={() => navigate('/dashboard')}>
-          <ListItemIcon><DashboardIcon /></ListItemIcon>
+        <ListItem 
+          button 
+          onClick={() => navigate('/dashboard')}
+          style={{ color: 'var(--text-primary)' }}
+        >
+          <ListItemIcon><DashboardIcon style={{ color: 'var(--primary-color)' }} /></ListItemIcon>
           <ListItemText primary="Dashboard" />
         </ListItem>
-        <ListItem button onClick={() => navigate('/organizations')}>
-          <ListItemIcon><GroupsIcon /></ListItemIcon>
+        <ListItem 
+          button 
+          onClick={() => navigate('/organizations')}
+          style={{ color: 'var(--text-primary)' }}
+        >
+          <ListItemIcon><GroupsIcon style={{ color: 'var(--primary-color)' }} /></ListItemIcon>
           <ListItemText primary="Organizations" />
         </ListItem>
       </List>
@@ -93,26 +101,36 @@ const Organizations = () => {
 
   if (loading) {
     return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
-        <CircularProgress />
+      <Box sx={{ 
+        display: 'flex', 
+        justifyContent: 'center', 
+        alignItems: 'center', 
+        height: '100vh',
+        backgroundColor: 'var(--bg-secondary)'
+      }}>
+        <CircularProgress style={{ color: 'var(--primary-color)' }} />
       </Box>
     );
   }
 
   if (error) {
     return (
-      <Box sx={{ p: 3 }}>
+      <Box sx={{ p: 3, backgroundColor: 'var(--bg-secondary)' }}>
         <Typography color="error">{error}</Typography>
       </Box>
     );
   }
 
   return (
-    <Box sx={{ display: 'flex', backgroundColor: '#f4f6f8', minHeight: '100vh' }}>
+    <Box sx={{ 
+      display: 'flex', 
+      backgroundColor: 'var(--bg-secondary)', 
+      minHeight: '100vh' 
+    }}>
       <AppBar
         position="fixed"
         sx={{
-          backgroundColor: '#7C3AED',
+          backgroundColor: 'var(--primary-color)',
           width: { sm: `calc(100% - ${drawerWidth}px)` },
           ml: { sm: `${drawerWidth}px` },
           boxShadow: 'none'
@@ -138,43 +156,71 @@ const Organizations = () => {
           open={mobileOpen}
           onClose={handleDrawerToggle}
           ModalProps={{ keepMounted: true }}
-          sx={{ display: { xs: 'block', sm: 'none' }, '& .MuiDrawer-paper': { width: drawerWidth } }}
+          sx={{ 
+            display: { xs: 'block', sm: 'none' }, 
+            '& .MuiDrawer-paper': { 
+              width: drawerWidth,
+              backgroundColor: 'var(--bg-paper)'
+            } 
+          }}
         >
           {drawer}
         </Drawer>
         <Drawer
           variant="permanent"
-          sx={{ display: { xs: 'none', sm: 'block' }, '& .MuiDrawer-paper': { width: drawerWidth } }}
+          sx={{ 
+            display: { xs: 'none', sm: 'block' }, 
+            '& .MuiDrawer-paper': { 
+              width: drawerWidth,
+              backgroundColor: 'var(--bg-paper)'
+            } 
+          }}
           open
         >
           {drawer}
         </Drawer>
       </Box>
 
-      <Box component="main" sx={{ flexGrow: 1, p: 3, width: { sm: `calc(100% - ${drawerWidth}px)` } }}>
+      <Box component="main" sx={{ 
+        flexGrow: 1, 
+        p: 3, 
+        width: { sm: `calc(100% - ${drawerWidth}px)` },
+        backgroundColor: 'var(--bg-secondary)'
+      }}>
         <Toolbar />
         <Box sx={{ p: 3 }}>
-          <Typography variant="h4" gutterBottom>
+          <Typography variant="h4" gutterBottom style={{ color: 'var(--text-primary)' }}>
             Organizations
           </Typography>
 
           <Grid container spacing={3}>
             {users.map((org) => (
               <Grid item xs={12} key={org.organization_name}>
-                <Card sx={{ mb: 3 }}>
+                <Card sx={{ 
+                  mb: 3,
+                  backgroundColor: 'var(--bg-paper)',
+                  borderRadius: 'var(--border-radius)',
+                  boxShadow: 'var(--shadow-sm)'
+                }}>
                   <CardHeader
                     avatar={
-                      <Avatar sx={{ bgcolor: 'primary.main' }}>
-                        <BusinessIcon />
+                      <Avatar sx={{ bgcolor: 'var(--primary-color)' }}>
+                        <BusinessIcon style={{ color: 'var(--primary-text)' }} />
                       </Avatar>
                     }
-                    title={org.organization_name}
+                    title={<Typography style={{ color: 'var(--text-primary)' }}>{org.organization_name}</Typography>}
                     subheader={`${org.users.length} Users`}
                     action={
                       <Chip
                         label={org.organization_name}
-                        color="primary"
-                        sx={{ ml: 1 }}
+                        sx={{ 
+                          ml: 1,
+                          backgroundColor: 'var(--primary-light)',
+                          color: 'var(--primary-color)',
+                          '&:hover': {
+                            backgroundColor: 'var(--primary-light-hover)'
+                          }
+                        }}
                       />
                     }
                   />
@@ -187,39 +233,44 @@ const Organizations = () => {
                               py: 2,
                               cursor: 'pointer',
                               '&:hover': {
-                                backgroundColor: 'action.hover',
+                                backgroundColor: 'var(--primary-light-hover)',
                               },
                             }}
                             onClick={() => handleUserClick(user)}
                           >
                             <ListItemAvatar>
-                              <Avatar>
-                                <PersonIcon />
+                              <Avatar sx={{ bgcolor: 'var(--primary-light)' }}>
+                                <PersonIcon style={{ color: 'var(--primary-color)' }} />
                               </Avatar>
                             </ListItemAvatar>
                             <ListItemText
-                              primary={user.name}
+                              primary={<Typography style={{ color: 'var(--text-primary)' }}>{user.name}</Typography>}
                               secondary={
                                 <Box component="span" sx={{ display: 'flex', alignItems: 'center' }}>
-                                  <EmailIcon fontSize="small" sx={{ mr: 1 }} />
-                                  {user.email}
+                                  <EmailIcon fontSize="small" sx={{ mr: 1, color: 'var(--text-secondary)' }} />
+                                  <Typography style={{ color: 'var(--text-secondary)' }}>{user.email}</Typography>
                                 </Box>
                               }
                             />
                             <ListItemSecondaryAction>
                               <Chip
                                 label={user.username}
-                                color="secondary"
+                                sx={{
+                                  backgroundColor: 'var(--primary-light)',
+                                  color: 'var(--primary-color)'
+                                }}
                                 size="small"
                               />
                             </ListItemSecondaryAction>
                           </ListItem>
-                          {index < org.users.length - 1 && <Divider />}
+                          {index < org.users.length - 1 && <Divider style={{ backgroundColor: 'var(--border-color)' }} />}
                         </React.Fragment>
                       ))}
                       {org.users.length === 0 && (
                         <ListItem>
-                          <ListItemText primary="No users in this organization" />
+                          <ListItemText 
+                            primary={<Typography style={{ color: 'var(--text-secondary)' }}>No users in this organization</Typography>} 
+                          />
                         </ListItem>
                       )}
                     </List>
@@ -233,38 +284,44 @@ const Organizations = () => {
           <Dialog open={openDialog} onClose={handleCloseDialog}>
             {selectedUser && (
               <>
-                <DialogTitle>User Details</DialogTitle>
+                <DialogTitle style={{ color: 'var(--text-primary)' }}>User Details</DialogTitle>
                 <DialogContent>
-                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 2 }}>
+                  <Box sx={{ 
+                    display: 'flex', 
+                    flexDirection: 'column', 
+                    gap: 2, 
+                    pt: 2,
+                    color: 'var(--text-primary)'
+                  }}>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                      <Avatar sx={{ width: 56, height: 56 }}>
-                        <PersonIcon fontSize="large" />
+                      <Avatar sx={{ width: 56, height: 56, bgcolor: 'var(--primary-light)' }}>
+                        <PersonIcon fontSize="large" style={{ color: 'var(--primary-color)' }} />
                       </Avatar>
                       <Box>
                         <Typography variant="h6">{selectedUser.name}</Typography>
-                        <Typography variant="body2" color="text.secondary">
+                        <Typography variant="body2" style={{ color: 'var(--text-secondary)' }}>
                           {selectedUser.email}
                         </Typography>
                       </Box>
                     </Box>
 
                     <Box>
-                      <Typography variant="subtitle2" color="text.secondary">Username</Typography>
+                      <Typography variant="subtitle2" style={{ color: 'var(--text-secondary)' }}>Username</Typography>
                       <Typography variant="body1">{selectedUser.username}</Typography>
                     </Box>
 
                     <Box>
-                      <Typography variant="subtitle2" color="text.secondary">Organization</Typography>
+                      <Typography variant="subtitle2" style={{ color: 'var(--text-secondary)' }}>Organization</Typography>
                       <Typography variant="body1">{selectedUser.organization}</Typography>
                     </Box>
 
                     <Box>
-                      <Typography variant="subtitle2" color="text.secondary">User ID</Typography>
+                      <Typography variant="subtitle2" style={{ color: 'var(--text-secondary)' }}>User ID</Typography>
                       <Typography variant="body1">{selectedUser.user_id}</Typography>
                     </Box>
 
                     <Box>
-                      <Typography variant="subtitle2" color="text.secondary">Created At</Typography>
+                      <Typography variant="subtitle2" style={{ color: 'var(--text-secondary)' }}>Created At</Typography>
                       <Typography variant="body1">
                         {new Date(selectedUser.created_at).toLocaleString()}
                       </Typography>
@@ -272,7 +329,17 @@ const Organizations = () => {
                   </Box>
                 </DialogContent>
                 <DialogActions>
-                  <Button onClick={handleCloseDialog}>Close</Button>
+                  <Button 
+                    onClick={handleCloseDialog}
+                    sx={{
+                      color: 'var(--primary-color)',
+                      '&:hover': {
+                        backgroundColor: 'var(--primary-light-hover)'
+                      }
+                    }}
+                  >
+                    Close
+                  </Button>
                 </DialogActions>
               </>
             )}

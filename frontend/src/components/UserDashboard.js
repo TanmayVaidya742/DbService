@@ -16,17 +16,16 @@ import axios from 'axios';
 import AddDatabaseDialog from './AddDatabaseDialog';
 import CreateTableDialog from './CreateTableDialog';
 import { styled } from '@mui/material/styles';
-
 import { Person as PersonIcon } from '@mui/icons-material';
 
 const drawerWidth = 240;
 
 const StyledPaper = styled(Paper)(({ theme }) => ({
-  padding: theme.spacing(3),
-  borderRadius: '16px',
-  boxShadow: '0 6px 20px rgba(0,0,0,0.05)',
-  backgroundColor: '#ffffff',
-  marginTop: theme.spacing(3),
+  padding: 'var(--spacing-unit) * 3',
+  borderRadius: 'var(--border-radius)',
+  boxShadow: 'var(--shadow-lg)',
+  backgroundColor: 'var(--bg-paper)',
+  marginTop: 'var(--spacing-unit) * 3',
 }));
 
 const UserDashboard = () => {
@@ -51,9 +50,9 @@ const UserDashboard = () => {
   const [currentApiKey, setCurrentApiKey] = useState('');
   const [deleteDialog, setDeleteDialog] = useState({
     open: false,
-    type: '', // 'database' or 'table'
+    type: '',
     name: '',
-    dbName: '' // only for table deletion
+    dbName: ''
   });
 
   useEffect(() => {
@@ -337,14 +336,18 @@ const UserDashboard = () => {
   };
 
   const drawer = (
-    <div>
+    <div style={{ backgroundColor: 'var(--bg-paper)' }}>
       <Toolbar>
-        <Typography variant="h6">1SPOC</Typography>
+        <Typography variant="h6" style={{ color: 'var(--text-primary)' }}>1SPOC</Typography>
       </Toolbar>
-      <Divider />
+      <Divider style={{ backgroundColor: 'var(--border-color)' }} />
       <List>
-         <ListItem button onClick={() => navigate('/UserDashboard')}>
-          <ListItemIcon><PersonIcon /></ListItemIcon>
+        <ListItem 
+          button 
+          onClick={() => navigate('/UserDashboard')}
+          style={{ color: 'var(--text-primary)' }}
+        >
+          <ListItemIcon><PersonIcon style={{ color: 'var(--primary-color)' }} /></ListItemIcon>
           <ListItemText primary="Users Dashboard" />
         </ListItem>
       </List>
@@ -352,11 +355,15 @@ const UserDashboard = () => {
   );
 
   return (
-    <Box sx={{ display: 'flex', backgroundColor: '#f4f6f8', minHeight: '100vh' }}>
+    <Box sx={{ 
+      display: 'flex', 
+      backgroundColor: 'var(--bg-secondary)', 
+      minHeight: '100vh' 
+    }}>
       <AppBar
         position="fixed"
         sx={{
-          backgroundColor: '#7C3AED',
+          backgroundColor: 'var(--primary-color)',
           width: { sm: `calc(100% - ${drawerWidth}px)` },
           ml: { sm: `${drawerWidth}px` },
           boxShadow: 'none'
@@ -371,7 +378,10 @@ const UserDashboard = () => {
           >
             <MenuIcon />
           </IconButton>
-          <Typography variant="h6" sx={{ flexGrow: 1 }}>User Dashboard</Typography>
+          <Typography variant="h6" sx={{ flexGrow: 1, color: '#ffffff' }}>
+  User Dashboard
+</Typography>
+
           <IconButton color="inherit"><SettingsIcon /></IconButton>
         </Toolbar>
       </AppBar>
@@ -382,20 +392,37 @@ const UserDashboard = () => {
           open={mobileOpen}
           onClose={handleDrawerToggle}
           ModalProps={{ keepMounted: true }}
-          sx={{ display: { xs: 'block', sm: 'none' }, '& .MuiDrawer-paper': { width: drawerWidth } }}
+          sx={{ 
+            display: { xs: 'block', sm: 'none' }, 
+            '& .MuiDrawer-paper': { 
+              width: drawerWidth,
+              backgroundColor: 'var(--bg-paper)'
+            } 
+          }}
         >
           {drawer}
         </Drawer>
         <Drawer
           variant="permanent"
-          sx={{ display: { xs: 'none', sm: 'block' }, '& .MuiDrawer-paper': { width: drawerWidth } }}
+          sx={{ 
+            display: { xs: 'none', sm: 'block' }, 
+            '& .MuiDrawer-paper': { 
+              width: drawerWidth,
+              backgroundColor: 'var(--bg-paper)'
+            } 
+          }}
           open
         >
           {drawer}
         </Drawer>
       </Box>
 
-      <Box component="main" sx={{ flexGrow: 1, p: 3, width: { sm: `calc(100% - ${drawerWidth}px)` } }}>
+      <Box component="main" sx={{ 
+        flexGrow: 1, 
+        p: 3, 
+        width: { sm: `calc(100% - ${drawerWidth}px)` },
+        backgroundColor: 'var(--bg-secondary)'
+      }}>
         <Toolbar />
         <Container maxWidth="lg">
           <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 3 }}>
@@ -404,13 +431,13 @@ const UserDashboard = () => {
               startIcon={<StorageIcon />}
               onClick={handleOpenDialog}
               sx={{
-                backgroundColor: '#7C3AED',
-                borderRadius: '12px',
+                backgroundColor: 'var(--primary-color)',
+                borderRadius: 'var(--border-radius)',
                 px: 4,
                 py: 1.5,
-                fontSize: '1rem',
+                fontSize: 'var(--font-size-base)',
                 '&:hover': {
-                  backgroundColor: '#6D28D9',
+                  backgroundColor: 'var(--primary-hover)',
                 },
               }}
             >
@@ -419,17 +446,17 @@ const UserDashboard = () => {
           </Box>
 
           <StyledPaper>
-            <Typography variant="h6" gutterBottom sx={{ mb: 3 }}>
+            <Typography variant="h6" gutterBottom sx={{ mb: 3, color: 'var(--text-primary)' }}>
               Your Databases
             </Typography>
             <TableContainer>
               <Table>
                 <TableHead>
                   <TableRow>
-                    <TableCell>Database Name</TableCell>
-                    <TableCell>Tables</TableCell>
-                    <TableCell>API Key</TableCell>
-                    <TableCell>Actions</TableCell>
+                    <TableCell style={{ color: 'var(--text-primary)' }}>Database Name</TableCell>
+                    <TableCell style={{ color: 'var(--text-primary)' }}>Tables</TableCell>
+                    <TableCell style={{ color: 'var(--text-primary)' }}>API Key</TableCell>
+                    <TableCell style={{ color: 'var(--text-primary)' }}>Actions</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
@@ -440,18 +467,26 @@ const UserDashboard = () => {
                       sx={{ 
                         cursor: 'pointer',
                         '&:hover': {
-                          backgroundColor: 'rgba(124, 58, 237, 0.08)'
+                          backgroundColor: 'var(--primary-light-hover)'
                         }
                       }}
                     >
-                      <TableCell onClick={() => handleRowClick(db.name)}>{db.name}</TableCell>
+                      <TableCell 
+                        onClick={() => handleRowClick(db.name)}
+                        style={{ color: 'var(--text-primary)' }}
+                      >
+                        {db.name}
+                      </TableCell>
                       <TableCell onClick={() => handleRowClick(db.name)}>
                         {db.tables.map((table) => (
                           <Box key={table} sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
                             <Chip
                               label={table}
-                              sx={{ mr: 1 }}
-                              color="primary"
+                              sx={{ 
+                                mr: 1,
+                                backgroundColor: 'var(--primary-light)',
+                                color: 'var(--primary-color)'
+                              }}
                               onClick={(e) => {
                                 e.stopPropagation();
                                 navigate(`/database/${db.name}/table/${table}`);
@@ -463,7 +498,7 @@ const UserDashboard = () => {
                                 e.stopPropagation();
                                 handleDeleteClick('table', table, db.name);
                               }}
-                              sx={{ color: 'error.main' }}
+                              sx={{ color: 'var(--error-color)' }}
                             >
                               <DeleteIcon fontSize="small" />
                             </IconButton>
@@ -481,10 +516,10 @@ const UserDashboard = () => {
                             }}
                             sx={{
                               textTransform: 'none',
-                              borderColor: '#7C3AED',
-                              color: '#7C3AED',
+                              borderColor: 'var(--primary-color)',
+                              color: 'var(--primary-color)',
                               '&:hover': {
-                                borderColor: '#6D28D9',
+                                borderColor: 'var(--primary-hover)',
                               },
                             }}
                           >
@@ -502,9 +537,9 @@ const UserDashboard = () => {
                               setOpenTableDialog(true);
                             }}
                             sx={{
-                              backgroundColor: '#7C3AED',
+                              backgroundColor: 'var(--primary-color)',
                               '&:hover': {
-                                backgroundColor: '#6D28D9',
+                                backgroundColor: 'var(--primary-hover)',
                               },
                             }}
                           >
@@ -515,7 +550,7 @@ const UserDashboard = () => {
                               e.stopPropagation();
                               handleDeleteClick('database', db.name);
                             }}
-                            sx={{ color: 'error.main' }}
+                            sx={{ color: 'var(--error-color)' }}
                           >
                             <DeleteIcon />
                           </IconButton>
@@ -546,32 +581,43 @@ const UserDashboard = () => {
         />
 
         <Dialog open={openApiKeyDialog} onClose={() => setOpenApiKeyDialog(false)}>
-          <DialogTitle>API Key</DialogTitle>
+          <DialogTitle style={{ color: 'var(--text-primary)' }}>API Key</DialogTitle>
           <DialogContent>
-            <DialogContentText>
+            <DialogContentText style={{ color: 'var(--text-primary)' }}>
               Here is your API key for this database. Keep it secure and don't share it with others.
             </DialogContentText>
             <Box sx={{
               mt: 2,
               p: 2,
-              backgroundColor: '#f5f5f5',
-              borderRadius: '4px',
+              backgroundColor: 'var(--bg-secondary)',
+              borderRadius: 'var(--border-radius-sm)',
               wordBreak: 'break-all',
-              fontFamily: 'monospace'
+              fontFamily: 'monospace',
+              color: 'var(--text-primary)'
             }}>
               {currentApiKey}
             </Box>
           </DialogContent>
           <DialogActions>
-            <Button onClick={() => setOpenApiKeyDialog(false)}>Close</Button>
+            <Button 
+              onClick={() => setOpenApiKeyDialog(false)}
+              sx={{
+                color: 'var(--text-primary)',
+                '&:hover': {
+                  backgroundColor: 'var(--primary-light-hover)'
+                }
+              }}
+            >
+              Close
+            </Button>
             <Button
               onClick={handleCopyApiKey}
               startIcon={<ContentCopyIcon />}
               variant="contained"
               sx={{
-                backgroundColor: '#7C3AED',
+                backgroundColor: 'var(--primary-color)',
                 '&:hover': {
-                  backgroundColor: '#6D28D9',
+                  backgroundColor: 'var(--primary-hover)',
                 },
               }}
             >
@@ -581,20 +627,35 @@ const UserDashboard = () => {
         </Dialog>
 
         <Dialog open={deleteDialog.open} onClose={() => setDeleteDialog({ ...deleteDialog, open: false })}>
-          <DialogTitle>
+          <DialogTitle style={{ color: 'var(--text-primary)' }}>
             Delete {deleteDialog.type === 'database' ? 'Database' : 'Table'}
           </DialogTitle>
           <DialogContent>
-            <DialogContentText>
+            <DialogContentText style={{ color: 'var(--text-primary)' }}>
               Are you sure you want to delete {deleteDialog.type} "{deleteDialog.name}"? 
               This action cannot be undone.
             </DialogContentText>
           </DialogContent>
           <DialogActions>
-            <Button onClick={() => setDeleteDialog({ ...deleteDialog, open: false })}>Cancel</Button>
+            <Button 
+              onClick={() => setDeleteDialog({ ...deleteDialog, open: false })}
+              sx={{
+                color: 'var(--text-primary)',
+                '&:hover': {
+                  backgroundColor: 'var(--primary-light-hover)'
+                }
+              }}
+            >
+              Cancel
+            </Button>
             <Button
               onClick={deleteDialog.type === 'database' ? handleDeleteDatabase : handleDeleteTable}
-              color="error"
+              sx={{
+                backgroundColor: 'var(--error-color)',
+                '&:hover': {
+                  backgroundColor: '#d32f2f',
+                },
+              }}
               variant="contained"
               startIcon={<DeleteIcon />}
             >
@@ -609,7 +670,18 @@ const UserDashboard = () => {
           onClose={handleCloseSnackbar}
           anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
         >
-          <Alert onClose={handleCloseSnackbar} severity={snackbar.severity} sx={{ width: '100%' }}>
+          <Alert 
+            onClose={handleCloseSnackbar} 
+            severity={snackbar.severity} 
+            sx={{ 
+              width: '100%',
+              backgroundColor: snackbar.severity === 'error' ? 'var(--error-color)' : 
+                             snackbar.severity === 'success' ? 'var(--success-color)' :
+                             snackbar.severity === 'warning' ? 'var(--warning-color)' :
+                             'var(--info-color)',
+              color: 'white'
+            }}
+          >
             {snackbar.message}
           </Alert>
         </Snackbar>
