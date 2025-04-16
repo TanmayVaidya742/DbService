@@ -1,0 +1,55 @@
+:root {
+  /* Color Palette - Blue Theme */
+  --primary-color: #515ff9; /* Tailwind's blue-500 */
+  --primary-hover: #504ac9; /* Tailwind's blue-600 */
+  --primary-light: rgba(59, 130, 246, 0.08);
+  --primary-light-hover: rgba(59, 130, 246, 0.12);
+  --primary-text: white;
+  
+  --secondary-color: #eb816e; /* Tailwind's blue-400 */
+  --error-color: #515ff9;     /* Tailwind's red-500 */
+  --success-color: #10b981;   /* Tailwind's emerald-500 */
+  --warning-color: #f59e0b;   /* Tailwind's amber-500 */
+  --info-color: #0ea5e9;      /* Tailwind's sky-500 */
+  
+  /* Background Colors */
+  --bg-primary: #d6d6d6;
+  --bg-secondary: #f8fafc;    /* Tailwind's slate-50 */
+  --bg-paper: #ffffff;
+  
+  /* Text Colors */
+  --text-primary: #1e293b;    /* Tailwind's slate-800 */
+  --text-secondary: #64748b;  /* Tailwind's slate-600 */
+  --text-disabled: #94a3b8;   /* Tailwind's slate-400 */
+  
+  /* Borders */
+  --border-color: rgba(0, 0, 0, 0.12);
+  --border-radius: 8px;
+  --border-radius-sm: 4px;
+  
+  /* Typography */
+  --font-family: 'Roboto', 'Helvetica', 'Arial', sans-serif;
+  --font-size-base: 1rem;
+  --font-size-small: 0.875rem;
+  --font-size-large: 1.25rem;
+  
+  /* Shadows */
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.12);
+  --shadow-md: 0 4px 6px rgba(0,0,0,0.1);
+  --shadow-lg: 0 6px 20px rgba(0,0,0,0.1);
+  
+  /* Spacing */
+  --spacing-unit: 8px;
+}
+
+/* Typography classes */
+body {
+  font-family: var(--font-family);
+  color: var(--text-primary);
+  background-color: var(--bg-secondary);
+}
+
+h1, h2, h3, h4, h5, h6 {
+  color: var(--text-primary);
+  font-weight: 600;
+}
