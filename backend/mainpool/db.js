@@ -14,3 +14,4 @@ const dbConfig = {
 const mainPool = new Pool(dbConfig);
 
 module.exports = { mainPool, dbConfig };
+ 
