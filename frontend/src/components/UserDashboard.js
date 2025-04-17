@@ -450,117 +450,137 @@ const UserDashboard = () => {
               Your Databases
             </Typography>
             <TableContainer>
-              <Table>
-                <TableHead>
-                  <TableRow>
-                    <TableCell style={{ color: 'var(--text-primary)' }}>Database Name</TableCell>
-                    <TableCell style={{ color: 'var(--text-primary)' }}>Tables</TableCell>
-                    <TableCell style={{ color: 'var(--text-primary)' }}>API Key</TableCell>
-                    <TableCell style={{ color: 'var(--text-primary)' }}>Actions</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {databases.map((db) => (
-                    <TableRow 
-                      key={db.name}
-                      hover
-                      sx={{ 
-                        cursor: 'pointer',
-                        '&:hover': {
-                          backgroundColor: 'var(--primary-light-hover)'
-                        }
-                      }}
-                    >
-                      <TableCell 
-                        onClick={() => handleRowClick(db.name)}
-                        style={{ color: 'var(--text-primary)' }}
-                      >
-                        {db.name}
-                      </TableCell>
-                      <TableCell onClick={() => handleRowClick(db.name)}>
-                        {db.tables.map((table) => (
-                          <Box key={table} sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                            <Chip
-                              label={table}
-                              sx={{ 
-                                mr: 1,
-                                backgroundColor: 'var(--primary-light)',
-                                color: 'var(--primary-color)'
-                              }}
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                navigate(`/database/${db.name}/table/${table}`);
-                              }}
-                            />
-                            <IconButton
-                              size="small"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleDeleteClick('table', table, db.name);
-                              }}
-                              sx={{ color: 'var(--error-color)' }}
-                            >
-                              <DeleteIcon fontSize="small" />
-                            </IconButton>
-                          </Box>
-                        ))}
-                      </TableCell>
-                      <TableCell onClick={() => handleRowClick(db.name)}>
-                        {db.apiKey && (
-                          <Button
-                            variant="outlined"
-                            startIcon={<VisibilityIcon />}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleShowApiKey(db.apiKey);
-                            }}
-                            sx={{
-                              textTransform: 'none',
-                              borderColor: 'var(--primary-color)',
-                              color: 'var(--primary-color)',
-                              '&:hover': {
-                                borderColor: 'var(--primary-hover)',
-                              },
-                            }}
-                          >
-                            Show API Key
-                          </Button>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        <Box sx={{ display: 'flex', gap: 1 }}>
-                          <Button
-                            variant="contained"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setSelectedDatabase(db.name);
-                              setOpenTableDialog(true);
-                            }}
-                            sx={{
-                              backgroundColor: 'var(--primary-color)',
-                              '&:hover': {
-                                backgroundColor: 'var(--primary-hover)',
-                              },
-                            }}
-                          >
-                            Create Table
-                          </Button>
-                          <IconButton
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleDeleteClick('database', db.name);
-                            }}
-                            sx={{ color: 'var(--error-color)' }}
-                          >
-                            <DeleteIcon />
-                          </IconButton>
-                        </Box>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </TableContainer>
+  <Table>
+    <TableHead>
+      <TableRow>
+        <TableCell style={{ color: 'var(--text-primary)' }}>Database Name</TableCell>
+        <TableCell style={{ color: 'var(--text-primary)' }}>Tables</TableCell>
+        <TableCell style={{ color: 'var(--text-primary)' }}>API Key</TableCell>
+        <TableCell style={{ color: 'var(--text-primary)' }} align="right">Actions</TableCell>
+      </TableRow>
+    </TableHead>
+    <TableBody>
+      {databases.map((db) => (
+        <TableRow 
+          key={db.name}
+          hover
+          sx={{ 
+            cursor: 'pointer',
+            '&:hover': {
+              backgroundColor: 'var(--primary-light-hover)'
+            }
+          }}
+        >
+          <TableCell 
+            onClick={() => handleRowClick(db.name)}
+            style={{ color: 'var(--text-primary)' }}
+          >
+            {db.name}
+          </TableCell>
+          <TableCell onClick={() => handleRowClick(db.name)}>
+            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+              {db.tables.map((table) => (
+                <Box 
+                  key={table} 
+                  sx={{ 
+                    display: 'flex', 
+                    alignItems: 'center',
+                    backgroundColor: 'var(--primary-light)',
+                    borderRadius: 1,
+                    px: 1,
+                    py: 0.5
+                  }}
+                >
+                  <Typography 
+                    variant="body2"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      navigate(`/database/${db.name}/table/${table}`);
+                    }}
+                    sx={{
+                      cursor: 'pointer',
+                      color: 'var(--primary-color)',
+                      '&:hover': {
+                        textDecoration: 'underline'
+                      }
+                    }}
+                  >
+                    {table}
+                  </Typography>
+                  <IconButton
+                    size="small"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDeleteClick('table', table, db.name);
+                    }}
+                    sx={{ 
+                      color: 'var(--error-color)',
+                      ml: 0.5,
+                      p: 0.5
+                    }}
+                  >
+                    <DeleteIcon fontSize="small" />
+                  </IconButton>
+                </Box>
+              ))}
+            </Box>
+          </TableCell>
+          <TableCell onClick={() => handleRowClick(db.name)}>
+            {db.apiKey && (
+              <Button
+                variant="outlined"
+                startIcon={<VisibilityIcon />}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleShowApiKey(db.apiKey);
+                }}
+                sx={{
+                  textTransform: 'none',
+                  borderColor: 'var(--primary-color)',
+                  color: 'var(--primary-color)',
+                  '&:hover': {
+                    borderColor: 'var(--primary-hover)',
+                  },
+                }}
+              >
+                Show API Key
+              </Button>
+            )}
+          </TableCell>
+          <TableCell align="right">
+            <Box sx={{ display: 'flex', gap: 1, justifyContent: 'flex-end' }}>
+              <Button
+                variant="contained"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setSelectedDatabase(db.name);
+                  setOpenTableDialog(true);
+                }}
+                sx={{
+                  backgroundColor: 'var(--primary-color)',
+                  '&:hover': {
+                    backgroundColor: 'var(--primary-hover)',
+                  },
+                }}
+              >
+                Create Table
+              </Button>
+              <IconButton
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleDeleteClick('database', db.name);
+                }}
+                sx={{ color: 'var(--error-color)' }}
+              >
+                <DeleteIcon />
+              </IconButton>
+            </Box>
+          </TableCell>
+        </TableRow>
+      ))}
+    </TableBody>
+  </Table>
+</TableContainer>
           </StyledPaper>
         </Container>
 
