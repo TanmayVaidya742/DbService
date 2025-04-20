@@ -43,21 +43,47 @@ const generateApiKey = () => {
 };
 
 // POST route to create a new database and table
+// Helper function to build column definition with constraints
+const buildColumnDefinition = (column) => {
+  let definition = `${column.name} ${column.type}`;
+  
+  if (column.isPrimary) {
+    definition += ' PRIMARY KEY';
+  }
+  
+  if (column.isNotNull) {
+    definition += ' NOT NULL';
+  }
+  
+  if (column.isUnique) {
+    definition += ' UNIQUE';
+  }
+  
+  if (column.defaultValue) {
+    definition += ` DEFAULT ${column.defaultValue}`;
+  }
+  
+  if (column.isForeignKey && column.foreignKeyTable && column.foreignKeyColumn) {
+    definition += ` REFERENCES ${column.foreignKeyTable}(${column.foreignKeyColumn})`;
+  }
+  
+  return definition;
+};
+
+// POST route to create a new database and table
 router.post('/', upload.single('csvFile'), async (req, res) => {
   const { databaseName, tableName, columns } = req.body;
   const csvFile = req.file;
-  const userId = req.user.user_id; // Assuming user is authenticated and user_id is available
+  const userId = req.user.user_id;
   let tempPool = null;
   let dbPool = null;
   let client = null;
 
   try {
-    // Validate required fields
     if (!databaseName || !tableName) {
       throw new Error('Database name and table name are required');
     }
 
-    // Parse columns if they exist
     let parsedColumns = [];
     if (columns) {
       try {
@@ -67,12 +93,10 @@ router.post('/', upload.single('csvFile'), async (req, res) => {
       }
     }
 
-    // Validate that we have either columns or CSV file
     if (parsedColumns.length === 0 && !csvFile) {
       throw new Error('Either columns or CSV file must be provided');
     }
 
-    // Connect to postgres database first
     tempPool = new Pool({
       user: process.env.DB_USER || 'postgres',
       host: process.env.DB_HOST || 'localhost',
@@ -81,10 +105,8 @@ router.post('/', upload.single('csvFile'), async (req, res) => {
       port: process.env.DB_PORT || 5432,
     });
 
-    // Create new database
     await tempPool.query(`CREATE DATABASE ${databaseName}`);
 
-    // Connect to the new database
     dbPool = new Pool({
       user: process.env.DB_USER || 'postgres',
       host: process.env.DB_HOST || 'localhost',
@@ -97,7 +119,6 @@ router.post('/', upload.single('csvFile'), async (req, res) => {
     let schema = {};
     
     if (csvFile) {
-      // Read CSV file to get column names and sample data for schema
       await new Promise((resolve, reject) => {
         fs.createReadStream(csvFile.path)
           .pipe(csv())
@@ -105,32 +126,28 @@ router.post('/', upload.single('csvFile'), async (req, res) => {
             headers.forEach(header => {
               const cleanHeader = header.replace(/[^a-zA-Z0-9_]/g, '_').toLowerCase();
               tableColumns.push(`${cleanHeader} TEXT`);
-              schema[cleanHeader] = 'TEXT'; // Default to TEXT type for CSV imports
+              schema[cleanHeader] = 'TEXT';
             });
             resolve();
           })
           .on('error', reject);
       });
     } else {
-      // Use the provided columns
-      tableColumns = parsedColumns.map(col => `${col.name} ${col.type}`);
+      tableColumns = parsedColumns.map(buildColumnDefinition);
       parsedColumns.forEach(col => {
         schema[col.name] = col.type;
       });
     }
 
-    // Create the main table
+    // Create the main table with constraints
     const createTableQuery = `CREATE TABLE ${tableName} (${tableColumns.join(', ')})`;
     await dbPool.query(createTableQuery);
 
-    // Generate API key
     const apiKey = generateApiKey();
 
-    // Connect to main database to store metadata
     client = await req.mainPool.connect();
     await client.query('BEGIN');
 
-    // Insert into db_collection
     const dbCollectionResult = await client.query(
       `INSERT INTO db_collection (dbname, user_id, apikey)
        VALUES ($1, $2, $3)
@@ -140,7 +157,6 @@ router.post('/', upload.single('csvFile'), async (req, res) => {
 
     const dbid = dbCollectionResult.rows[0].dbid;
 
-    // Insert into table_collection
     await client.query(
       `INSERT INTO table_collection (dbid, tablename, schema)
        VALUES ($1, $2, $3)`,
@@ -149,7 +165,6 @@ router.post('/', upload.single('csvFile'), async (req, res) => {
 
     await client.query('COMMIT');
 
-    // Clean up the uploaded file if it exists
     if (csvFile) {
       fs.unlinkSync(csvFile.path);
     }
@@ -171,10 +186,8 @@ router.post('/', upload.single('csvFile'), async (req, res) => {
       }
     }
     
-    // Clean up the database if something went wrong
     if (tempPool) {
       try {
-        // Terminate all connections to the target database first
         await tempPool.query(`
           SELECT pg_terminate_backend(pg_stat_activity.pid)
           FROM pg_stat_activity
@@ -182,15 +195,12 @@ router.post('/', upload.single('csvFile'), async (req, res) => {
           AND pid <> pg_backend_pid();
         `, [databaseName]);
         
-        // Then drop the database
         await tempPool.query(`DROP DATABASE IF EXISTS ${databaseName}`);
       } catch (dropError) {
         console.error('Error dropping database:', dropError);
       }
     }
     
-    
-    // Clean up the uploaded file if it exists
     if (csvFile && fs.existsSync(csvFile.path)) {
       fs.unlinkSync(csvFile.path);
     }
@@ -202,7 +212,6 @@ router.post('/', upload.single('csvFile'), async (req, res) => {
     if (client) client.release();
   }
 });
-
 // GET route to fetch databases for the current user
 router.get('/', async (req, res) => {
   const userId = req.user.user_id; // Assuming user is authenticated and user_id is available
@@ -252,7 +261,6 @@ router.post('/:dbName/create-table', upload.single('csvFile'), async (req, res) 
   let client = null;
 
   try {
-    // Validate inputs
     if (!dbName || !tableName) {
       throw new Error('Database name and table name are required');
     }
@@ -270,7 +278,6 @@ router.post('/:dbName/create-table', upload.single('csvFile'), async (req, res) 
       throw new Error('Either columns or CSV file must be provided');
     }
 
-    // Connect to the existing database
     dbPool = new Pool({
       user: process.env.DB_USER || 'postgres',
       host: process.env.DB_HOST || 'localhost',
@@ -297,21 +304,19 @@ router.post('/:dbName/create-table', upload.single('csvFile'), async (req, res) 
           .on('error', reject);
       });
     } else {
-      tableColumns = parsedColumns.map(col => `${col.name} ${col.type}`);
+      tableColumns = parsedColumns.map(buildColumnDefinition);
       parsedColumns.forEach(col => {
         schema[col.name] = col.type;
       });
     }
 
-    // Create the table
+    // Create the table with constraints
     const createTableQuery = `CREATE TABLE ${tableName} (${tableColumns.join(', ')})`;
     await dbPool.query(createTableQuery);
 
-    // Connect to main database to store metadata
     client = await req.mainPool.connect();
     await client.query('BEGIN');
 
-    // Get the dbid for this database
     const dbResult = await client.query(
       'SELECT dbid FROM db_collection WHERE dbname = $1 AND user_id = $2',
       [dbName, userId]
@@ -323,7 +328,6 @@ router.post('/:dbName/create-table', upload.single('csvFile'), async (req, res) 
 
     const dbid = dbResult.rows[0].dbid;
 
-    // Insert into table_collection
     await client.query(
       `INSERT INTO table_collection (dbid, tablename, schema)
        VALUES ($1, $2, $3)`,
@@ -332,7 +336,6 @@ router.post('/:dbName/create-table', upload.single('csvFile'), async (req, res) 
 
     await client.query('COMMIT');
 
-    // Delete uploaded file if exists
     if (csvFile) {
       fs.unlinkSync(csvFile.path);
     }
@@ -357,7 +360,6 @@ router.post('/:dbName/create-table', upload.single('csvFile'), async (req, res) 
     if (client) client.release();
   }
 });
-
 
 
 
@@ -627,6 +629,140 @@ router.get('/:dbName/tables/:tableName/columns', verifyToken, async (req, res) =
   } catch (error) {
     console.error('Error fetching table columns:', error);
     res.status(500).json({ error: 'Failed to fetch table columns' });
+  } finally {
+    if (dbPool) await dbPool.end().catch(console.error);
+    if (client) client.release();
+  }
+});
+
+
+
+
+// PUT route to update table structure
+router.put('/:dbName/:tableName', verifyToken, async (req, res) => {
+  const { dbName, tableName } = req.params;
+  const { columns } = req.body;
+  const userId = req.user.user_id;
+  let dbPool = null;
+  let client = null;
+
+  try {
+    // First verify the user has access to this database
+    client = await req.mainPool.connect();
+    const dbResult = await client.query(
+      'SELECT dbid FROM db_collection WHERE dbname = $1 AND user_id = $2',
+      [dbName, userId]
+    );
+
+    if (dbResult.rows.length === 0) {
+      return res.status(404).json({ error: 'Database not found or access denied' });
+    }
+
+    const dbid = dbResult.rows[0].dbid;
+
+    // Connect to the specific database
+    dbPool = new Pool({
+      user: process.env.DB_USER || 'postgres',
+      host: process.env.DB_HOST || 'localhost',
+      database: dbName,
+      password: process.env.DB_PASSWORD || 'postgres',
+      port: process.env.DB_PORT || 5432,
+    });
+
+    // Get current columns to compare
+    const currentColumns = await dbPool.query(`
+      SELECT column_name 
+      FROM information_schema.columns 
+      WHERE table_name = $1
+    `, [tableName]);
+
+    const currentColumnNames = currentColumns.rows.map(row => row.column_name);
+    const newColumnNames = columns.map(col => col.column_name);
+
+    // Determine columns to add and remove
+    const columnsToAdd = columns.filter(col => 
+      !currentColumnNames.includes(col.column_name)
+    );
+    const columnsToRemove = currentColumnNames.filter(name => 
+      !newColumnNames.includes(name)
+    );
+
+    await dbPool.query('BEGIN');
+
+    // Remove columns
+    for (const columnName of columnsToRemove) {
+      await dbPool.query(
+        `ALTER TABLE ${tableName} DROP COLUMN IF EXISTS ${columnName}`
+      );
+    }
+
+    // Add or modify columns
+    for (const column of columns) {
+      const columnDef = [
+        column.column_name,
+        column.data_type,
+        column.is_nullable === 'NO' ? 'NOT NULL' : '',
+        column.column_default ? `DEFAULT ${column.column_default}` : ''
+      ].filter(Boolean).join(' ');
+
+      if (columnsToAdd.some(c => c.column_name === column.column_name)) {
+        // New column
+        await dbPool.query(
+          `ALTER TABLE ${tableName} ADD COLUMN ${columnDef}`
+        );
+      } else {
+        // Modify existing column
+        await dbPool.query(
+          `ALTER TABLE ${tableName} ALTER COLUMN ${column.column_name} TYPE ${column.data_type}`
+        );
+        await dbPool.query(
+          `ALTER TABLE ${tableName} ALTER COLUMN ${column.column_name} ${column.is_nullable === 'NO' ? 'SET NOT NULL' : 'DROP NOT NULL'}`
+        );
+        if (column.column_default) {
+          await dbPool.query(
+            `ALTER TABLE ${tableName} ALTER COLUMN ${column.column_name} SET DEFAULT ${column.column_default}`
+          );
+        } else {
+          await dbPool.query(
+            `ALTER TABLE ${tableName} ALTER COLUMN ${column.column_name} DROP DEFAULT`
+          );
+        }
+      }
+    }
+
+    // Update schema in metadata
+    const schema = {};
+    columns.forEach(col => {
+      schema[col.column_name] = col.data_type;
+    });
+
+    await client.query(
+      'UPDATE table_collection SET schema = $1 WHERE dbid = $2 AND tablename = $3',
+      [schema, dbid, tableName]
+    );
+
+    await dbPool.query('COMMIT');
+    await client.query('COMMIT');
+  } catch (error) {
+    console.error('Error updating table:', error);
+    
+    if (dbPool) {
+      try {
+        await dbPool.query('ROLLBACK');
+      } catch (rollbackError) {
+        console.error('Error rolling back DB transaction:', rollbackError);
+      }
+    }
+    
+    if (client) {
+      try {
+        await client.query('ROLLBACK');
+      } catch (rollbackError) {
+        console.error('Error rolling back client transaction:', rollbackError);
+      }
+    }
+    
+    res.status(500).json({ error: error.message });
   } finally {
     if (dbPool) await dbPool.end().catch(console.error);
     if (client) client.release();

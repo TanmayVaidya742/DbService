@@ -8,7 +8,6 @@ const multer = require('multer');
 const csv = require('csv-parser');
 const authRoutes = require('./routes/auth');
 const usersRoutes = require('./routes/users');
-const organizationsRoutes = require('./routes/organizations');
 const databasesRoutes = require('./routes/databases');
 const superadminRoutes = require('./routes/superadmin');
 const accessRoutes = require('./routes/access');
@@ -197,7 +196,6 @@ initializeDatabase();
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/users', usersRoutes);
-app.use('/api/organizations', organizationsRoutes);
 app.use('/api/databases', verifyToken, databasesRoutes);
 app.use('/api/superadmin', superadminRoutes);
 app.use('/api/query', accessRoutes); // Added access routes

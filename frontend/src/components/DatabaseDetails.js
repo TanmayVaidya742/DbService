@@ -13,8 +13,10 @@ import {
   Menu as MenuIcon,
   Settings as SettingsIcon,
   Person as PersonIcon,
-  MoreVert as MoreVertIcon
+  MoreVert as MoreVertIcon,
+  Edit as EditIcon
 } from '@mui/icons-material';
+import EditTableDialog from './EditTableDialog';
 
 const drawerWidth = 240;
 
@@ -32,27 +34,101 @@ const DatabaseDetails = () => {
   const [anchorEl, setAnchorEl] = useState(null);
   const [currentTable, setCurrentTable] = useState(null);
 
-  useEffect(() => {
-    const fetchDatabaseDetails = async () => {
-      try {
-        const response = await axios.get(`http://localhost:5000/api/databases/${dbName}`, {
+  const [editDialog, setEditDialog] = useState({
+    open: false,
+    dbName: '',
+    tableName: '',
+    columns: []
+  });
+
+  const handleEditTable = (dbName, tableName) => {
+    axios.get(`http://localhost:5000/api/databases/${dbName}/tables/${tableName}/columns`, {
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem('token')}`
+      }
+    })
+      .then(response => {
+        setEditDialog({
+          open: true,
+          dbName,
+          tableName,
+          columns: response.data
+        });
+      })
+      .catch(error => {
+        console.error('Error fetching table columns:', error);
+        setSnackbar({
+          open: true,
+          message: error.response?.data?.error || 'Failed to fetch table columns',
+          severity: 'error'
+        });
+      });
+  };
+
+  const handleSaveTableChanges = async (dbName, tableName, columns) => {
+    try {
+      const response = await axios.put(
+        `http://localhost:5000/api/databases/${dbName}/${tableName}`,
+        { columns },
+        {
           headers: {
             Authorization: `Bearer ${localStorage.getItem('token')}`
           }
-        });
-        setDatabase(response.data);
-      } catch (error) {
-        console.error('Error fetching database details:', error);
-        setSnackbar({
-          open: true,
-          message: error.response?.data?.error || 'Failed to fetch database details',
-          severity: 'error'
-        });
-      } finally {
-        setLoading(false);
-      }
-    };
+        }
+      );
 
+      // Update the local state to reflect changes immediately
+      setDatabase(prev => {
+        const updatedTables = prev.tables.map(table => {
+          if (table.tablename === tableName) {
+            const schema = {};
+            columns.forEach(col => {
+              schema[col.column_name] = col.data_type;
+            });
+            return { ...table, schema };
+          }
+          return table;
+        });
+
+        return { ...prev, tables: updatedTables };
+      });
+
+      setSnackbar({
+        open: true,
+        message: response.data?.message,
+        severity: 'success'
+      });
+    } catch (error) {
+      console.error('Error updating table:', error);
+      setSnackbar({
+        open: true,
+        message: error.response?.data?.error || 'Failed to update table',
+        severity: 'error'
+      });
+    }
+  };
+
+  const fetchDatabaseDetails = async () => {
+    try {
+      const response = await axios.get(`http://localhost:5000/api/databases/${dbName}`, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+      setDatabase(response.data);
+    } catch (error) {
+      console.error('Error fetching database details:', error);
+      setSnackbar({
+        open: true,
+        message: error.response?.data?.error || 'Failed to fetch database details',
+        severity: 'error'
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
     fetchDatabaseDetails();
   }, [dbName]);
 
@@ -77,11 +153,11 @@ const DatabaseDetails = () => {
   const generateandCopyUrlByActionType = (dbName, tableName, action) => {
     const baseUrl = process.env.REACT_APP_SERVER_BASE_URL;
     const queryRoute = process.env.REACT_APP_QUERY_ROUTE || '/api/query';
-  
+
     let url = '';
     let method = '';
-  
-    switch(action) {
+
+    switch (action) {
       case 'read':
         url = `${baseUrl}${queryRoute}/${dbName}/${tableName}/get`;
         method = 'POST';
@@ -102,7 +178,7 @@ const DatabaseDetails = () => {
         console.error('Invalid action!!');
         return;
     }
-  
+
     navigator.clipboard.writeText(url)
       .then(() => {
         setSnackbar({
@@ -119,14 +195,14 @@ const DatabaseDetails = () => {
           severity: 'error'
         });
       });
-  
+
     return url;
   };
 
   const handleMenuAction = (action) => {
     generateandCopyUrlByActionType(dbName, currentTable.tablename, action);
     handleMenuClose();
-    
+
     let message = '';
     switch (action) {
       case 'read':
@@ -141,8 +217,10 @@ const DatabaseDetails = () => {
       case 'delete':
         message = 'Send a POST request with filter object in body';
         break;
+      default:
+        message = '';
     }
-    
+
     setSnackbar(prev => ({
       ...prev,
       message: `${prev.message}\n${message}`
@@ -425,6 +503,19 @@ const DatabaseDetails = () => {
                           >
                             <MoreVertIcon />
                           </IconButton>
+                          <IconButton
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleEditTable(dbName, table.tablename);
+                            }}
+                            sx={{
+                              color: 'var(--primary-color)',
+                              mr: 1,
+                              float: 'right'
+                            }}
+                          >
+                            <EditIcon fontSize="small" />
+                          </IconButton>
                         </TableCell>
                       </TableRow>
                     ))}
@@ -433,6 +524,15 @@ const DatabaseDetails = () => {
               </TableContainer>
             </Paper>
           </Box>
+
+          <EditTableDialog
+            open={editDialog.open}
+            onClose={() => setEditDialog({ ...editDialog, open: false })}
+            dbName={editDialog.dbName}
+            tableName={editDialog.tableName}
+            columns={editDialog.columns}
+            onSave={handleSaveTableChanges}  // Make sure this is passed correctly
+          />
 
           <Menu
             id="table-actions-menu"
