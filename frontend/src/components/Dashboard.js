@@ -208,7 +208,7 @@ const Dashboard = () => {
           >
             <MenuIcon />
           </IconButton>
-          <Typography variant="h6" sx={{ flexGrow: 1 }}>Dashboard</Typography>
+          <Typography variant="h6" sx={{ flexGrow: 1 }} style={{ color: 'var(--primary-text)' }}>Dashboard</Typography>
           <IconButton color="inherit"><AddIcon /></IconButton>
           <IconButton color="inherit"><SettingsIcon /></IconButton>
         </Toolbar>

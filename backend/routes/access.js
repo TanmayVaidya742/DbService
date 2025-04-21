@@ -191,6 +191,7 @@ const validateApiKey = async (req, res, next) => {
 
     req.user = result.rows[0];
     next();
+    
   } catch (err) {
     console.error('Error validating API key:', err);
     res.status(500).json({ error: 'Internal server error' });
@@ -281,6 +282,10 @@ const ensureDatabaseExists = async (dbname) => {
 //       return res.status(500).json({ error: 'Internal server error', details: err.message });
 //     }
 //   });
+
+
+
+
 
   router.post('/:dbname/:tablename/create', validateApiKey, async (req, res) => {
     const { dbname, tablename } = req.params;
@@ -503,40 +508,66 @@ const ensureDatabaseExists = async (dbname) => {
     }
   });
 
+  // ✅ Check if a mobile number exists in a table
+router.post('/:dbname/:tablename/check-mobile', validateApiKey, async (req, res) => {
+  const { dbname, tablename } = req.params;
+  const { mobile_no } = req.body;
 
-  router.post('/:dbname/:tablename/get', validateApiKey, async (req, res) => {
-    const { dbname, tablename } = req.params;
-    const filters = req.body.filter;
-  
-    try {
-      const pool = getDbPool(dbname);
-  
-      if (!filters || Object.keys(filters).length === 0) {
-        return res.status(400).json({ error: 'No filter object provided in request body' });
-      }
-  
-      // Build WHERE clause dynamically
-      const conditions = Object.keys(filters).map((key, i) => `${key} = $${i + 1}`).join(' AND ');
-      const values = Object.values(filters);
-  
-      const query = `SELECT * FROM ${tablename} WHERE ${conditions}`;
-      const result = await pool.query(query, values);
-  
-      if (result.rows.length === 0) {
-        return res.status(404).json({ message: 'No matching rows found' });
-      }
-  
-      res.status(200).json({
-        message: 'Matching rows found',
-        data: result.rows,
-      });
-    } catch (err) {
-      console.error('❌ Error filtering rows:', err);
-      res.status(500).json({ error: 'Internal server error', details: err.message });
+  if (!mobile_no) {
+    return res.status(400).json({ error: 'mobile_no is required in request body' });
+  }
+
+  try {
+    const pool = getDbPool(dbname);
+
+    // Using parameterized query to prevent SQL injection
+    const query = `SELECT * FROM ${tablename} WHERE mobile_no = $1`;
+    const result = await pool.query(query, [mobile_no]);
+
+    if (result.rows.length > 0) {
+      return res.status(200).json({ exists: true, data: result.rows });
+    } else {
+      return res.status(404).json({ exists: false, message: 'Mobile number not found' });
     }
-  });
+  } catch (err) {
+    console.error('❌ Error checking mobile number:', err);
+    res.status(500).json({ error: 'Internal server error', details: err.message });
+  }
+});
 
-  router.post('/:dbname/:tablename/insert', validateApiKey, async (req, res) => {
+
+
+router.post('/:dbname/:tablename/get', validateApiKey, async (req, res) => {
+  const { dbname, tablename } = req.params;
+  const filters = req.body.filter;
+
+  try {
+    const pool = getDbPool(dbname);
+
+    if (!filters || Object.keys(filters).length === 0) {
+      return res.status(400).json({ error: 'No filter object provided in request body' });
+    }
+
+    // Build WHERE clause dynamically
+    const conditions = Object.keys(filters).map((key, i) => `${key} = $${i + 1}`).join(' AND ');
+    const values = Object.values(filters);
+
+    const query = `SELECT * FROM ${tablename} WHERE ${conditions}`;
+    const result = await pool.query(query, values);
+
+    // Always return status 200 with data array (empty or not)
+    res.status(200).json({
+      message: result.rows.length === 0 ? 'No matching rows found' : 'Matching rows found',
+      data: result.rows,
+    });
+  } catch (err) {
+    console.error('❌ Error filtering rows:', err);
+    res.status(500).json({ error: 'Internal server error', details: err.message });
+  }
+});
+
+
+  router.post('/:dbname/:tablename/insert',validateApiKey, async (req, res) => {
     const { dbname, tablename } = req.params;
     const { data } = req.body;
   

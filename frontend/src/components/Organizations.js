@@ -145,7 +145,7 @@ const Organizations = () => {
           >
             <MenuIcon />
           </IconButton>
-          <Typography variant="h6" sx={{ flexGrow: 1 }}>Organizations</Typography>
+          <Typography variant="h6" sx={{ flexGrow: 1 }}style={{ color: 'var(--primary-text)' }}>Organizations</Typography>
           <IconButton color="inherit"><SettingsIcon /></IconButton>
         </Toolbar>
       </AppBar>

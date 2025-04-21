@@ -115,6 +115,7 @@ const CreateTableDialog = ({ open, onClose, dbName, onSubmit }) => {
       const response = await axios.get(`http://localhost:5000/api/databases/${dbName}/tables`, {
         headers: {
           Authorization: `Bearer ${localStorage.getItem('token')}`
+          
         }
       });
 
