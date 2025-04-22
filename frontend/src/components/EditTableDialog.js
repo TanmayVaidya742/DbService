@@ -86,22 +86,18 @@ const EditTableDialog = ({
         }
       );
   
-      // Check for successful response
-      if (response.data && response.data.message) {
-        setSnackbar({
-          open: true,
-          message: response.data.message, // Use server message
-          severity: 'success'
-        });
-  
-        if (typeof onSave === 'function') {
-          onSave(dbName, tableName, editedColumns);
-        }
-        
-        onClose();
-      } else {
-        throw new Error('Unexpected response from server');
+      // Update parent component with new schema
+      if (typeof onSave === 'function') {
+        onSave(dbName, tableName, response.data.schema);
       }
+      
+      setSnackbar({
+        open: true,
+        message: response.data.message,
+        severity: 'success'
+      });
+      
+      onClose();
     } catch (error) {
       console.error('Error updating table:', error);
       setSnackbar({
