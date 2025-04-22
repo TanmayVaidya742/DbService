@@ -32,8 +32,7 @@ const UserDashboard = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
   const navigate = useNavigate();
   const [openDialog, setOpenDialog] = useState(false);
-  const [openTableDialog, setOpenTableDialog] = useState(false);
-  const [selectedDatabase, setSelectedDatabase] = useState('');
+ 
   const [databaseFormData, setDatabaseFormData] = useState({
     databaseName: '',
     tableName: '',
@@ -446,7 +445,7 @@ const UserDashboard = () => {
           </Box>
 
           <StyledPaper>
-            <Typography variant="h6" gutterBottom sx={{ mb: 3, color: 'var(--text-primary)' }}>
+            <Typography variant="h6" gutterBottom sx={{ mb: 3, color: 'var(--text-primary)', py: 2, pl: 2 }}>
               Your Databases
             </Typography>
             <TableContainer>
@@ -546,22 +545,7 @@ const UserDashboard = () => {
                       </TableCell>
                       <TableCell align="right">
                         <Box sx={{ display: 'flex', gap: 1, justifyContent: 'flex-end' }}>
-                          <Button
-                            variant="contained"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setSelectedDatabase(db.name);
-                              setOpenTableDialog(true);
-                            }}
-                            sx={{
-                              backgroundColor: 'var(--primary-color)',
-                              '&:hover': {
-                                backgroundColor: 'var(--primary-hover)',
-                              },
-                            }}
-                          >
-                            Create Table
-                          </Button>
+                       
                           <IconButton
                             onClick={(e) => {
                               e.stopPropagation();
@@ -590,13 +574,7 @@ const UserDashboard = () => {
           onSubmit={handleDatabaseSubmit}
         />
 
-        <CreateTableDialog
-          open={openTableDialog}
-          onClose={() => setOpenTableDialog(false)}
-          dbName={selectedDatabase}
-          onSubmit={handleCreateTable}
-        />
-
+        
         <Dialog open={openApiKeyDialog} onClose={() => setOpenApiKeyDialog(false)}>
           <DialogTitle style={{ color: 'var(--text-primary)' }}>API Key</DialogTitle>
           <DialogContent>
