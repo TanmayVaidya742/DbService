@@ -65,47 +65,22 @@ const DatabaseDetails = () => {
       });
   };
 
-  const handleSaveTableChanges = async (dbName, tableName, columns) => {
-    try {
-      const response = await axios.put(
-        `http://localhost:5000/api/databases/${dbName}/${tableName}`,
-        { columns },
-        {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem('token')}`
-          }
+  const handleSaveTableChanges = async (dbName, tableName, newSchema) => {
+    setDatabase(prev => {
+      const updatedTables = prev.tables.map(table => {
+        if (table.tablename === tableName) {
+          return { ...table, schema: newSchema };
         }
-      );
-
-      // Update the local state to reflect changes immediately
-      setDatabase(prev => {
-        const updatedTables = prev.tables.map(table => {
-          if (table.tablename === tableName) {
-            const schema = {};
-            columns.forEach(col => {
-              schema[col.column_name] = col.data_type;
-            });
-            return { ...table, schema };
-          }
-          return table;
-        });
-
-        return { ...prev, tables: updatedTables };
+        return table;
       });
-
-      setSnackbar({
-        open: true,
-        message: response.data?.message,
-        severity: 'success'
-      });
-    } catch (error) {
-      console.error('Error updating table:', error);
-      setSnackbar({
-        open: true,
-        message: error.response?.data?.error || 'Failed to update table',
-        severity: 'error'
-      });
-    }
+      return { ...prev, tables: updatedTables };
+    });
+  
+    setSnackbar({
+      open: true,
+      message: 'Table structure updated successfully',
+      severity: 'success'
+    });
   };
 
   const fetchDatabaseDetails = async () => {

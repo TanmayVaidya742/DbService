@@ -669,14 +669,19 @@ router.put('/:dbName/:tableName', verifyToken, async (req, res) => {
       port: process.env.DB_PORT || 5432,
     });
 
-    // Get current columns to compare
+    // Get current columns with their types
     const currentColumns = await dbPool.query(`
-      SELECT column_name 
+      SELECT column_name, data_type 
       FROM information_schema.columns 
       WHERE table_name = $1
     `, [tableName]);
 
-    const currentColumnNames = currentColumns.rows.map(row => row.column_name);
+    const currentColumnMap = {};
+    currentColumns.rows.forEach(row => {
+      currentColumnMap[row.column_name] = row.data_type;
+    });
+
+    const currentColumnNames = Object.keys(currentColumnMap);
     const newColumnNames = columns.map(col => col.column_name);
 
     // Determine columns to add and remove
@@ -686,6 +691,39 @@ router.put('/:dbName/:tableName', verifyToken, async (req, res) => {
     const columnsToRemove = currentColumnNames.filter(name => 
       !newColumnNames.includes(name)
     );
+
+    // Check for incompatible type changes
+    for (const column of columns) {
+      if (currentColumnMap[column.column_name] && 
+          currentColumnMap[column.column_name] !== column.data_type) {
+        // Check if table has data
+        const hasData = await dbPool.query(
+          `SELECT EXISTS (SELECT 1 FROM ${tableName} LIMIT 1)`
+        );
+        
+        if (hasData.rows[0].exists) {
+          // For numeric types, check if existing data can be converted
+          if (['INTEGER', 'BIGINT', 'NUMERIC'].includes(column.data_type)) {
+            try {
+              // Test conversion with a sample of data
+              const testConversion = await dbPool.query(
+                `SELECT ${column.column_name} FROM ${tableName} LIMIT 100`
+              );
+              
+              for (const row of testConversion.rows) {
+                if (row[column.column_name] && isNaN(Number(row[column.column_name]))) {
+                  throw new Error(`Column '${column.column_name}' contains non-numeric data that cannot be converted to ${column.data_type}`);
+                }
+              }
+            } catch (err) {
+              return res.status(400).json({ 
+                error: `Cannot change column '${column.column_name}' to ${column.data_type} - table contains incompatible data`
+              });
+            }
+          }
+        }
+      }
+    }
 
     await dbPool.query('BEGIN');
 
@@ -711,13 +749,29 @@ router.put('/:dbName/:tableName', verifyToken, async (req, res) => {
           `ALTER TABLE ${tableName} ADD COLUMN ${columnDef}`
         );
       } else {
-        // Modify existing column
-        await dbPool.query(
-          `ALTER TABLE ${tableName} ALTER COLUMN ${column.column_name} TYPE ${column.data_type}`
-        );
+        // Check if data type is actually changing
+        const oldType = currentColumnMap[column.column_name];
+        const newType = column.data_type;
+        
+        if (oldType !== newType) {
+          let alterTypeQuery = `ALTER TABLE ${tableName} ALTER COLUMN ${column.column_name} TYPE ${newType}`;
+          
+          // Add USING clause for certain type conversions
+          if (newType === 'INTEGER' || newType === 'BIGINT' || newType === 'NUMERIC') {
+            alterTypeQuery += ` USING ${column.column_name}::${newType}`;
+          } else if (newType === 'BOOLEAN') {
+            alterTypeQuery += ` USING ${column.column_name}::boolean`;
+          }
+          
+          await dbPool.query(alterTypeQuery);
+        }
+
+        // Modify null constraint
         await dbPool.query(
           `ALTER TABLE ${tableName} ALTER COLUMN ${column.column_name} ${column.is_nullable === 'NO' ? 'SET NOT NULL' : 'DROP NOT NULL'}`
         );
+
+        // Modify default value
         if (column.column_default) {
           await dbPool.query(
             `ALTER TABLE ${tableName} ALTER COLUMN ${column.column_name} SET DEFAULT ${column.column_default}`
@@ -743,6 +797,12 @@ router.put('/:dbName/:tableName', verifyToken, async (req, res) => {
 
     await dbPool.query('COMMIT');
     await client.query('COMMIT');
+    
+    res.json({ 
+      message: 'Table structure updated successfully',
+      schema: schema 
+    });
+
   } catch (error) {
     console.error('Error updating table:', error);
     
@@ -768,4 +828,9 @@ router.put('/:dbName/:tableName', verifyToken, async (req, res) => {
     if (client) client.release();
   }
 });
+
+
+
+
+
 module.exports = router;
