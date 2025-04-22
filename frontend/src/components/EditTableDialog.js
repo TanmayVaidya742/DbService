@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import {
   Dialog, DialogTitle, DialogContent, DialogActions,
@@ -86,18 +87,20 @@ const EditTableDialog = ({
         }
       );
   
-      // Update parent component with new schema
-      if (typeof onSave === 'function') {
-        onSave(dbName, tableName, response.data.schema);
+      if (response.data && response.data.message) {
+        setSnackbar({
+          open: true,
+          message: response.data.message,
+          severity: 'success'
+        });
+  
+        // Call onSave with all three parameters
+        onSave(dbName, tableName, editedColumns);
+        
+        onClose();
+      } else {
+        throw new Error('Unexpected response from server');
       }
-      
-      setSnackbar({
-        open: true,
-        message: response.data.message,
-        severity: 'success'
-      });
-      
-      onClose();
     } catch (error) {
       console.error('Error updating table:', error);
       setSnackbar({
@@ -107,7 +110,7 @@ const EditTableDialog = ({
       });
     }
   };
-
+  
   const handleCloseSnackbar = () => {
     setSnackbar({ ...snackbar, open: false });
   };

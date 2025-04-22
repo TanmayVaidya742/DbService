@@ -132,23 +132,58 @@ const DatabaseDetails = () => {
       });
   };
 
-  const handleSaveTableChanges = async (dbName, tableName, newSchema) => {
-    setDatabase(prev => {
-      const updatedTables = prev.tables.map(table => {
-        if (table.tablename === tableName) {
-          return { ...table, schema: newSchema };
+  const handleSaveTableChanges = async (dbName, tableName, columns) => {
+    try {
+      const response = await axios.put(
+        `http://localhost:5000/api/databases/${dbName}/${tableName}`,
+        { columns },
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
         }
-        return table;
-      });
-      return { ...prev, tables: updatedTables };
-    });
+      );
   
-    setSnackbar({
-      open: true,
-      message: 'Table structure updated successfully',
-      severity: 'success'
-    });
-    
+      // Update the local state to reflect changes immediately
+      setDatabase((prev) => {
+        const updatedTables = prev.tables.map((table) => {
+          if (table.tablename === tableName) {
+            // Create a new schema object from the updated columns
+            const schema = {};
+            columns.forEach((col) => {
+              schema[col.column_name] = col.data_type;
+            });
+            
+            return { 
+              ...table, 
+              schema,
+              // Also update the columns array if it exists in your table object
+              columns: columns 
+            };
+          }
+          return table;
+        });
+  
+        return { ...prev, tables: updatedTables };
+      });
+  
+      setSnackbar({
+        open: true,
+        message: response.data?.message || "Table updated successfully!",
+        severity: "success",
+      });
+      
+      // Close the edit dialog
+      setEditDialog({ ...editDialog, open: false });
+    } catch (error) {
+      console.error("Error updating table:", error);
+      setSnackbar({
+        open: true,
+        message: error.response?.data?.error || "Failed to update table",
+        severity: "error",
+      });
+    }
+  };
 
   const fetchDatabaseDetails = async () => {
     try {
