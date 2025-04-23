@@ -433,7 +433,7 @@ const UserDashboard = () => {
             </Typography>
             <TableContainer
               sx={{
-                maxHeight: 'calc(100vh - 300px)', // Adjust this value as needed
+                maxHeight: 'calc(100vh - 300px)',
                 overflow: 'auto',
                 '&::-webkit-scrollbar': {
                   width: '8px',
@@ -458,7 +458,7 @@ const UserDashboard = () => {
                     <TableCell style={{
                       color: 'var(--text-primary)',
                       backgroundColor: 'var(--bg-paper)'
-                    }}>Tables</TableCell>
+                    }}>Tables Count</TableCell>
                     <TableCell style={{
                       color: 'var(--text-primary)',
                       backgroundColor: 'var(--bg-paper)'
@@ -487,47 +487,25 @@ const UserDashboard = () => {
                       >
                         {db.name}
                       </TableCell>
-                      <TableCell onClick={() => handleRowClick(db.name)}>
-                        <Box sx={{
-                          display: 'flex',
-                          flexWrap: 'wrap',
-                          gap: 1,
-                          maxHeight: '120px',
-                          overflowY: 'auto',
-                          '&::-webkit-scrollbar': {
-                            width: '4px'
-                          },
-                          '&::-webkit-scrollbar-thumb': {
-                            backgroundColor: 'var(--primary-light)'
-                          }
-                        }}>
-                          {db.tables.map((table) => (
-                            <Box
-                              key={table}
-                              sx={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                backgroundColor: 'var(--primary-light)',
-                                borderRadius: 1,
-                                px: 1,
-                                py: 0.5
-                              }}
-                            >
-                              <Typography
-                                variant="body2"
-                                sx={{
-                                  cursor: 'pointer',
-                                  color: 'var(--primary-color)',
-                                  '&:hover': {
-                                    textDecoration: 'underline'
-                                  }
-                                }}
-                              >
-                                {table}
-                              </Typography>
-        
-                            </Box>
-                          ))}
+                      <TableCell
+                        onClick={() => handleRowClick(db.name)}
+                        style={{ color: 'var(--text-primary)' }}
+                      >
+                        <Box
+                          sx={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            backgroundColor: 'var(--primary-light)',
+                            borderRadius: '50%',
+                            width: '32px',
+                            height: '32px',
+                            color: 'var(--primary-color)',
+                            fontWeight: 'bold',
+                            fontSize: '0.875rem'
+                          }}
+                        >
+                          {db.tables.length}
                         </Box>
                       </TableCell>
                       <TableCell onClick={() => handleRowClick(db.name)}>
