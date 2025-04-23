@@ -100,6 +100,7 @@ const EditTableDialog = ({
       setIsSaving(false);
     }
   };
+  
   const handleCloseSnackbar = () => {
     setSnackbar({ ...snackbar, open: false });
   };

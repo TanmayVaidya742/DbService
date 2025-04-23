@@ -35,7 +35,7 @@ const UserDashboard = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
   const navigate = useNavigate();
   const [openDialog, setOpenDialog] = useState(false);
-
+ 
   const [databaseFormData, setDatabaseFormData] = useState({
     databaseName: '',
     tableName: '',
@@ -419,16 +419,7 @@ const UserDashboard = () => {
           </Box>
 
           <StyledPaper>
-            <Typography variant="h6" gutterBottom sx={{
-              mb: 3,
-              color: 'var(--text-primary)',
-              py: 2,
-              pl: 2,
-              position: 'sticky',
-              top: 0,
-              backgroundColor: 'var(--bg-paper)',
-              zIndex: 1
-            }}>
+            <Typography variant="h6" gutterBottom sx={{ mb: 3, color: 'var(--text-primary)', py: 2, pl: 2 }}>
               Your Databases
             </Typography>
             <TableContainer
@@ -554,6 +545,7 @@ const UserDashboard = () => {
                       </TableCell>
                       <TableCell align="right">
                         <Box sx={{ display: 'flex', gap: 1, justifyContent: 'flex-end' }}>
+                       
                           <IconButton
                             onClick={(e) => {
                               e.stopPropagation();
@@ -582,7 +574,7 @@ const UserDashboard = () => {
           onSubmit={handleDatabaseSubmit}
         />
 
-
+        
         <Dialog open={openApiKeyDialog} onClose={() => setOpenApiKeyDialog(false)}>
           <DialogTitle style={{ color: 'var(--text-primary)' }}>API Key</DialogTitle>
           <DialogContent>

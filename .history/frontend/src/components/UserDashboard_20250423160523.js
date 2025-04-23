@@ -35,7 +35,12 @@ const UserDashboard = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
   const navigate = useNavigate();
   const [openDialog, setOpenDialog] = useState(false);
+<<<<<<< Updated upstream
+  const [openTableDialog, setOpenTableDialog] = useState(false);
+  const [selectedDatabase, setSelectedDatabase] = useState('');
+=======
 
+>>>>>>> Stashed changes
   const [databaseFormData, setDatabaseFormData] = useState({
     databaseName: '',
     tableName: '',
@@ -419,6 +424,9 @@ const UserDashboard = () => {
           </Box>
 
           <StyledPaper>
+<<<<<<< Updated upstream
+            <Typography variant="h6" gutterBottom sx={{ mb: 3, color: 'var(--text-primary)' }}>
+=======
             <Typography variant="h6" gutterBottom sx={{
               mb: 3,
               color: 'var(--text-primary)',
@@ -429,6 +437,7 @@ const UserDashboard = () => {
               backgroundColor: 'var(--bg-paper)',
               zIndex: 1
             }}>
+>>>>>>> Stashed changes
               Your Databases
             </Typography>
             <TableContainer
@@ -554,6 +563,25 @@ const UserDashboard = () => {
                       </TableCell>
                       <TableCell align="right">
                         <Box sx={{ display: 'flex', gap: 1, justifyContent: 'flex-end' }}>
+<<<<<<< Updated upstream
+                          <Button
+                            variant="contained"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedDatabase(db.name);
+                              setOpenTableDialog(true);
+                            }}
+                            sx={{
+                              backgroundColor: 'var(--primary-color)',
+                              '&:hover': {
+                                backgroundColor: 'var(--primary-hover)',
+                              },
+                            }}
+                          >
+                            Create Table
+                          </Button>
+=======
+>>>>>>> Stashed changes
                           <IconButton
                             onClick={(e) => {
                               e.stopPropagation();
@@ -582,6 +610,15 @@ const UserDashboard = () => {
           onSubmit={handleDatabaseSubmit}
         />
 
+<<<<<<< Updated upstream
+        <CreateTableDialog
+          open={openTableDialog}
+          onClose={() => setOpenTableDialog(false)}
+          dbName={selectedDatabase}
+          onSubmit={handleCreateTable}
+        />
+=======
+>>>>>>> Stashed changes
 
         <Dialog open={openApiKeyDialog} onClose={() => setOpenApiKeyDialog(false)}>
           <DialogTitle style={{ color: 'var(--text-primary)' }}>API Key</DialogTitle>

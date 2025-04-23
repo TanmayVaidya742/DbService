@@ -1,3 +1,14 @@
+<<<<<<< Updated upstream
+import React, { useState, useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import axios from 'axios';
+import {
+  Box, Typography, Container, Button, Paper,
+  Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
+  Chip, Divider, Snackbar, Alert, Drawer, AppBar, Toolbar, IconButton,
+  List, ListItem, ListItemIcon, ListItemText, Menu, MenuItem
+} from '@mui/material';
+=======
 import React, { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
@@ -33,6 +44,7 @@ import {
   DialogContentText,
   DialogActions
 } from "@mui/material";
+>>>>>>> Stashed changes
 import {
   ArrowBack as ArrowBackIcon,
   Storage as StorageIcon,
@@ -40,6 +52,11 @@ import {
   Settings as SettingsIcon,
   Person as PersonIcon,
   MoreVert as MoreVertIcon,
+<<<<<<< Updated upstream
+  Edit as EditIcon
+} from '@mui/icons-material';
+import EditTableDialog from './EditTableDialog';
+=======
   Edit as EditIcon,
   Delete as DeleteIcon
 } from "@mui/icons-material";
@@ -47,6 +64,7 @@ import EditTableDialog from "./EditTableDialog";
 import AddIcon from "@mui/icons-material/Add";
 import CreateTableDialog from "./CreateTableDialog";
 
+>>>>>>> Stashed changes
 
 const drawerWidth = 240;
 
@@ -70,6 +88,8 @@ const DatabaseDetails = () => {
     tableName: '',
     columns: []
   });
+<<<<<<< Updated upstream
+=======
   const [deleteDialog, setDeleteDialog] = useState({
     open: false,
     tableName: "",
@@ -114,6 +134,7 @@ const DatabaseDetails = () => {
       });
     }
   };
+>>>>>>> Stashed changes
 
   const handleEditTable = (dbName, tableName) => {
     axios.get(`http://localhost:5000/api/databases/${dbName}/tables/${tableName}/columns`, {
@@ -139,16 +160,24 @@ const DatabaseDetails = () => {
       });
   };
 
-  const handleSaveTableChanges = async (dbName, tableName, columns) => {
-    try {
-      const response = await axios.put(
-        `http://localhost:5000/api/databases/${dbName}/${tableName}`,
-        { columns },
-        {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-          },
+  const handleSaveTableChanges = async (dbName, tableName, newSchema) => {
+    setDatabase(prev => {
+      const updatedTables = prev.tables.map(table => {
+        if (table.tablename === tableName) {
+          return { ...table, schema: newSchema };
         }
+<<<<<<< Updated upstream
+        return table;
+      });
+      return { ...prev, tables: updatedTables };
+    });
+  
+    setSnackbar({
+      open: true,
+      message: 'Table structure updated successfully',
+      severity: 'success'
+    });
+=======
       );
 
       // Update the local state
@@ -191,6 +220,7 @@ const DatabaseDetails = () => {
       });
       throw error; // Re-throw to prevent dialog from closing
     }
+>>>>>>> Stashed changes
   };
 
   const fetchDatabaseDetails = async () => {
@@ -591,6 +621,11 @@ const DatabaseDetails = () => {
 
               <Divider sx={{ my: 2 }} />
 
+<<<<<<< Updated upstream
+              <Typography variant="h6" gutterBottom>Tables in this database</Typography>
+              <TableContainer>
+                <Table>
+=======
               <Typography variant="h6" gutterBottom>
                 Tables in this database
               </Typography>
@@ -614,6 +649,7 @@ const DatabaseDetails = () => {
                 }}
               >
                 <Table stickyHeader> {/* stickyHeader keeps the header visible while scrolling */}
+>>>>>>> Stashed changes
                   <TableHead>
                     <TableRow>
                       <TableCell>Table Name</TableCell>
@@ -636,6 +672,29 @@ const DatabaseDetails = () => {
                           ))}
                         </TableCell>
                         <TableCell>
+<<<<<<< Updated upstream
+                          <IconButton
+                            aria-label="more"
+                            aria-controls={`table-menu-${table.tablename}`}
+                            aria-haspopup="true"
+                            onClick={(e) => handleMenuOpen(e, table)}
+                          >
+                            <MoreVertIcon />
+                          </IconButton>
+                          <IconButton
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleEditTable(dbName, table.tablename);
+                            }}
+                            sx={{
+                              color: 'var(--primary-color)',
+                              mr: 1,
+                              float: 'right'
+                            }}
+                          >
+                            <EditIcon fontSize="small" />
+                          </IconButton>
+=======
                           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                             <IconButton
                               aria-label="more"
@@ -669,6 +728,7 @@ const DatabaseDetails = () => {
                               <DeleteIcon fontSize="small" />
                             </IconButton>
                           </Box>
+>>>>>>> Stashed changes
                         </TableCell>
                       </TableRow>
                     ))}
@@ -689,7 +749,11 @@ const DatabaseDetails = () => {
             dbName={editDialog.dbName}
             tableName={editDialog.tableName}
             columns={editDialog.columns}
+<<<<<<< Updated upstream
+            onSave={handleSaveTableChanges}  // Make sure this is passed correctly
+=======
             onSave={handleSaveTableChanges}
+>>>>>>> Stashed changes
           />
           <Menu
             id="table-actions-menu"
@@ -703,6 +767,9 @@ const DatabaseDetails = () => {
             <MenuItem onClick={() => handleMenuAction('update')}>Update Data</MenuItem>
             <MenuItem onClick={() => handleMenuAction('delete')}>Delete Data</MenuItem>
           </Menu>
+<<<<<<< Updated upstream
+
+=======
           <CreateTableDialog
             open={openTableDialog}
             onClose={() => setOpenTableDialog(false)}
@@ -747,6 +814,7 @@ const DatabaseDetails = () => {
               </Button>
             </DialogActions>
           </Dialog>
+>>>>>>> Stashed changes
           <Snackbar
             open={snackbar.open}
             autoHideDuration={6000}

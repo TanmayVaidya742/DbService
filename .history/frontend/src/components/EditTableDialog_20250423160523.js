@@ -80,6 +80,33 @@ const EditTableDialog = ({
     setIsSaving(true);
     
     try {
+<<<<<<< Updated upstream
+      const response = await axios.put(
+        `http://localhost:5000/api/databases/${dbName}/${tableName}`,
+        { columns: editedColumns },
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem('token')}`
+          }
+        }
+      );
+  
+      // Update parent component with new schema
+      if (typeof onSave === 'function') {
+        onSave(dbName, tableName, response.data.schema);
+      }
+      
+      setSnackbar({
+        open: true,
+        message: response.data.message,
+        severity: 'success'
+      });
+      
+      onClose();
+    } catch (error) {
+      console.error('Error updating table:', error);
+=======
+>>>>>>> Stashed changes
       setSnackbar({
         open: true,
         message: "Saving changes...",
@@ -100,6 +127,10 @@ const EditTableDialog = ({
       setIsSaving(false);
     }
   };
+<<<<<<< Updated upstream
+
+=======
+>>>>>>> Stashed changes
   const handleCloseSnackbar = () => {
     setSnackbar({ ...snackbar, open: false });
   };
