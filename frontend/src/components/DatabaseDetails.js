@@ -642,7 +642,13 @@ const DatabaseDetails = () => {
                 Create Table
               </Button>
             </Box>
-            <Paper elevation={3} sx={{ p: 3, mb: 3 }}>
+            <Paper elevation={3} sx={{
+              p: 3,
+              mb: 3,
+              backgroundColor: 'var(--bg-paper)',
+              borderRadius: 'var(--border-radius)',
+              boxShadow: 'var(--shadow-lg)'
+            }}>
               <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
                 <StorageIcon color="primary" sx={{ mr: 2, fontSize: 40 }} />
                 <Typography variant="h4">{database.dbname}</Typography>
@@ -650,34 +656,29 @@ const DatabaseDetails = () => {
 
               <Divider sx={{ my: 2 }} />
 
-              <Typography variant="h6" gutterBottom>
-                Tables in this database
-              </Typography>
               <TableContainer
                 sx={{
-                  maxHeight: '500px', // or whatever height you prefer
-                  overflowY: 'auto',
+                  maxHeight: 'calc(100vh - 300px)',
+                  overflow: 'auto',
                   '&::-webkit-scrollbar': {
                     width: '8px',
+                    height: '8px'
                   },
                   '&::-webkit-scrollbar-track': {
-                    background: '#f1f1f1',
+                    background: 'var(--bg-secondary)'
                   },
                   '&::-webkit-scrollbar-thumb': {
-                    background: '#888',
-                    borderRadius: '4px',
-                  },
-                  '&::-webkit-scrollbar-thumb:hover': {
-                    background: '#555',
+                    backgroundColor: 'var(--primary-color)',
+                    borderRadius: '4px'
                   }
                 }}
               >
                 <Table stickyHeader> {/* stickyHeader keeps the header visible while scrolling */}
-                  <TableHead>
+                  <TableHead >
                     <TableRow>
-                      <TableCell>Table Name</TableCell>
-                      <TableCell>Columns</TableCell>
-                      <TableCell>Actions</TableCell>
+                      <TableCell sx={{ backgroundColor: "var(--primary-light)" }}>Table Name</TableCell>
+                      <TableCell sx={{ backgroundColor: "var(--primary-light)" }}>Columns</TableCell>
+                      <TableCell sx={{ backgroundColor: "var(--primary-light)" }}>Actions</TableCell>
                     </TableRow>
                   </TableHead>
                   <TableBody>
@@ -690,7 +691,7 @@ const DatabaseDetails = () => {
                               <Chip
                                 key={colName}
                                 label={`${colName}: ${colType}`}
-                                sx={{ mr: 1, mb: 1 }}
+                                sx={{ mr: 1, mb: 1, backgroundColor: "var(--primary-light)" }}
                                 variant="outlined"
                               />
                             )

@@ -418,19 +418,14 @@ const UserDashboard = () => {
             </Button>
           </Box>
 
-          <StyledPaper>
-            <Typography variant="h6" gutterBottom sx={{
-              mb: 3,
-              color: 'var(--text-primary)',
-              py: 2,
-              pl: 2,
-              position: 'sticky',
-              top: 0,
-              backgroundColor: 'var(--bg-paper)',
-              zIndex: 1
-            }}>
-              Your Databases
-            </Typography>
+          <Paper elevation={3} sx={{
+            p: 3,
+            mb: 3,
+            backgroundColor: 'var(--bg-paper)',
+            borderRadius: 'var(--border-radius)',
+            boxShadow: 'var(--shadow-lg)'
+          }}>
+            
             <TableContainer
               sx={{
                 maxHeight: 'calc(100vh - 300px)',
@@ -453,19 +448,19 @@ const UserDashboard = () => {
                   <TableRow>
                     <TableCell style={{
                       color: 'var(--text-primary)',
-                      backgroundColor: 'var(--bg-paper)'
+                      backgroundColor: 'var(--primary-light)'
                     }}>Database Name</TableCell>
                     <TableCell style={{
                       color: 'var(--text-primary)',
-                      backgroundColor: 'var(--bg-paper)'
+                      backgroundColor: 'var(--primary-light)'
                     }}>Tables Count</TableCell>
                     <TableCell style={{
                       color: 'var(--text-primary)',
-                      backgroundColor: 'var(--bg-paper)'
+                      backgroundColor: 'var(--primary-light)'
                     }}>API Key</TableCell>
                     <TableCell style={{
                       color: 'var(--text-primary)',
-                      backgroundColor: 'var(--bg-paper)'
+                      backgroundColor: 'var(--primary-light)'
                     }} align="right">Actions</TableCell>
                   </TableRow>
                 </TableHead>
@@ -548,7 +543,7 @@ const UserDashboard = () => {
                 </TableBody>
               </Table>
             </TableContainer>
-          </StyledPaper>
+          </Paper>
         </Container>
 
         <AddDatabaseDialog
