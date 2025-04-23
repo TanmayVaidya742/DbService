@@ -81,6 +81,32 @@ const EditTableDialog = ({
     setIsSaving(true);
     
     try {
+<<<<<<< HEAD
+      const response = await axios.put(
+        `http://localhost:5000/api/databases/${dbName}/${tableName}`,
+        { columns: editedColumns },
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem('token')}`
+          }
+        }
+      );
+  
+      if (response.data && response.data.message) {
+        setSnackbar({
+          open: true,
+          message: response.data.message,
+          severity: 'success'
+        });
+  
+        // Call onSave with all three parameters
+        onSave(dbName, tableName, editedColumns);
+        
+        onClose();
+      } else {
+        throw new Error('Unexpected response from server');
+      }
+=======
       setSnackbar({
         open: true,
         message: "Saving changes...",
@@ -89,6 +115,7 @@ const EditTableDialog = ({
   
       await onSave(dbName, tableName, editedColumns);
       // Remove the onClose() call here - let the parent handle it
+>>>>>>> feature/apiAuthentication
     } catch (error) {
       console.error('Error in save handler:', error);
       setSnackbar({
@@ -101,6 +128,10 @@ const EditTableDialog = ({
       setIsSaving(false);
     }
   };
+<<<<<<< HEAD
+  
+=======
+>>>>>>> feature/apiAuthentication
   const handleCloseSnackbar = () => {
     setSnackbar({ ...snackbar, open: false });
   };

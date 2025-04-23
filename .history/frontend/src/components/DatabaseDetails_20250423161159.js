@@ -1,38 +1,12 @@
-import React, { useState, useEffect, useCallback } from "react";
-import { useParams, useNavigate } from "react-router-dom";
-import axios from "axios";
+import React, { useState, useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import axios from 'axios';
 import {
-  Box,
-  Typography,
-  Container,
-  Button,
-  Paper,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Chip,
-  Divider,
-  Snackbar,
-  Alert,
-  Drawer,
-  AppBar,
-  Toolbar,
-  IconButton,
-  List,
-  ListItem,
-  ListItemIcon,
-  ListItemText,
-  Menu,
-  MenuItem,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogContentText,
-  DialogActions
-} from "@mui/material";
+  Box, Typography, Container, Button, Paper,
+  Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
+  Chip, Divider, Snackbar, Alert, Drawer, AppBar, Toolbar, IconButton,
+  List, ListItem, ListItemIcon, ListItemText, Menu, MenuItem
+} from '@mui/material';
 import {
   ArrowBack as ArrowBackIcon,
   Storage as StorageIcon,
@@ -40,13 +14,9 @@ import {
   Settings as SettingsIcon,
   Person as PersonIcon,
   MoreVert as MoreVertIcon,
-  Edit as EditIcon,
-  Delete as DeleteIcon
-} from "@mui/icons-material";
-import EditTableDialog from "./EditTableDialog";
-import AddIcon from "@mui/icons-material/Add";
-import CreateTableDialog from "./CreateTableDialog";
-
+  Edit as EditIcon
+} from '@mui/icons-material';
+import EditTableDialog from './EditTableDialog';
 
 const drawerWidth = 240;
 
@@ -71,50 +41,6 @@ const DatabaseDetails = () => {
     tableName: "",
     columns: [],
   });
-  const [deleteDialog, setDeleteDialog] = useState({
-    open: false,
-    tableName: "",
-  });
-
-  // Add this handler function:
-  const handleCreateTable = async (dbName, formData) => {
-    try {
-      setSnackbar({
-        open: true,
-        message: "Creating table...",
-        severity: "info",
-        autoHideDuration: null,
-      });
-
-      const response = await axios.post(
-        `http://localhost:5000/api/databases/${dbName}/create-table`,
-        formData,
-        {
-          headers: {
-            "Content-Type": "multipart/form-data",
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-          },
-        }
-      );
-
-      setSnackbar({
-        open: true,
-        message: "Table created successfully!",
-        severity: "success",
-      });
-
-      // Refresh the database details
-      await fetchDatabaseDetails();
-      setOpenTableDialog(false);
-    } catch (error) {
-      console.error("Error creating table:", error);
-      setSnackbar({
-        open: true,
-        message: error.response?.data?.error || "Failed to create table",
-        severity: "error",
-      });
-    }
-  };
 
   const handleEditTable = (dbName, tableName) => {
     axios
@@ -145,58 +71,22 @@ const DatabaseDetails = () => {
       });
   };
 
-  const handleSaveTableChanges = async (dbName, tableName, columns) => {
-    try {
-      const response = await axios.put(
-        `http://localhost:5000/api/databases/${dbName}/${tableName}`,
-        { columns },
-        {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-          },
+  const handleSaveTableChanges = async (dbName, tableName, newSchema) => {
+    setDatabase(prev => {
+      const updatedTables = prev.tables.map(table => {
+        if (table.tablename === tableName) {
+          return { ...table, schema: newSchema };
         }
-      );
-
-      // Update the local state
-      const updatedDatabase = JSON.parse(JSON.stringify(database));
-      const tableIndex = updatedDatabase.tables.findIndex(
-        table => table.tablename === tableName
-      );
-
-      if (tableIndex !== -1) {
-        const newSchema = {};
-        columns.forEach(col => {
-          newSchema[col.column_name] = col.data_type;
-        });
-        updatedDatabase.tables[tableIndex].schema = newSchema;
-        updatedDatabase.tables[tableIndex].columns = columns;
-      }
-
-      setDatabase(updatedDatabase);
-
-      setSnackbar({
-        open: true,
-        message: response.data?.message || "Table updated successfully!",
-        severity: "success",
+        return table;
       });
-
-      // Close the dialog by resetting the editDialog state
-      setEditDialog({
-        open: false,
-        dbName: "",
-        tableName: "",
-        columns: []
-      });
-
-    } catch (error) {
-      console.error("Error updating table:", error);
-      setSnackbar({
-        open: true,
-        message: error.response?.data?.error || "Failed to update table",
-        severity: "error",
-      });
-      throw error; // Re-throw to prevent dialog from closing
-    }
+      return { ...prev, tables: updatedTables };
+    });
+  
+    setSnackbar({
+      open: true,
+      message: 'Table structure updated successfully',
+      severity: 'success'
+    });
   };
 
   const fetchDatabaseDetails = async () => {
@@ -650,29 +540,9 @@ const DatabaseDetails = () => {
 
               <Divider sx={{ my: 2 }} />
 
-              <Typography variant="h6" gutterBottom>
-                Tables in this database
-              </Typography>
-              <TableContainer
-                sx={{
-                  maxHeight: '500px', // or whatever height you prefer
-                  overflowY: 'auto',
-                  '&::-webkit-scrollbar': {
-                    width: '8px',
-                  },
-                  '&::-webkit-scrollbar-track': {
-                    background: '#f1f1f1',
-                  },
-                  '&::-webkit-scrollbar-thumb': {
-                    background: '#888',
-                    borderRadius: '4px',
-                  },
-                  '&::-webkit-scrollbar-thumb:hover': {
-                    background: '#555',
-                  }
-                }}
-              >
-                <Table stickyHeader> {/* stickyHeader keeps the header visible while scrolling */}
+              <Typography variant="h6" gutterBottom>Tables in this database</Typography>
+              <TableContainer>
+                <Table>
                   <TableHead>
                     <TableRow>
                       <TableCell>Table Name</TableCell>
@@ -697,39 +567,27 @@ const DatabaseDetails = () => {
                           )}
                         </TableCell>
                         <TableCell>
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                            <IconButton
-                              aria-label="more"
-                              aria-controls={`table-menu-${table.tablename}`}
-                              aria-haspopup="true"
-                              onClick={(e) => handleMenuOpen(e, table)}
-                            >
-                              <MoreVertIcon />
-                            </IconButton>
-                            <IconButton
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleEditTable(dbName, table.tablename);
-                              }}
-                              sx={{
-                                color: "var(--primary-color)",
-                              }}
-                            >
-                              <EditIcon fontSize="small" />
-                            </IconButton>
-                            <IconButton
-                              size="small"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleDeleteClick(table);
-                              }}
-                              sx={{
-                                color: 'var(--error-color)',
-                              }}
-                            >
-                              <DeleteIcon fontSize="small" />
-                            </IconButton>
-                          </Box>
+                          <IconButton
+                            aria-label="more"
+                            aria-controls={`table-menu-${table.tablename}`}
+                            aria-haspopup="true"
+                            onClick={(e) => handleMenuOpen(e, table)}
+                          >
+                            <MoreVertIcon />
+                          </IconButton>
+                          <IconButton
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleEditTable(dbName, table.tablename);
+                            }}
+                            sx={{
+                              color: 'var(--primary-color)',
+                              mr: 1,
+                              float: 'right'
+                            }}
+                          >
+                            <EditIcon fontSize="small" />
+                          </IconButton>
                         </TableCell>
                       </TableRow>
                     ))}
@@ -750,7 +608,7 @@ const DatabaseDetails = () => {
             dbName={editDialog.dbName}
             tableName={editDialog.tableName}
             columns={editDialog.columns}
-            onSave={handleSaveTableChanges}
+            onSave={handleSaveTableChanges}  // Make sure this is passed correctly
           />
           <Menu
             id="table-actions-menu"
@@ -772,50 +630,7 @@ const DatabaseDetails = () => {
               Delete Data
             </MenuItem>
           </Menu>
-          <CreateTableDialog
-            open={openTableDialog}
-            onClose={() => setOpenTableDialog(false)}
-            dbName={dbName}
-            onSubmit={handleCreateTable}
-          />
 
-          <Dialog open={deleteDialog.open} onClose={() => setDeleteDialog({ ...deleteDialog, open: false })}>
-            <DialogTitle style={{ color: 'var(--text-primary)' }}>
-              Delete Table
-            </DialogTitle>
-            <DialogContent>
-              <DialogContentText style={{ color: 'var(--text-primary)' }}>
-                Are you sure you want to delete table "{deleteDialog.tableName}"?
-                This action cannot be undone.
-              </DialogContentText>
-            </DialogContent>
-            <DialogActions>
-              <Button
-                onClick={() => setDeleteDialog({ ...deleteDialog, open: false })}
-                sx={{
-                  color: 'var(--text-primary)',
-                  '&:hover': {
-                    backgroundColor: 'var(--primary-light-hover)'
-                  }
-                }}
-              >
-                Cancel
-              </Button>
-              <Button
-                onClick={handleDeleteTable}
-                sx={{
-                  backgroundColor: 'var(--error-color)',
-                  '&:hover': {
-                    backgroundColor: '#d32f2f',
-                  },
-                }}
-                variant="contained"
-                startIcon={<DeleteIcon />}
-              >
-                Delete
-              </Button>
-            </DialogActions>
-          </Dialog>
           <Snackbar
             open={snackbar.open}
             autoHideDuration={6000}

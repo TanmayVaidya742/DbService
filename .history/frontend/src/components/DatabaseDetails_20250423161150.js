@@ -1,4 +1,8 @@
+<<<<<<< HEAD
 import React, { useState, useEffect, useCallback } from "react";
+=======
+import React, { useState, useEffect } from "react";
+>>>>>>> 8f913da186969ff52b75f481ee3712ea8e909049
 import { useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
 import {
@@ -27,11 +31,14 @@ import {
   ListItemText,
   Menu,
   MenuItem,
+<<<<<<< HEAD
   Dialog,
   DialogTitle,
   DialogContent,
   DialogContentText,
   DialogActions
+=======
+>>>>>>> 8f913da186969ff52b75f481ee3712ea8e909049
 } from "@mui/material";
 import {
   ArrowBack as ArrowBackIcon,
@@ -41,13 +48,19 @@ import {
   Person as PersonIcon,
   MoreVert as MoreVertIcon,
   Edit as EditIcon,
+<<<<<<< HEAD
   Delete as DeleteIcon
+=======
+>>>>>>> 8f913da186969ff52b75f481ee3712ea8e909049
 } from "@mui/icons-material";
 import EditTableDialog from "./EditTableDialog";
 import AddIcon from "@mui/icons-material/Add";
 import CreateTableDialog from "./CreateTableDialog";
+<<<<<<< HEAD
 
 
+=======
+>>>>>>> 8f913da186969ff52b75f481ee3712ea8e909049
 const drawerWidth = 240;
 
 const DatabaseDetails = () => {
@@ -71,11 +84,14 @@ const DatabaseDetails = () => {
     tableName: "",
     columns: [],
   });
+<<<<<<< HEAD
   const [deleteDialog, setDeleteDialog] = useState({
     open: false,
     tableName: "",
   });
 
+=======
+>>>>>>> 8f913da186969ff52b75f481ee3712ea8e909049
   // Add this handler function:
   const handleCreateTable = async (dbName, formData) => {
     try {
@@ -179,6 +195,7 @@ const DatabaseDetails = () => {
         message: response.data?.message || "Table updated successfully!",
         severity: "success",
       });
+<<<<<<< HEAD
 
       // Close the dialog by resetting the editDialog state
       setEditDialog({
@@ -198,6 +215,17 @@ const DatabaseDetails = () => {
       throw error; // Re-throw to prevent dialog from closing
     }
   };
+=======
+      return { ...prev, tables: updatedTables };
+    });
+  
+    setSnackbar({
+      open: true,
+      message: 'Table structure updated successfully',
+      severity: 'success'
+    });
+    
+>>>>>>> 8f913da186969ff52b75f481ee3712ea8e909049
 
   const fetchDatabaseDetails = async () => {
     try {
@@ -653,6 +681,7 @@ const DatabaseDetails = () => {
               <Typography variant="h6" gutterBottom>
                 Tables in this database
               </Typography>
+<<<<<<< HEAD
               <TableContainer
                 sx={{
                   maxHeight: '500px', // or whatever height you prefer
@@ -673,6 +702,10 @@ const DatabaseDetails = () => {
                 }}
               >
                 <Table stickyHeader> {/* stickyHeader keeps the header visible while scrolling */}
+=======
+              <TableContainer>
+                <Table>
+>>>>>>> 8f913da186969ff52b75f481ee3712ea8e909049
                   <TableHead>
                     <TableRow>
                       <TableCell>Table Name</TableCell>
@@ -697,6 +730,7 @@ const DatabaseDetails = () => {
                           )}
                         </TableCell>
                         <TableCell>
+<<<<<<< HEAD
                           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                             <IconButton
                               aria-label="more"
@@ -730,6 +764,29 @@ const DatabaseDetails = () => {
                               <DeleteIcon fontSize="small" />
                             </IconButton>
                           </Box>
+=======
+                          <IconButton
+                            aria-label="more"
+                            aria-controls={`table-menu-${table.tablename}`}
+                            aria-haspopup="true"
+                            onClick={(e) => handleMenuOpen(e, table)}
+                          >
+                            <MoreVertIcon />
+                          </IconButton>
+                          <IconButton
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleEditTable(dbName, table.tablename);
+                            }}
+                            sx={{
+                              color: "var(--primary-color)",
+                              mr: 1,
+                              float: "right",
+                            }}
+                          >
+                            <EditIcon fontSize="small" />
+                          </IconButton>
+>>>>>>> 8f913da186969ff52b75f481ee3712ea8e909049
                         </TableCell>
                       </TableRow>
                     ))}
@@ -750,7 +807,11 @@ const DatabaseDetails = () => {
             dbName={editDialog.dbName}
             tableName={editDialog.tableName}
             columns={editDialog.columns}
+<<<<<<< HEAD
             onSave={handleSaveTableChanges}
+=======
+            onSave={handleSaveTableChanges} // Make sure this is passed correctly
+>>>>>>> 8f913da186969ff52b75f481ee3712ea8e909049
           />
           <Menu
             id="table-actions-menu"
@@ -778,6 +839,7 @@ const DatabaseDetails = () => {
             dbName={dbName}
             onSubmit={handleCreateTable}
           />
+<<<<<<< HEAD
 
           <Dialog open={deleteDialog.open} onClose={() => setDeleteDialog({ ...deleteDialog, open: false })}>
             <DialogTitle style={{ color: 'var(--text-primary)' }}>
@@ -816,6 +878,8 @@ const DatabaseDetails = () => {
               </Button>
             </DialogActions>
           </Dialog>
+=======
+>>>>>>> 8f913da186969ff52b75f481ee3712ea8e909049
           <Snackbar
             open={snackbar.open}
             autoHideDuration={6000}

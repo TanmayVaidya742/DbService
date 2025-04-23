@@ -115,7 +115,7 @@ router.post('/login', async (req, res) => {
     const token = jwt.sign(
       tokenPayload, 
       process.env.JWT_SECRET || 'fallback-secret-key',
-      { expiresIn: '1h' }
+      { expiresIn: '24h' }
     );
 
     res.json({
