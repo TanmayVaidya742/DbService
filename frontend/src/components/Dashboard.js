@@ -3,7 +3,7 @@ import {
   Box, Drawer, AppBar, Toolbar, Typography, IconButton,
   List, ListItem, ListItemIcon, ListItemText, Divider, Container,
   Button, TextField, Paper, Table, TableBody, TableCell,
-  TableContainer, TableHead, TableRow, Snackbar, Alert, Dialog, DialogTitle, DialogContent,
+  TableContainer, TableHead, TableRow, Snackbar, Alert, Dialog, DialogTitle, DialogContent,Grid,
   DialogActions, DialogContentText
 } from '@mui/material';
 import {
@@ -246,7 +246,7 @@ const Dashboard = () => {
           >
             <MenuIcon />
           </IconButton>
-          <Typography variant="h6" sx={{ flexGrow: 1 }}>Dashboard</Typography>
+          <Typography variant="h6" sx={{ flexGrow: 1, color: 'var(--primary-text)' }}>Dashboard</Typography>
           <IconButton color="inherit"><AddIcon /></IconButton>
           <IconButton color="inherit"><SettingsIcon /></IconButton>
         </Toolbar>
@@ -273,7 +273,7 @@ const Dashboard = () => {
 
       <Box component="main" sx={{ flexGrow: 1, p: 3, width: { sm: `calc(100% - ${drawerWidth}px)` } }}>
         <Toolbar />
-        <Container maxWidth="lg">
+        <Grid>
           <StyledPaper>
             <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 3 }}>
               <Button
@@ -478,7 +478,7 @@ const Dashboard = () => {
               {snackbar.message}
             </Alert>
           </Snackbar>
-        </Container>
+        </Grid>
       </Box>
     </Box>
   );

@@ -31,8 +31,6 @@ router.post('/', verifyToken, async (req, res) => {
     password
   } = req.body;
   
-  // Important: Ensure userId is a valid UUID or generate a new one
-  // If you're getting numeric IDs from auth, convert them to UUID
   let userId;
   try {
     // If the user_id is already a valid UUID, this will work
@@ -40,9 +38,7 @@ router.post('/', verifyToken, async (req, res) => {
         req.user.user_id.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i)) {
       userId = req.user.user_id;
     } else {
-      // Otherwise generate a new UUID
       userId = uuidv4();
-      console.log('Generated new UUID for user:', userId);
     }
   } catch (error) {
     console.error('Error with user ID:', error);

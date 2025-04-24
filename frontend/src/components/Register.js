@@ -51,7 +51,6 @@ const Register = () => {
     address: '',
     email: '',
     organization: '',
-    username: '',
     password: '',
     confirmPassword: '',
     user_type: 'superadmin'
@@ -87,12 +86,11 @@ const Register = () => {
     if (!formData.address) newErrors.address = 'Address is required';
     if (!formData.email) newErrors.email = 'Email is required';
     else if (!/\S+@\S+\.\S+/.test(formData.email)) newErrors.email = 'Email is invalid';
-    if (!formData.username) newErrors.username = 'Username is required';
     if (!formData.password) newErrors.password = 'Password is required';
     if (!formData.confirmPassword) newErrors.confirmPassword = 'Please confirm password';
     if (formData.password !== formData.confirmPassword) newErrors.confirmPassword = 'Passwords do not match';
     if (!formData.organization) newErrors.organization = 'Organization is required';
-
+  
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -123,7 +121,6 @@ const Register = () => {
         address: '',
         email: '',
         organization: '',
-        username: '',
         password: '',
         confirmPassword: '',
       });
@@ -238,18 +235,6 @@ const Register = () => {
                         onChange={handleChange}
                         error={!!errors.email}
                         helperText={errors.email}
-                      />
-                    </Grid>
-                    <Grid item xs={12} sm={6}>
-                      <TextField
-                        required
-                        fullWidth
-                        label="Username"
-                        name="username"
-                        value={formData.username}
-                        onChange={handleChange}
-                        error={!!errors.username}
-                        helperText={errors.username}
                       />
                     </Grid>
                     <Grid item xs={12} sm={6}>

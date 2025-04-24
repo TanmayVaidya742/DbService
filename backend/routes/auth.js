@@ -17,11 +17,12 @@ router.get('/check-users', async (req, res) => {
 });
 
 // Register Superadmin
+// Register Superadmin - Updated to remove username
 router.post('/register', async (req, res) => {
-  const { name, mobile_no, address, email, organization, username, password } = req.body;
+  const { name, mobile_no, address, email, organization, password } = req.body;
 
   try {
-    if (!name || !mobile_no || !address || !email || !organization || !username || !password) {
+    if (!name || !mobile_no || !address || !email || !organization || !password) {
       return res.status(400).json({ message: 'All fields are required' });
     }
 
@@ -33,22 +34,14 @@ router.post('/register', async (req, res) => {
       return res.status(400).json({ message: 'Email already exists' });
     }
 
-    const usernameCheck = await pool.query(
-      'SELECT * FROM superadmins WHERE username = $1',
-      [username]
-    );
-    if (usernameCheck.rows.length > 0) {
-      return res.status(400).json({ message: 'Username already exists' });
-    }
-
     const hashedPassword = await bcrypt.hash(password, 10);
 
     const result = await pool.query(
       `INSERT INTO superadmins 
-       (name, mobile_no, address, email, organization, username, password) 
-       VALUES ($1, $2, $3, $4, $5, $6, $7) 
-       RETURNING id, name, email, username, organization, mobile_no`,
-      [name, mobile_no, address, email, organization, username, hashedPassword]
+       (name, mobile_no, address, email, organization, password) 
+       VALUES ($1, $2, $3, $4, $5, $6) 
+       RETURNING id, name, email, organization, mobile_no`,
+      [name, mobile_no, address, email, organization, hashedPassword]
     );
 
     const token = jwt.sign(
@@ -63,9 +56,9 @@ router.post('/register', async (req, res) => {
         id: result.rows[0].id,
         name: result.rows[0].name,
         email: result.rows[0].email,
-        username: result.rows[0].username,
         organization: result.rows[0].organization,
-        mobile_no: result.rows[0].mobile_no
+        mobile_no: result.rows[0].mobile_no,
+        user_type: 'superadmin'
       }
     });
   } catch (err) {
@@ -74,14 +67,19 @@ router.post('/register', async (req, res) => {
   }
 });
 
+// Login - Updated to only use email
 router.post('/login', async (req, res) => {
-  const { username, password } = req.body;
+  const { email, password } = req.body;
 
   try {
+    if (!email || !password) {
+      return res.status(400).json({ message: 'Email and password are required' });
+    }
+
     // First check in superadmins table
     let user = await pool.query(
-      'SELECT * FROM superadmins WHERE username = $1',
-      [username]
+      'SELECT * FROM superadmins WHERE email = $1',
+      [email]
     );
 
     let isSuperadmin = true;
@@ -89,8 +87,8 @@ router.post('/login', async (req, res) => {
     // If not found in superadmins, check in users table
     if (user.rows.length === 0) {
       user = await pool.query(
-        'SELECT * FROM users WHERE username = $1',
-        [username]
+        'SELECT * FROM users WHERE owner_email = $1',
+        [email]
       );
       isSuperadmin = false;
     }
@@ -104,11 +102,10 @@ router.post('/login', async (req, res) => {
       return res.status(401).json({ message: 'Invalid credentials' });
     }
 
-    // Create token with consistent structure
+    // Create token
     const tokenPayload = {
       user_id: isSuperadmin ? user.rows[0].id : user.rows[0].user_id,
-      username: user.rows[0].username,
-      email: user.rows[0].email,
+      email: isSuperadmin ? user.rows[0].email : user.rows[0].owner_email,
       user_type: isSuperadmin ? 'superadmin' : 'user'
     };
 
@@ -118,13 +115,30 @@ router.post('/login', async (req, res) => {
       { expiresIn: '24h' }
     );
 
-    res.json({
+    // Prepare response
+    const responseData = isSuperadmin ? {
       token,
       user: {
-        ...user.rows[0],
-        user_type: isSuperadmin ? 'superadmin' : 'user'
+        id: user.rows[0].id,
+        name: user.rows[0].name,
+        email: user.rows[0].email,
+        organization: user.rows[0].organization,
+        mobile_no: user.rows[0].mobile_no,
+        user_type: 'superadmin'
       }
-    });
+    } : {
+      token,
+      user: {
+        user_id: user.rows[0].user_id,
+        full_name: user.rows[0].full_name,
+        organization_name: user.rows[0].organization_name,
+        domain_name: user.rows[0].domain_name,
+        owner_email: user.rows[0].owner_email,
+        user_type: 'user'
+      }
+    };
+
+    res.json(responseData);
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: 'Server error' });
