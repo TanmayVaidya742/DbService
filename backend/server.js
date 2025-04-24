@@ -142,14 +142,15 @@ const initializeDatabase = async () => {
     await mainPool.query(`
       CREATE TABLE IF NOT EXISTS users (
         user_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-        name VARCHAR(255) NOT NULL,
-        username VARCHAR(255) NOT NULL UNIQUE,
-        email VARCHAR(255) NOT NULL UNIQUE,
+        full_name VARCHAR(255) NOT NULL,
         password VARCHAR(255) NOT NULL,
-        organization VARCHAR(255) NOT NULL,
+        organization_name VARCHAR(255),
+        domain_name VARCHAR(255),
+        owner_email VARCHAR(255),
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
     `);
+    
 
     // Create organizations table
     await mainPool.query(`
