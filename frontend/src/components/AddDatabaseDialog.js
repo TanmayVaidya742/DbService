@@ -10,27 +10,12 @@ import {
   Typography,
   Grid,
   Box,
-  Chip,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableRow,
-  IconButton as MuiIconButton,
-  Tooltip,
-  Checkbox,
-  FormControlLabel
+  InputAdornment
 } from '@mui/material';
 import {
   Close as CloseIcon,
-  CloudUpload as CloudUploadIcon,
-  Add as AddIcon,
-  Delete as DeleteIcon,
-  Key as KeyIcon
+  Visibility,
+  VisibilityOff
 } from '@mui/icons-material';
 import { styled } from '@mui/material/styles';
 
@@ -56,86 +41,64 @@ const FormField = styled(Grid)(({ theme }) => ({
   marginBottom: theme.spacing(2),
 }));
 
-const UploadButton = styled(Button)(({ theme }) => ({
-  border: '2px dashed var(--primary-color)',
-  backgroundColor: 'var(--primary-light)',
-  '&:hover': {
-    backgroundColor: 'var(--primary-light-hover)',
-    border: '2px dashed var(--primary-hover)',
-  },
-}));
+const AddDatabaseDialog = ({ open, onClose, formData, onChange, onSubmit }) => {
+  const [showPassword, setShowPassword] = useState(false);
+  const [domainError, setDomainError] = useState('');
+  const [passwordError, setPasswordError] = useState('');
 
-const dataTypes = [
-  'TEXT',
-  'INTEGER',
-  'BIGINT',
-  'NUMERIC',
-  'REAL',
-  'DOUBLE PRECISION',
-  'BOOLEAN',
-  'DATE',
-  'TIMESTAMP',
-  'JSON',
-  'UUID'
-];
-
-const AddDatabaseDialog = ({ open, onClose, formData, onChange, onFileChange, onSubmit }) => {
-  const [columns, setColumns] = useState([
-    { name: '', type: 'TEXT', isPrimary: false, isNotNull: false, isUnique: false, defaultValue: '' }
-  ]);
-
-  const handleAddColumn = () => {
-    setColumns([...columns, { name: '', type: 'TEXT', isPrimary: false, isNotNull: false, isUnique: false, defaultValue: '' }]);
+  const handleTogglePasswordVisibility = () => {
+    setShowPassword(!showPassword);
   };
 
-  const handleRemoveColumn = (index) => {
-    const newColumns = [...columns];
-    newColumns.splice(index, 1);
-    setColumns(newColumns);
-  };
-
-  const handleColumnChange = (index, field, value) => {
-    const newColumns = [...columns];
-
-    if (field === 'isPrimary' && value === true) {
-      newColumns.forEach(col => col.isPrimary = false);
+  const validateDomain = (domain) => {
+    const domainRegex = /^[a-zA-Z0-9-]+(\.[a-zA-Z0-9-]+)*\.[a-zA-Z]{2,}$/;
+    if (!domainRegex.test(domain)) {
+      setDomainError('Please enter a valid domain name (e.g., example.com)');
+      return false;
     }
+    setDomainError('');
+    return true;
+  };
 
-    newColumns[index][field] = value;
-    setColumns(newColumns);
+  const validatePassword = (password) => {
+    if (password.length < 8) {
+      setPasswordError('Password must be at least 8 characters long');
+      return false;
+    }
+    setPasswordError('');
+    return true;
   };
 
   const handleSubmit = () => {
-    if (!formData.databaseName || !formData.tableName) {
-      alert('Database name and table name are required');
+    if (!formData.organizationName || !formData.domainName || 
+        !formData.ownerEmail || !formData.fullName || !formData.password) {
+      alert('All fields are required');
       return;
     }
 
-    if (columns.every(col => !col.name.trim()) && !formData.csvFile) {
-      alert('Either define columns or upload a CSV file');
+    if (!validateDomain(formData.domainName)) {
       return;
     }
 
-    for (const column of columns) {
-      if (column.name.trim() && !/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(column.name)) {
-        alert('Column names must start with a letter or underscore and contain only letters, numbers, and underscores');
-        return;
-      }
+    if (!validatePassword(formData.password)) {
+      return;
     }
 
-    const filteredColumns = columns.filter(col => col.name.trim());
+    // Validate email domain matches
+    const emailDomain = formData.ownerEmail.split('@')[1];
+    if (emailDomain !== formData.domainName) {
+      alert('Owner email domain must match the organization domain name');
+      return;
+    }
 
-    onSubmit({
-      ...formData,
-      columns: filteredColumns
-    });
+    onSubmit(formData);
   };
 
   return (
     <StyledDialog
       open={open}
       onClose={onClose}
-      maxWidth="md"
+      maxWidth="sm"
       fullWidth
       sx={{
         '& .MuiDialog-container': {
@@ -145,7 +108,7 @@ const AddDatabaseDialog = ({ open, onClose, formData, onChange, onFileChange, on
       }}
     >
       <StyledDialogTitle>
-        <Typography variant="h6" style={{ color: 'var(--primary-text)' }}>Create New Database</Typography>
+        <Typography variant="h6" style={{ color: 'var(--primary-text)' }}>Create New Organization</Typography>
         <IconButton
           aria-label="close"
           onClick={onClose}
@@ -160,24 +123,13 @@ const AddDatabaseDialog = ({ open, onClose, formData, onChange, onFileChange, on
       }}>
         <Box component="form" noValidate>
           <Grid container spacing={2}>
+            {/* Organization Information */}
             <FormField item xs={12}>
               <TextField
                 fullWidth
-                label="Database Name"
-                name="databaseName"
-                value={formData.databaseName}
-                onChange={onChange}
-                required
-                variant="outlined"
-                sx={{ '& .MuiOutlinedInput-root': { borderRadius: 'var(--border-radius)' } }}
-              />
-            </FormField>
-            <FormField item xs={12}>
-              <TextField
-                fullWidth
-                label="Table Name"
-                name="tableName"
-                value={formData.tableName}
+                label="Organization Name"
+                name="organizationName"
+                value={formData.organizationName || ''}
                 onChange={onChange}
                 required
                 variant="outlined"
@@ -186,148 +138,76 @@ const AddDatabaseDialog = ({ open, onClose, formData, onChange, onFileChange, on
             </FormField>
 
             <FormField item xs={12}>
-              <Typography variant="subtitle1" gutterBottom>
-                Table Columns (Optional - define or upload CSV)
-              </Typography>
-              <Box sx={{
-                maxHeight: '300px',
-                overflowY: 'auto',
-                border: '1px solid var(--border-color)',
-                borderRadius: 'var(--border-radius-sm)'
-              }}>
-                <Table size="small" stickyHeader>
-                  <TableHead>
-                    <TableRow>
-                      <TableCell>Column Name</TableCell>
-                      <TableCell>Data Type</TableCell>
-                      <TableCell>Primary</TableCell>
-                      <TableCell>Not Null</TableCell>
-                      <TableCell>Unique</TableCell>
-                      <TableCell>Default</TableCell>
-                      <TableCell align="right">Actions</TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {columns.map((column, index) => (
-                      <TableRow key={index}>
-                        <TableCell>
-                          <TextField
-                            fullWidth
-                            value={column.name}
-                            onChange={(e) => handleColumnChange(index, 'name', e.target.value)}
-                            placeholder="Column name"
-                          />
-                        </TableCell>
-                        <TableCell>
-                          <FormControl fullWidth size="small">
-                            <Select
-                              value={column.type}
-                              onChange={(e) => handleColumnChange(index, 'type', e.target.value)}
-                            >
-                              {dataTypes.map((type) => (
-                                <MenuItem key={type} value={type}>{type}</MenuItem>
-                              ))}
-                            </Select>
-                          </FormControl>
-                        </TableCell>
-                        <TableCell>
-                          <Tooltip title="Primary Key">
-                            <Checkbox
-                              checked={column.isPrimary}
-                              onChange={(e) => handleColumnChange(index, 'isPrimary', e.target.checked)}
-                              icon={<KeyIcon />}
-                              checkedIcon={<KeyIcon color="primary" />}
-                            />
-                          </Tooltip>
-                        </TableCell>
-                        <TableCell>
-                          <Tooltip title="Not Null">
-                            <Checkbox
-                              checked={column.isNotNull}
-                              onChange={(e) => handleColumnChange(index, 'isNotNull', e.target.checked)}
-                            />
-                          </Tooltip>
-                        </TableCell>
-                        <TableCell>
-                          <Tooltip title="Unique">
-                            <Checkbox
-                              checked={column.isUnique}
-                              onChange={(e) => handleColumnChange(index, 'isUnique', e.target.checked)}
-                            />
-                          </Tooltip>
-                        </TableCell>
-                        <TableCell>
-                          <TextField
-                            size="small"
-                            value={column.defaultValue}
-                            onChange={(e) => handleColumnChange(index, 'defaultValue', e.target.value)}
-                            placeholder="Default"
-                          />
-                        </TableCell>
-                        <TableCell align="right">
-                          <Tooltip title="Remove column">
-                            <MuiIconButton
-                              onClick={() => handleRemoveColumn(index)}
-                            >
-                              <DeleteIcon />
-                            </MuiIconButton>
-                          </Tooltip>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </Box>
-              <Box sx={{ mt: 1 }}>
-                <Button
-                  startIcon={<AddIcon />}
-                  onClick={handleAddColumn}
-                  variant="outlined"
-                >
-                  Add Column
-                </Button>
-              </Box>
+              <TextField
+                fullWidth
+                label="Domain Name (e.g., hdfc.in)"
+                name="domainName"
+                value={formData.domainName || ''}
+                onChange={onChange}
+                required
+                variant="outlined"
+                error={!!domainError}
+                helperText={domainError || "This will be your unique organization identifier"}
+                sx={{ '& .MuiOutlinedInput-root': { borderRadius: 'var(--border-radius)' } }}
+                onBlur={(e) => validateDomain(e.target.value)}
+              />
             </FormField>
 
             <FormField item xs={12}>
-              <Typography variant="subtitle1" gutterBottom>
-                Optional CSV Upload
-              </Typography>
-              <input
-                type="file"
-                accept=".csv"
-                id="csv-upload"
-                hidden
-                onChange={(e) => {
-                  if (e.target.files && e.target.files[0]) {
-                    const file = e.target.files[0];
-                    if (file.type !== 'text/csv') {
-                      alert('Please upload a CSV file');
-                      return;
-                    }
-                    onFileChange(e);
-                  }
+              <TextField
+                fullWidth
+                label="Owner Email"
+                name="ownerEmail"
+                type="email"
+                value={formData.ownerEmail || ''}
+                onChange={onChange}
+                required
+                variant="outlined"
+                sx={{ '& .MuiOutlinedInput-root': { borderRadius: 'var(--border-radius)' } }}
+                helperText={`Must be from ${formData.domainName || 'your domain'}`}
+              />
+            </FormField>
+
+            <FormField item xs={12}>
+              <TextField
+                fullWidth
+                label="Full Name"
+                name="fullName"
+                value={formData.fullName || ''}
+                onChange={onChange}
+                required
+                variant="outlined"
+                sx={{ '& .MuiOutlinedInput-root': { borderRadius: 'var(--border-radius)' } }}
+              />
+            </FormField>
+
+            <FormField item xs={12}>
+              <TextField
+                fullWidth
+                label="Password"
+                name="password"
+                type={showPassword ? 'text' : 'password'}
+                value={formData.password || ''}
+                onChange={onChange}
+                required
+                variant="outlined"
+                error={!!passwordError}
+                helperText={passwordError || "Must be at least 8 characters"}
+                sx={{ '& .MuiOutlinedInput-root': { borderRadius: 'var(--border-radius)' } }}
+                InputProps={{
+                  endAdornment: (
+                    <InputAdornment position="end">
+                      <IconButton
+                        aria-label="toggle password visibility"
+                        onClick={handleTogglePasswordVisibility}
+                        edge="end"
+                      >
+                        {showPassword ? <VisibilityOff /> : <Visibility />}
+                      </IconButton>
+                    </InputAdornment>
+                  ),
                 }}
               />
-              <label htmlFor="csv-upload">
-                <UploadButton
-                  component="span"
-                  fullWidth
-                  startIcon={<CloudUploadIcon />}
-                  sx={{ borderRadius: 'var(--border-radius)', textTransform: 'none' }}
-                >
-                  Upload CSV File (Optional)
-                </UploadButton>
-              </label>
-              {formData.csvFile && (
-                <Box sx={{ mt: 2, display: 'flex', justifyContent: 'center' }}>
-                  <Chip
-                    label={formData.csvFile.name}
-                    onDelete={() => onChange({ target: { name: 'csvFile', value: null } })}
-                    sx={{ backgroundColor: 'var(--primary-color)', color: 'var(--primary-text)' }}
-                  />
-                </Box>
-              )}
             </FormField>
           </Grid>
         </Box>
@@ -359,7 +239,7 @@ const AddDatabaseDialog = ({ open, onClose, formData, onChange, onFileChange, on
             },
           }}
         >
-          Create
+          Create Organization
         </Button>
       </DialogActions>
     </StyledDialog>
