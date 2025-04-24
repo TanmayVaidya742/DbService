@@ -7,9 +7,12 @@ import {
   DialogContent, DialogContentText, DialogActions
 } from '@mui/material';
 import {
-  Menu as MenuIcon, Settings as SettingsIcon,
-  Storage as StorageIcon, Delete as DeleteIcon,
-  Visibility as VisibilityIcon, ContentCopy as ContentCopyIcon
+  Menu as MenuIcon,
+  Settings as SettingsIcon,
+  Storage as StorageIcon,
+  Delete as DeleteIcon,
+  Visibility as VisibilityIcon,
+  ContentCopy as ContentCopyIcon
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
@@ -32,8 +35,7 @@ const UserDashboard = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
   const navigate = useNavigate();
   const [openDialog, setOpenDialog] = useState(false);
-  const [openTableDialog, setOpenTableDialog] = useState(false);
-  const [selectedDatabase, setSelectedDatabase] = useState('');
+
   const [databaseFormData, setDatabaseFormData] = useState({
     databaseName: '',
     tableName: '',
@@ -107,35 +109,6 @@ const UserDashboard = () => {
       setSnackbar({
         open: true,
         message: error.response?.data?.error || 'Failed to delete database',
-        severity: 'error'
-      });
-    }
-  };
-
-  const handleDeleteTable = async () => {
-    try {
-      await axios.delete(
-        `http://localhost:5000/api/databases/${deleteDialog.dbName}/tables/${deleteDialog.name}`,
-        {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem('token')}`
-          }
-        }
-      );
-
-      setSnackbar({
-        open: true,
-        message: 'Table deleted successfully!',
-        severity: 'success'
-      });
-
-      setDeleteDialog({ ...deleteDialog, open: false });
-      fetchDatabases();
-    } catch (error) {
-      console.error('Error deleting table:', error);
-      setSnackbar({
-        open: true,
-        message: error.response?.data?.error || 'Failed to delete table',
         severity: 'error'
       });
     }
@@ -445,18 +418,50 @@ const UserDashboard = () => {
             </Button>
           </Box>
 
-          <StyledPaper>
-            <Typography variant="h6" gutterBottom sx={{ mb: 3, color: 'var(--text-primary)' }}>
-              Your Databases
-            </Typography>
-            <TableContainer>
-              <Table>
+          <Paper elevation={3} sx={{
+            p: 3,
+            mb: 3,
+            backgroundColor: 'var(--bg-paper)',
+            borderRadius: 'var(--border-radius)',
+            boxShadow: 'var(--shadow-lg)'
+          }}>
+            
+            <TableContainer
+              sx={{
+                maxHeight: 'calc(100vh - 300px)',
+                overflow: 'auto',
+                '&::-webkit-scrollbar': {
+                  width: '8px',
+                  height: '8px'
+                },
+                '&::-webkit-scrollbar-track': {
+                  background: 'var(--bg-secondary)'
+                },
+                '&::-webkit-scrollbar-thumb': {
+                  backgroundColor: 'var(--primary-color)',
+                  borderRadius: '4px'
+                }
+              }}
+            >
+              <Table stickyHeader>
                 <TableHead>
                   <TableRow>
-                    <TableCell style={{ color: 'var(--text-primary)' }}>Database Name</TableCell>
-                    <TableCell style={{ color: 'var(--text-primary)' }}>Tables</TableCell>
-                    <TableCell style={{ color: 'var(--text-primary)' }}>API Key</TableCell>
-                    <TableCell style={{ color: 'var(--text-primary)' }} align="right">Actions</TableCell>
+                    <TableCell style={{
+                      color: 'var(--text-primary)',
+                      backgroundColor: 'var(--primary-light)'
+                    }}>Database Name</TableCell>
+                    <TableCell style={{
+                      color: 'var(--text-primary)',
+                      backgroundColor: 'var(--primary-light)'
+                    }}>Tables Count</TableCell>
+                    <TableCell style={{
+                      color: 'var(--text-primary)',
+                      backgroundColor: 'var(--primary-light)'
+                    }}>API Key</TableCell>
+                    <TableCell style={{
+                      color: 'var(--text-primary)',
+                      backgroundColor: 'var(--primary-light)'
+                    }} align="right">Actions</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
@@ -477,49 +482,25 @@ const UserDashboard = () => {
                       >
                         {db.name}
                       </TableCell>
-                      <TableCell onClick={() => handleRowClick(db.name)}>
-                        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-                          {db.tables.map((table) => (
-                            <Box
-                              key={table}
-                              sx={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                backgroundColor: 'var(--primary-light)',
-                                borderRadius: 1,
-                                px: 1,
-                                py: 0.5
-                              }}
-                            >
-                              <Typography
-                                variant="body2"
-
-                                sx={{
-                                  cursor: 'pointer',
-                                  color: 'var(--primary-color)',
-                                  '&:hover': {
-                                    textDecoration: 'underline'
-                                  }
-                                }}
-                              >
-                                {table}
-                              </Typography>
-                              <IconButton
-                                size="small"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleDeleteClick('table', table, db.name);
-                                }}
-                                sx={{
-                                  color: 'var(--error-color)',
-                                  ml: 0.5,
-                                  p: 0.5
-                                }}
-                              >
-                                <DeleteIcon fontSize="small" />
-                              </IconButton>
-                            </Box>
-                          ))}
+                      <TableCell
+                        onClick={() => handleRowClick(db.name)}
+                        style={{ color: 'var(--text-primary)' }}
+                      >
+                        <Box
+                          sx={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            backgroundColor: 'var(--primary-light)',
+                            borderRadius: '50%',
+                            width: '32px',
+                            height: '32px',
+                            color: 'var(--primary-color)',
+                            fontWeight: 'bold',
+                            fontSize: '0.875rem'
+                          }}
+                        >
+                          {db.tables.length}
                         </Box>
                       </TableCell>
                       <TableCell onClick={() => handleRowClick(db.name)}>
@@ -546,22 +527,6 @@ const UserDashboard = () => {
                       </TableCell>
                       <TableCell align="right">
                         <Box sx={{ display: 'flex', gap: 1, justifyContent: 'flex-end' }}>
-                          <Button
-                            variant="contained"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setSelectedDatabase(db.name);
-                              setOpenTableDialog(true);
-                            }}
-                            sx={{
-                              backgroundColor: 'var(--primary-color)',
-                              '&:hover': {
-                                backgroundColor: 'var(--primary-hover)',
-                              },
-                            }}
-                          >
-                            Create Table
-                          </Button>
                           <IconButton
                             onClick={(e) => {
                               e.stopPropagation();
@@ -578,7 +543,7 @@ const UserDashboard = () => {
                 </TableBody>
               </Table>
             </TableContainer>
-          </StyledPaper>
+          </Paper>
         </Container>
 
         <AddDatabaseDialog
@@ -590,12 +555,6 @@ const UserDashboard = () => {
           onSubmit={handleDatabaseSubmit}
         />
 
-        <CreateTableDialog
-          open={openTableDialog}
-          onClose={() => setOpenTableDialog(false)}
-          dbName={selectedDatabase}
-          onSubmit={handleCreateTable}
-        />
 
         <Dialog open={openApiKeyDialog} onClose={() => setOpenApiKeyDialog(false)}>
           <DialogTitle style={{ color: 'var(--text-primary)' }}>API Key</DialogTitle>
@@ -666,7 +625,7 @@ const UserDashboard = () => {
               Cancel
             </Button>
             <Button
-              onClick={deleteDialog.type === 'database' ? handleDeleteDatabase : handleDeleteTable}
+              onClick={handleDeleteDatabase}
               sx={{
                 backgroundColor: 'var(--error-color)',
                 '&:hover': {
@@ -678,6 +637,7 @@ const UserDashboard = () => {
             >
               Delete
             </Button>
+
           </DialogActions>
         </Dialog>
 

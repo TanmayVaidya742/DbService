@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import {
   Dialog, DialogTitle, DialogContent, DialogActions,
@@ -24,6 +25,7 @@ const EditTableDialog = ({
     defaultValue: '',
     isNullable: 'YES'
   });
+  const [isSaving, setIsSaving] = useState(false);
   const [snackbar, setSnackbar] = useState({
     open: false,
     message: '',
@@ -75,43 +77,30 @@ const EditTableDialog = ({
   };
 
   const handleSave = async () => {
+    if (isSaving) return;
+    setIsSaving(true);
+    
     try {
-      const response = await axios.put(
-        `http://localhost:5000/api/databases/${dbName}/${tableName}`,
-        { columns: editedColumns },
-        {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem('token')}`
-          }
-        }
-      );
-  
-      // Check for successful response
-      if (response.data && response.data.message) {
-        setSnackbar({
-          open: true,
-          message: response.data.message, // Use server message
-          severity: 'success'
-        });
-  
-        if (typeof onSave === 'function') {
-          onSave(dbName, tableName, editedColumns);
-        }
-        
-        onClose();
-      } else {
-        throw new Error('Unexpected response from server');
-      }
-    } catch (error) {
-      console.error('Error updating table:', error);
       setSnackbar({
         open: true,
-        message: error.response?.data?.error || error.message || 'Failed to update table',
+        message: "Saving changes...",
+        severity: "info",
+      });
+  
+      await onSave(dbName, tableName, editedColumns);
+      // Remove the onClose() call here - let the parent handle it
+    } catch (error) {
+      console.error('Error in save handler:', error);
+      setSnackbar({
+        open: true,
+        message: error.message || 'Failed to save changes',
         severity: 'error'
       });
+      throw error; // Re-throw the error so parent can handle it
+    } finally {
+      setIsSaving(false);
     }
   };
-
   const handleCloseSnackbar = () => {
     setSnackbar({ ...snackbar, open: false });
   };
@@ -255,9 +244,14 @@ const EditTableDialog = ({
           </Box>
         </DialogContent>
         <DialogActions>
-          <Button onClick={onClose}>Cancel</Button>
-          <Button onClick={handleSave} variant="contained" color="primary">
-            Save Changes
+          <Button onClick={onClose} disabled={isSaving}>Cancel</Button>
+          <Button 
+            onClick={handleSave} 
+            variant="contained" 
+            color="primary"
+            disabled={isSaving}
+          >
+            {isSaving ? "Saving..." : "Save Changes"}
           </Button>
         </DialogActions>
       </Dialog>
