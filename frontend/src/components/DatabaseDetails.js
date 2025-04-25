@@ -212,6 +212,8 @@ const DatabaseDetails = () => {
 
       // Ensure tables have schema objects
       const data = response.data;
+      data.tables = data.tables || [];
+
       if (data.tables) {
         data.tables = data.tables.map(table => ({
           ...table,
@@ -614,7 +616,7 @@ const DatabaseDetails = () => {
         }}
       >
         <Toolbar />
-       <Container maxWidth={false}>
+        <Container maxWidth={false}>
           <Box sx={{ mt: 4, mb: 4 }}>
             <Box
               sx={{
@@ -671,21 +673,11 @@ const DatabaseDetails = () => {
                   maxHeight: 'calc(100vh - 300px)',
                   width: '100%',
                   overflow: 'auto',
-                  '&::-webkit-scrollbar': {
-                    width: '8px',
-                    height: '8px'
-                  },
-                  '&::-webkit-scrollbar-track': {
-                    background: 'var(--bg-secondary)'
-                  },
-                  '&::-webkit-scrollbar-thumb': {
-                    backgroundColor: 'var(--primary-color)',
-                    borderRadius: '4px'
-                  }
+                  '&::-webkit-scrollbar': { /* ... */ }
                 }}
               >
-                <Table stickyHeader> {/* stickyHeader keeps the header visible while scrolling */}
-                  <TableHead >
+                <Table stickyHeader>
+                  <TableHead>
                     <TableRow>
                       <TableCell sx={{ backgroundColor: "var(--primary-light)" }}>Table Name</TableCell>
                       <TableCell sx={{ backgroundColor: "var(--primary-light)" }}>Columns</TableCell>
@@ -693,58 +685,70 @@ const DatabaseDetails = () => {
                     </TableRow>
                   </TableHead>
                   <TableBody>
-                    {database.tables.map((table) => (
-                      <TableRow key={table.tablename}>
-                        <TableCell>{table.tablename}</TableCell>
-                        <TableCell>
-                          {Object.entries(table.schema).map(
-                            ([colName, colType]) => (
-                              <Chip
-                                key={colName}
-                                label={`${colName}: ${colType}`}
-                                sx={{ mr: 1, mb: 1, backgroundColor: "var(--primary-light)" }}
-                                variant="outlined"
-                              />
-                            )
-                          )}
-                        </TableCell>
-                        <TableCell>
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                            <IconButton
-                              aria-label="more"
-                              aria-controls={`table-menu-${table.tablename}`}
-                              aria-haspopup="true"
-                              onClick={(e) => handleMenuOpen(e, table)}
-                            >
-                              <MoreVertIcon />
-                            </IconButton>
-                            <IconButton
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleEditTable(dbName, table.tablename);
-                              }}
-                              sx={{
-                                color: "var(--primary-color)",
-                              }}
-                            >
-                              <EditIcon fontSize="small" />
-                            </IconButton>
-                            <IconButton
-                              size="small"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleDeleteClick(table);
-                              }}
-                              sx={{
-                                color: 'var(--error-color)',
-                              }}
-                            >
-                              <DeleteIcon fontSize="small" />
-                            </IconButton>
-                          </Box>
+                    {database.tables && database.tables.length > 0 ? (
+                      database.tables.map((table) => (
+                        <TableRow key={table.tablename}>
+                          <TableCell>{table.tablename}</TableCell>
+                          <TableCell>
+                            {Object.entries(table.schema).map(
+                              ([colName, colType]) => (
+                                <Chip
+                                  key={colName}
+                                  label={`${colName}: ${colType}`}
+                                  sx={{ mr: 1, mb: 1, backgroundColor: "var(--primary-light)" }}
+                                  variant="outlined"
+                                />
+                              )
+                            )}
+                          </TableCell>
+                          <TableCell>
+                            {table.tablename && ( // Only show actions if table exists
+                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                <IconButton
+                                  aria-label="more"
+                                  aria-controls={`table-menu-${table.tablename}`}
+                                  aria-haspopup="true"
+                                  onClick={(e) => handleMenuOpen(e, table)}
+                                >
+                                  <MoreVertIcon />
+                                </IconButton>
+                                <IconButton
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleEditTable(dbName, table.tablename);
+                                  }}
+                                  sx={{
+                                    color: "var(--primary-color)",
+                                  }}
+                                >
+                                  <EditIcon fontSize="small" />
+                                </IconButton>
+                                <IconButton
+                                  size="small"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleDeleteClick(table);
+                                  }}
+                                  sx={{
+                                    color: 'var(--error-color)',
+                                  }}
+                                >
+                                  <DeleteIcon fontSize="small" />
+                                </IconButton>
+                              </Box>
+                            )}
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    ) : (
+                      <TableRow>
+                        <TableCell colSpan={3} align="center" sx={{ py: 4 }}>
+                          <Typography variant="body1" color="textSecondary">
+                            No tables present in the database
+                          </Typography>
                         </TableCell>
                       </TableRow>
-                    ))}
+                    )}
                   </TableBody>
                 </Table>
               </TableContainer>
@@ -791,17 +795,32 @@ const DatabaseDetails = () => {
             onSubmit={handleCreateTable}
           />
 
-          <Dialog open={deleteDialog.open} onClose={() => setDeleteDialog({ ...deleteDialog, open: false })}>
-            <DialogTitle style={{ color: 'var(--text-primary)' }}>
+          <Dialog
+            open={deleteDialog.open}
+            onClose={() => setDeleteDialog({ ...deleteDialog, open: false })}
+            fullWidth
+            maxWidth="sm"
+            slotProps={{
+              paper: {
+                sx: {
+                  backgroundColor: 'var(--bg-paper)',
+                  borderRadius: 'var(--border-radius)',
+                  padding: 2
+                }
+              }
+            }}
+          >
+             <DialogTitle sx={{ color: 'var(--text-primary)', fontWeight: 'bold' }}>
               Delete Table
             </DialogTitle>
+
             <DialogContent>
-              <DialogContentText style={{ color: 'var(--text-primary)' }}>
+              <DialogContentText sx={{ color: 'var(--text-secondary)', mb: 2 }}>
                 Are you sure you want to delete table "{deleteDialog.tableName}"?
                 This action cannot be undone.
               </DialogContentText>
             </DialogContent>
-            <DialogActions>
+            <DialogActions sx={{ padding: 2, gap: 2 }}>
               <Button
                 onClick={() => setDeleteDialog({ ...deleteDialog, open: false })}
                 sx={{
