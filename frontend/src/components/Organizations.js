@@ -217,9 +217,7 @@ const Organizations = () => {
                                 </Box>
                               }
                             />
-                            <ListItemSecondaryAction>
-                              <Chip label={user.user_id.substring(0, 8)} size="small" />
-                            </ListItemSecondaryAction>
+                           
                           </ListItem>
                           {index < org.users.length - 1 && <Divider />}
                         </React.Fragment>
