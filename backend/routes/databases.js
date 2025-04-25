@@ -71,32 +71,18 @@ const buildColumnDefinition = (column) => {
 };
 
 // POST route to create a new database and table
-router.post('/', upload.single('csvFile'), async (req, res) => {
-  const { databaseName, tableName, columns } = req.body;
-  const csvFile = req.file;
+router.post('/', verifyToken, async (req, res) => {
+  const { databaseName } = req.body;
   const userId = req.user.user_id;
   let tempPool = null;
-  let dbPool = null;
   let client = null;
 
   try {
-    if (!databaseName || !tableName) {
-      throw new Error('Database name and table name are required');
+    if (!databaseName) {
+      return res.status(400).json({ error: 'Database name is required' });
     }
 
-    let parsedColumns = [];
-    if (columns) {
-      try {
-        parsedColumns = JSON.parse(columns);
-      } catch (err) {
-        throw new Error('Invalid columns format');
-      }
-    }
-
-    if (parsedColumns.length === 0 && !csvFile) {
-      throw new Error('Either columns or CSV file must be provided');
-    }
-
+    // Connect to postgres database to create the new database
     tempPool = new Pool({
       user: process.env.DB_USER || 'postgres',
       host: process.env.DB_HOST || 'localhost',
@@ -107,44 +93,10 @@ router.post('/', upload.single('csvFile'), async (req, res) => {
 
     await tempPool.query(`CREATE DATABASE ${databaseName}`);
 
-    dbPool = new Pool({
-      user: process.env.DB_USER || 'postgres',
-      host: process.env.DB_HOST || 'localhost',
-      database: databaseName,
-      password: process.env.DB_PASSWORD || 'postgres',
-      port: process.env.DB_PORT || 5432,
-    });
-
-    let tableColumns = [];
-    let schema = {};
-    
-    if (csvFile) {
-      await new Promise((resolve, reject) => {
-        fs.createReadStream(csvFile.path)
-          .pipe(csv())
-          .on('headers', (headers) => {
-            headers.forEach(header => {
-              const cleanHeader = header.replace(/[^a-zA-Z0-9_]/g, '_').toLowerCase();
-              tableColumns.push(`${cleanHeader} TEXT`);
-              schema[cleanHeader] = 'TEXT';
-            });
-            resolve();
-          })
-          .on('error', reject);
-      });
-    } else {
-      tableColumns = parsedColumns.map(buildColumnDefinition);
-      parsedColumns.forEach(col => {
-        schema[col.name] = col.type;
-      });
-    }
-
-    // Create the main table with constraints
-    const createTableQuery = `CREATE TABLE ${tableName} (${tableColumns.join(', ')})`;
-    await dbPool.query(createTableQuery);
-
+    // Generate API key
     const apiKey = generateApiKey();
 
+    // Store metadata in main database
     client = await req.mainPool.connect();
     await client.query('BEGIN');
 
@@ -155,24 +107,12 @@ router.post('/', upload.single('csvFile'), async (req, res) => {
       [databaseName, userId, apiKey]
     );
 
-    const dbid = dbCollectionResult.rows[0].dbid;
-
-    await client.query(
-      `INSERT INTO table_collection (dbid, tablename, schema)
-       VALUES ($1, $2, $3)`,
-      [dbid, tableName, schema]
-    );
-
     await client.query('COMMIT');
 
-    if (csvFile) {
-      fs.unlinkSync(csvFile.path);
-    }
-
     res.status(201).json({
-      message: 'Database and table created successfully',
-      apiKey: apiKey,
-      dbid: dbid
+      message: 'Database created successfully',
+      apiKey,
+      dbid: dbCollectionResult.rows[0].dbid
     });
 
   } catch (error) {
@@ -186,6 +126,7 @@ router.post('/', upload.single('csvFile'), async (req, res) => {
       }
     }
     
+    // Clean up if database was created but metadata failed
     if (tempPool) {
       try {
         await tempPool.query(`
@@ -201,17 +142,17 @@ router.post('/', upload.single('csvFile'), async (req, res) => {
       }
     }
     
-    if (csvFile && fs.existsSync(csvFile.path)) {
-      fs.unlinkSync(csvFile.path);
-    }
-    
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ 
+      error: error.message.includes('already exists') 
+        ? 'Database name already exists' 
+        : 'Failed to create database'
+    });
   } finally {
     if (tempPool) await tempPool.end().catch(console.error);
-    if (dbPool) await dbPool.end().catch(console.error);
     if (client) client.release();
   }
 });
+
 // GET route to fetch databases for the current user
 router.get('/', async (req, res) => {
   const userId = req.user.user_id; // Assuming user is authenticated and user_id is available

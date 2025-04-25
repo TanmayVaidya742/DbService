@@ -3,13 +3,14 @@ import {
   Box, Drawer, AppBar, Toolbar, Typography, IconButton,
   List, ListItem, ListItemIcon, ListItemText, Divider, Container,
   Button, TextField, Paper, Table, TableBody, TableCell,
-  TableContainer, TableHead, TableRow, Snackbar, Alert, Dialog, DialogTitle, DialogContent,
-  DialogActions, FormControl, InputLabel, Select, MenuItem
+  TableContainer, TableHead, TableRow, Snackbar, Alert, Dialog, DialogTitle, DialogContent,Grid,
+  DialogActions, DialogContentText
 } from '@mui/material';
 import {
   Menu as MenuIcon, Add as AddIcon, Settings as SettingsIcon,
-  Dashboard as DashboardIcon, Search as SearchIcon, Person as PersonIcon,
-  Groups as GroupsIcon, Delete as DeleteIcon
+  Dashboard as DashboardIcon, Search as SearchIcon,
+  Groups as GroupsIcon, Delete as DeleteIcon, Visibility as VisibilityIcon, 
+  VisibilityOff as VisibilityOffIcon
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
@@ -24,24 +25,20 @@ const StyledPaper = styled(Paper)(({ theme }) => ({
   backgroundColor: 'var(--bg-paper)',
 }));
 
-// Static organization options
-const ORGANIZATIONS = [
-  { organization_name: 'idfc.in' },
-  { organization_name: 'hdfc.in' },
-  { organization_name: 'sbi.in' }
-];
-
 const Dashboard = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
   const navigate = useNavigate();
   const [openDialog, setOpenDialog] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [userToDelete, setUserToDelete] = useState(null);
   const [formData, setFormData] = useState({
-    organization: '',
-    email: '',
-    name: '',
-    username: '',
+    organizationName: '',
+    domainName: '',
+    ownerEmail: '',
+    fullName: '',
     password: ''
   });
+  const [showPassword, setShowPassword] = useState(false);
   const [snackbar, setSnackbar] = useState({
     open: false,
     message: '',
@@ -61,7 +58,11 @@ const Dashboard = () => {
   const fetchUsers = async () => {
     setLoading(true);
     try {
-      const res = await axios.get('http://localhost:5000/api/users');
+      const res = await axios.get('http://localhost:5000/api/users', {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem('token')}`
+        }
+      });
       setUsers(res.data);
     } catch (err) {
       console.error('Error fetching users:', err);
@@ -79,10 +80,10 @@ const Dashboard = () => {
   const handleCloseDialog = () => {
     setOpenDialog(false);
     setFormData({
-      organization: '',
-      email: '',
-      name: '',
-      username: '',
+      organizationName: '',
+      domainName: '',
+      ownerEmail: '',
+      fullName: '',
       password: ''
     });
   };
@@ -91,9 +92,15 @@ const Dashboard = () => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
+  const togglePasswordVisibility = () => {
+    setShowPassword(!showPassword);
+  };
+
   const handleSubmit = async () => {
-    if (!formData.organization || !formData.email ||
-      !formData.name || !formData.username || !formData.password) {
+    // Validate all fields are filled
+    if (!formData.organizationName || !formData.domainName || 
+        !formData.ownerEmail || !formData.fullName || 
+        !formData.password) {
       setSnackbar({
         open: true,
         message: 'Please fill in all fields',
@@ -102,12 +109,34 @@ const Dashboard = () => {
       return;
     }
 
+    // Validate domain format
+    const domainRegex = /^[a-zA-Z0-9-]+(\.[a-zA-Z0-9-]+)*\.[a-zA-Z]{2,}$/;
+    if (!domainRegex.test(formData.domainName)) {
+      setSnackbar({
+        open: true,
+        message: 'Invalid domain name format',
+        severity: 'error'
+      });
+      return;
+    }
+
+    // Validate email matches domain
+    const emailDomain = formData.ownerEmail.split('@')[1];
+    if (emailDomain !== formData.domainName) {
+      setSnackbar({
+        open: true,
+        message: 'Owner email domain must match organization domain',
+        severity: 'error'
+      });
+      return;
+    }
+
     try {
       const response = await axios.post('http://localhost:5000/api/users', {
-        name: formData.name,
-        email: formData.email,
-        organization: formData.organization,
-        username: formData.username,
+        organizationName: formData.organizationName,
+        domainName: formData.domainName,
+        ownerEmail: formData.ownerEmail,
+        fullName: formData.fullName,
         password: formData.password
       }, {
         headers: {
@@ -117,28 +146,35 @@ const Dashboard = () => {
 
       setSnackbar({
         open: true,
-        message: response.data.message,
+        message: 'Organization created successfully',
         severity: 'success'
       });
 
       await fetchUsers();
       handleCloseDialog();
     } catch (error) {
-      console.error('Error adding user:', error);
-      console.error('Error response:', error.response?.data);
+      console.error('Error adding organization:', error);
       setSnackbar({
         open: true,
-        message: error.response?.data?.message || 'Error adding user',
+        message: error.response?.data?.error || 'Error creating organization',
         severity: 'error'
       });
     }
   };
 
-  const handleDeleteUser = async (userId) => {
-    try {
-      console.log(`Deleting user with ID: ${userId}`);
+  const handleOpenDeleteDialog = (userId) => {
+    setUserToDelete(userId);
+    setDeleteDialogOpen(true);
+  };
 
-      const response = await axios.delete(`http://localhost:5000/api/users/${userId}`, {
+  const handleCloseDeleteDialog = () => {
+    setDeleteDialogOpen(false);
+    setUserToDelete(null);
+  };
+
+  const handleDeleteUser = async () => {
+    try {
+      const response = await axios.delete(`http://localhost:5000/api/users/${userToDelete}`, {
         headers: {
           Authorization: `Bearer ${localStorage.getItem('token')}`
         }
@@ -150,7 +186,8 @@ const Dashboard = () => {
         severity: 'success'
       });
 
-      setUsers(prevUsers => prevUsers.filter(user => user.user_id !== userId));
+      setUsers(prevUsers => prevUsers.filter(user => user.user_id !== userToDelete));
+      handleCloseDeleteDialog();
     } catch (error) {
       console.error('Error deleting user:', error);
       setSnackbar({
@@ -158,6 +195,7 @@ const Dashboard = () => {
         message: error.response?.data?.message || 'Error deleting user',
         severity: 'error'
       });
+      handleCloseDeleteDialog();
     }
   };
 
@@ -208,7 +246,7 @@ const Dashboard = () => {
           >
             <MenuIcon />
           </IconButton>
-          <Typography variant="h6" sx={{ flexGrow: 1 }} style={{ color: 'var(--primary-text)' }}>Dashboard</Typography>
+          <Typography variant="h6" sx={{ flexGrow: 1, color: 'var(--primary-text)' }}>Dashboard</Typography>
           <IconButton color="inherit"><AddIcon /></IconButton>
           <IconButton color="inherit"><SettingsIcon /></IconButton>
         </Toolbar>
@@ -235,7 +273,7 @@ const Dashboard = () => {
 
       <Box component="main" sx={{ flexGrow: 1, p: 3, width: { sm: `calc(100% - ${drawerWidth}px)` } }}>
         <Toolbar />
-        <Container maxWidth="lg">
+        <Grid>
           <StyledPaper>
             <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 3 }}>
               <Button
@@ -284,10 +322,10 @@ const Dashboard = () => {
               <Table>
                 <TableHead>
                   <TableRow>
-                    <TableCell>Name</TableCell>
-                    <TableCell>Username</TableCell>
-                    <TableCell>Email</TableCell>
-                    <TableCell>Organization</TableCell>
+                    <TableCell>Full Name</TableCell>
+                    <TableCell>Domain Name</TableCell>
+                    <TableCell>Owner Email</TableCell>
+                    <TableCell>Organization Name</TableCell>
                     <TableCell>Time checked in</TableCell>
                     <TableCell>Actions</TableCell>
                   </TableRow>
@@ -316,18 +354,18 @@ const Dashboard = () => {
                               alignItems: 'center',
                               justifyContent: 'center'
                             }}>
-                              {user.name?.[0]?.toUpperCase()}
+                              {user.full_name?.[0]?.toUpperCase()}
                             </Box>
-                            {user.name || ''}
+                            {user.full_name || ''}
                           </Box>
                         </TableCell>
-                        <TableCell>{user.username || ''}</TableCell>
-                        <TableCell>{user.email || ''}</TableCell>
-                        <TableCell>{user.organization || ''}</TableCell>
+                        <TableCell>{user.domain_name || ''}</TableCell>
+                        <TableCell>{user.owner_email || ''}</TableCell>
+                        <TableCell>{user.organization_name || ''}</TableCell>
                         <TableCell>{user.created_at ? new Date(user.created_at).toLocaleTimeString() : ''}</TableCell>
                         <TableCell>
                           <IconButton
-                            onClick={() => handleDeleteUser(user.user_id)}
+                            onClick={() => handleOpenDeleteDialog(user.user_id)}
                             color="error"
                             aria-label="delete user"
                           >
@@ -342,46 +380,42 @@ const Dashboard = () => {
             </TableContainer>
           </StyledPaper>
 
+          {/* Organization Creation Dialog */}
           <Dialog open={openDialog} onClose={handleCloseDialog} maxWidth="sm" fullWidth>
             <DialogTitle>Add New Organization</DialogTitle>
             <DialogContent>
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 2 }}>
-                <FormControl fullWidth>
-                  <InputLabel>Select Organization</InputLabel>
-                  <Select
-                    name="organization"
-                    value={formData.organization}
-                    onChange={handleChange}
-                    label="Select Organization"
-                  >
-                    {ORGANIZATIONS.map((org) => (
-                      <MenuItem key={org.organization_name} value={org.organization_name}>
-                        {org.organization_name}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
                 <TextField
-                  label="Email"
-                  name="email"
-                  type="email"
-                  value={formData.email}
+                  label="Organization Name"
+                  name="organizationName"
+                  value={formData.organizationName}
                   onChange={handleChange}
                   fullWidth
                   required
+                />
+                <TextField
+                  label="Domain Name (e.g., hdfc.in)"
+                  name="domainName"
+                  value={formData.domainName}
+                  onChange={handleChange}
+                  fullWidth
+                  required
+                  helperText="Must be unique and in correct format (e.g., domain.com)"
+                />
+                <TextField
+                  label="Owner Email"
+                  name="ownerEmail"
+                  type="email"
+                  value={formData.ownerEmail}
+                  onChange={handleChange}
+                  fullWidth
+                  required
+                  helperText="Email domain must match organization domain"
                 />
                 <TextField
                   label="Full Name"
-                  name="name"
-                  value={formData.name}
-                  onChange={handleChange}
-                  fullWidth
-                  required
-                />
-                <TextField
-                  label="Username"
-                  name="username"
-                  value={formData.username}
+                  name="fullName"
+                  value={formData.fullName}
                   onChange={handleChange}
                   fullWidth
                   required
@@ -389,11 +423,19 @@ const Dashboard = () => {
                 <TextField
                   label="Password"
                   name="password"
-                  type="password"
+                  type={showPassword ? "text" : "password"}
                   value={formData.password}
                   onChange={handleChange}
                   fullWidth
                   required
+                  InputProps={{
+                    endAdornment: (
+                      <IconButton onClick={togglePasswordVisibility}>
+                        {showPassword ? <VisibilityOffIcon /> : <VisibilityIcon />}
+                      </IconButton>
+                    )
+                  }}
+                  helperText="Password must be at least 8 characters long"
                 />
               </Box>
             </DialogContent>
@@ -401,6 +443,27 @@ const Dashboard = () => {
               <Button onClick={handleCloseDialog}>Cancel</Button>
               <Button onClick={handleSubmit} variant="contained" color="primary">
                 Add organization
+              </Button>
+            </DialogActions>
+          </Dialog>
+
+          {/* Delete Confirmation Dialog */}
+          <Dialog
+            open={deleteDialogOpen}
+            onClose={handleCloseDeleteDialog}
+          >
+            <DialogTitle>Confirm Deletion</DialogTitle>
+            <DialogContent>
+              <DialogContentText>
+                Are you sure you want to delete this organization? This action cannot be undone.
+              </DialogContentText>
+            </DialogContent>
+            <DialogActions>
+              <Button onClick={handleCloseDeleteDialog} color="primary">
+                Cancel
+              </Button>
+              <Button onClick={handleDeleteUser} color="error" variant="contained">
+                Delete
               </Button>
             </DialogActions>
           </Dialog>
@@ -415,7 +478,7 @@ const Dashboard = () => {
               {snackbar.message}
             </Alert>
           </Snackbar>
-        </Container>
+        </Grid>
       </Box>
     </Box>
   );

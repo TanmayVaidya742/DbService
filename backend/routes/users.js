@@ -1,133 +1,200 @@
 const express = require('express');
 const router = express.Router();
-const { Pool } = require('pg');
-require('dotenv').config();
-const jwt = require('jsonwebtoken');
 const bcrypt = require('bcrypt');
+const { verifyToken } = require('../middleware/authMiddleware');
+const { v4: uuidv4 } = require('uuid'); // Make sure to install this package
+require('dotenv').config();
 
-// DB connection
-const pool = new Pool({
-  user: process.env.DB_USER,
-  host: process.env.DB_HOST,
-  database: process.env.DB_NAME,
-  password: process.env.DB_PASSWORD,
-  port: process.env.DB_PORT,
-});
+const generateApiKey = () => {
+  const buffer = require('crypto').randomBytes(32);
+  return buffer.toString('hex');
+};
 
-// Get all users
-router.get('/', async (req, res) => {
+// GET all organizations
+router.get('/', verifyToken, async (req, res) => {
   try {
-    const result = await pool.query('SELECT * FROM users ORDER BY created_at DESC');
+    const result = await req.mainPool.query('SELECT * FROM users WHERE organization_name IS NOT NULL ORDER BY created_at DESC');
     res.json(result.rows);
   } catch (error) {
-    console.error('Error fetching users:', error);
-    res.status(500).json({ message: 'Error fetching users' });
+    console.error('Error fetching organizations:', error);
+    res.status(500).json({ message: 'Error fetching organizations' });
   }
 });
 
-// Create a new user with UUID and email domain validation
-router.post('/', async (req, res) => {
-  const { organization, email, name, username, password } = req.body;
-
-  console.log('Received user creation request:', req.body);
-
-  if (!organization || !email || !name || !username || !password) {
-    return res.status(400).json({ message: 'All fields are required' });
-  }
-
-  // Validate email domain matches organization domain
-  const emailParts = email.split('@');
-  if (emailParts.length !== 2 || emailParts[1].toLowerCase() !== organization.toLowerCase()) {
-    return res.status(400).json({ 
-      message: `Email must be from the ${organization} domain` 
-    });
-  }
-
-  const client = await pool.connect();
+// POST route to create a new organization
+router.post('/', verifyToken, async (req, res) => {
+  const { 
+    organizationName, 
+    domainName, 
+    ownerEmail, 
+    fullName, 
+    password
+  } = req.body;
+  
+  let userId;
   try {
-    await client.query('BEGIN');
+    // If the user_id is already a valid UUID, this will work
+    if (req.user.user_id && typeof req.user.user_id === 'string' && 
+        req.user.user_id.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i)) {
+      userId = req.user.user_id;
+    } else {
+      userId = uuidv4();
+    }
+  } catch (error) {
+    console.error('Error with user ID:', error);
+    userId = uuidv4(); // Generate UUID as fallback
+  }
+  
+  let client = null;
 
-    // Check if user already exists
-    const userCheck = await client.query(
-      'SELECT * FROM users WHERE email = $1 OR username = $2',
-      [email, username]
-    );
-
-    if (userCheck.rows.length > 0) {
-      await client.query('ROLLBACK');
-      return res.status(400).json({ message: 'User with this email or username already exists' });
+  try {
+    // Validate required fields
+    if (!organizationName || !domainName || !ownerEmail || !fullName || !password) {
+      return res.status(400).json({ error: 'All fields are required' });
     }
 
-    // Hash password
-    const hashedPassword = await bcrypt.hash(password, 10);
+    // Validate domain format
+    const domainRegex = /^[a-zA-Z0-9-]+(\.[a-zA-Z0-9-]+)*\.[a-zA-Z]{2,}$/;
+    if (!domainRegex.test(domainName)) {
+      return res.status(400).json({ error: 'Invalid domain name format' });
+    }
 
-    // Insert user and return the created user
-    const result = await client.query(
-      `INSERT INTO users (name, username, email, organization, password, created_at)
-       VALUES ($1, $2, $3, $4, $5, NOW())
-       RETURNING user_id, name, username, email, organization, created_at`,
-      [name, username, email, organization, hashedPassword]
+    // Validate password length
+    if (password.length < 8) {
+      return res.status(400).json({ error: 'Password must be at least 8 characters long' });
+    }
+
+    // Validate email matches domain
+    const emailDomain = ownerEmail.split('@')[1];
+    if (emailDomain !== domainName) {
+      return res.status(400).json({ error: 'Owner email domain must match organization domain' });
+    }
+
+    // Verify mainPool exists
+    if (!req.mainPool) {
+      throw new Error('Database connection pool not found on request object');
+    }
+
+    client = await req.mainPool.connect();
+    await client.query('BEGIN');
+
+    // Ensure uuid-ossp extension is enabled
+    await client.query('CREATE EXTENSION IF NOT EXISTS "uuid-ossp";');
+
+    // Check if domain is already taken
+    const domainCheck = await client.query(
+      'SELECT 1 FROM users WHERE domain_name = $1',
+      [domainName]
+    );
+
+    if (domainCheck.rows.length > 0) {
+      return res.status(400).json({ error: 'Domain name is already taken' });
+    }
+
+    // Hash the password
+    const saltRounds = 10;
+    const passwordHash = await bcrypt.hash(password, saltRounds);
+
+    // Store organization information in users table
+    const userResult = await client.query(
+      `INSERT INTO users (
+        user_id,
+        full_name, 
+        password, 
+        organization_name, 
+        domain_name,
+        owner_email
+      ) VALUES (uuid_generate_v4(), $1, $2, $3, $4, $5)
+      RETURNING user_id`,
+      [fullName, passwordHash, organizationName, domainName, ownerEmail]
+    );
+
+    const newUserId = userResult.rows[0].user_id;
+
+    // Generate API key for the organization
+    const apiKey = generateApiKey();
+
+    // Create user_organizations table if not exists (with proper constraints)
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS user_organizations (
+        id SERIAL PRIMARY KEY,
+        user_id UUID,
+        organization_id UUID,
+        api_key VARCHAR(255) NOT NULL
+      );
+    `);
+
+    // Use UUID generation directly in the query for both user_id and organization_id
+    await client.query(
+      `INSERT INTO user_organizations (user_id, organization_id, api_key)
+       VALUES (uuid_generate_v4(), $1, $2)`,
+      [newUserId, apiKey]
     );
 
     await client.query('COMMIT');
 
     res.status(201).json({
-      message: 'User created successfully',
-      user: result.rows[0]
+      message: 'Organization created successfully',
+      apiKey: apiKey,
+      organizationId: newUserId
     });
+
   } catch (error) {
-    await client.query('ROLLBACK');
-    console.error('Error creating user:', error);
-    res.status(500).json({ 
-      message: 'Error creating user',
-      error: error.message
-    });
+    console.error('Error creating organization:', error);
+    
+    if (client) {
+      try {
+        await client.query('ROLLBACK');
+      } catch (rollbackError) {
+        console.error('Error rolling back transaction:', rollbackError);
+      }
+    }
+    
+    res.status(500).json({ error: error.message });
   } finally {
-    client.release();
+    if (client) client.release();
   }
 });
 
-// Delete a user - Fixed to properly handle UUID format
-router.delete('/:userId', async (req, res) => {
-  const { userId } = req.params;
+// Delete an organization
+router.delete('/:organizationId', verifyToken, async (req, res) => {
+  const { organizationId } = req.params;
 
-  if (!userId) {
-    return res.status(400).json({ message: 'User ID is required' });
+  if (!organizationId) {
+    return res.status(400).json({ message: 'Organization ID is required' });
   }
 
-  console.log('Attempting to delete user with ID:', userId);
-
-  const client = await pool.connect();
+  const client = await req.mainPool.connect();
   try {
     await client.query('BEGIN');
 
-    // Check if user exists
-    const userCheck = await client.query(
-      'SELECT * FROM users WHERE user_id::text = $1',
-      [userId]
+    // Check if organization exists
+    const orgCheck = await client.query(
+      'SELECT * FROM users WHERE user_id::text = $1 AND organization_name IS NOT NULL',
+      [organizationId]
     );
 
-    if (userCheck.rows.length === 0) {
+    if (orgCheck.rows.length === 0) {
       await client.query('ROLLBACK');
-      return res.status(404).json({ message: 'User not found' });
+      return res.status(404).json({ message: 'Organization not found' });
     }
 
-    // Delete user
+    // Delete organization by updating the user record
     await client.query(
       'DELETE FROM users WHERE user_id::text = $1',
-      [userId]
+      [organizationId]
     );
 
     await client.query('COMMIT');
 
     res.status(200).json({
-      message: 'User deleted successfully'
+      message: 'Organization deleted successfully'
     });
   } catch (error) {
     await client.query('ROLLBACK');
-    console.error('Error deleting user:', error);
+    console.error('Error deleting organization:', error);
     res.status(500).json({ 
-      message: 'Error deleting user',
+      message: 'Error deleting organization',
       error: error.message
     });
   } finally {

@@ -3,7 +3,7 @@ import {
   Box, Drawer, AppBar, Toolbar, Typography, IconButton,
   List, ListItem, ListItemIcon, ListItemText, Divider, Container,
   Button, Paper, Snackbar, Alert, Table, TableBody, TableCell,
-  TableContainer, TableHead, TableRow, Chip, Dialog, DialogTitle,
+  TableContainer, TableHead, TableRow, Chip, Dialog, DialogTitle, Grid,
   DialogContent, DialogContentText, DialogActions
 } from '@mui/material';
 import {
@@ -17,7 +17,6 @@ import {
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import AddDatabaseDialog from './AddDatabaseDialog';
-import CreateTableDialog from './CreateTableDialog';
 import { styled } from '@mui/material/styles';
 import { Person as PersonIcon } from '@mui/icons-material';
 
@@ -35,12 +34,8 @@ const UserDashboard = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
   const navigate = useNavigate();
   const [openDialog, setOpenDialog] = useState(false);
-
   const [databaseFormData, setDatabaseFormData] = useState({
     databaseName: '',
-    tableName: '',
-    csvFile: null,
-    columns: []
   });
   const [snackbar, setSnackbar] = useState({
     open: false,
@@ -123,55 +118,6 @@ const UserDashboard = () => {
     });
   };
 
-  const handleCreateTable = async (dbName, formData) => {
-    try {
-      setSnackbar({
-        open: true,
-        message: 'Creating table...',
-        severity: 'info',
-        autoHideDuration: null
-      });
-
-      const response = await axios.post(
-        `http://localhost:5000/api/databases/${dbName}/create-table`,
-        formData,
-        {
-          headers: {
-            'Content-Type': 'multipart/form-data',
-            Authorization: `Bearer ${localStorage.getItem('token')}`
-          }
-        }
-      );
-
-      setSnackbar({
-        open: true,
-        message: 'Table created successfully!',
-        severity: 'success'
-      });
-
-      setDatabases(prevDatabases => {
-        return prevDatabases.map(db => {
-          if (db.name === dbName) {
-            const tableName = formData.get('tableName');
-            return {
-              ...db,
-              tables: [...db.tables, tableName]
-            };
-          }
-          return db;
-        });
-      });
-
-    } catch (error) {
-      console.error('Error creating table:', error);
-      setSnackbar({
-        open: true,
-        message: error.response?.data?.error || 'Failed to create table',
-        severity: 'error'
-      });
-    }
-  };
-
   const handleDrawerToggle = () => setMobileOpen(!mobileOpen);
 
   const handleOpenDialog = () => setOpenDialog(true);
@@ -179,63 +125,19 @@ const UserDashboard = () => {
     setOpenDialog(false);
     setDatabaseFormData({
       databaseName: '',
-      tableName: '',
-      csvFile: null
+
     });
   };
 
-  const handleDatabaseChange = (e) => {
-    setDatabaseFormData({ ...databaseFormData, [e.target.name]: e.target.value });
-  };
-
-  const handleDatabaseFileChange = (e) => {
-    setDatabaseFormData({ ...databaseFormData, csvFile: e.target.files[0] });
-  };
-
-  const handleDatabaseSubmit = async (formDataWithColumns) => {
-    if (!formDataWithColumns.databaseName || !formDataWithColumns.tableName) {
-      setSnackbar({
-        open: true,
-        message: 'Database name and table name are required',
-        severity: 'error'
-      });
-      return;
-    }
-
-    const hasColumns = formDataWithColumns.columns && formDataWithColumns.columns.some(col => col.name.trim());
-    if (!hasColumns && !formDataWithColumns.csvFile) {
-      setSnackbar({
-        open: true,
-        message: 'Either define columns or upload a CSV file',
-        severity: 'error'
-      });
-      return;
-    }
-
-    if (hasColumns) {
-      for (const column of formDataWithColumns.columns) {
-        if (!/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(column.name)) {
-          setSnackbar({
-            open: true,
-            message: 'Column names must start with a letter or underscore and contain only letters, numbers, and underscores',
-            severity: 'error'
-          });
-          return;
-        }
-      }
-    }
-
+  const handleDatabaseSubmit = async (formData) => {
     try {
-      const formData = new FormData();
-      formData.append('databaseName', formDataWithColumns.databaseName);
-      formData.append('tableName', formDataWithColumns.tableName);
-
-      if (formDataWithColumns.csvFile) {
-        formData.append('csvFile', formDataWithColumns.csvFile);
-      }
-
-      if (formDataWithColumns.columns && formDataWithColumns.columns.length > 0) {
-        formData.append('columns', JSON.stringify(formDataWithColumns.columns));
+      if (!formData.databaseName) {
+        setSnackbar({
+          open: true,
+          message: 'Database name is required',
+          severity: 'error'
+        });
+        return;
       }
 
       setSnackbar({
@@ -245,9 +147,10 @@ const UserDashboard = () => {
         autoHideDuration: null
       });
 
-      const response = await axios.post('http://localhost:5000/api/databases', formData, {
+      const response = await axios.post('http://localhost:5000/api/databases', {
+        databaseName: formData.databaseName
+      }, {
         headers: {
-          'Content-Type': 'multipart/form-data',
           Authorization: `Bearer ${localStorage.getItem('token')}`
         },
         timeout: 30000
@@ -305,7 +208,7 @@ const UserDashboard = () => {
   };
 
   const handleRowClick = (dbName) => {
-    navigate(`/database/${dbName}`);
+    navigate(`/database/${encodeURIComponent(dbName)}`);
   };
 
   const drawer = (
@@ -333,6 +236,7 @@ const UserDashboard = () => {
       backgroundColor: 'var(--bg-secondary)',
       minHeight: '100vh'
     }}>
+
       <AppBar
         position="fixed"
         sx={{
@@ -351,7 +255,7 @@ const UserDashboard = () => {
           >
             <MenuIcon />
           </IconButton>
-          <Typography variant="h6" sx={{ flexGrow: 1, color: '#ffffff' }}>
+          <Typography variant="h6" sx={{ flexGrow: 1 }} style={{ color: 'var(--primary-text)' }}>
             User Dashboard
           </Typography>
 
@@ -397,7 +301,7 @@ const UserDashboard = () => {
         backgroundColor: 'var(--bg-secondary)'
       }}>
         <Toolbar />
-        <Container maxWidth="lg">
+        <Grid>
           <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 3 }}>
             <Button
               variant="contained"
@@ -425,7 +329,7 @@ const UserDashboard = () => {
             borderRadius: 'var(--border-radius)',
             boxShadow: 'var(--shadow-lg)'
           }}>
-            
+
             <TableContainer
               sx={{
                 maxHeight: 'calc(100vh - 300px)',
@@ -475,6 +379,7 @@ const UserDashboard = () => {
                           backgroundColor: 'var(--primary-light-hover)'
                         }
                       }}
+                      onClick={() => handleRowClick(db.name)}
                     >
                       <TableCell
                         onClick={() => handleRowClick(db.name)}
@@ -544,14 +449,11 @@ const UserDashboard = () => {
               </Table>
             </TableContainer>
           </Paper>
-        </Container>
+        </Grid>
 
         <AddDatabaseDialog
           open={openDialog}
           onClose={handleCloseDialog}
-          formData={databaseFormData}
-          onChange={handleDatabaseChange}
-          onFileChange={handleDatabaseFileChange}
           onSubmit={handleDatabaseSubmit}
         />
 

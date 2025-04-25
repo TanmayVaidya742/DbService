@@ -202,26 +202,36 @@ const DatabaseDetails = () => {
   const fetchDatabaseDetails = async () => {
     try {
       const response = await axios.get(
-        `http://localhost:5000/api/databases/${dbName}`,
+        `http://localhost:5000/api/databases/${decodeURIComponent(dbName)}`,
         {
           headers: {
             Authorization: `Bearer ${localStorage.getItem("token")}`,
           },
         }
       );
-      setDatabase(response.data);
+
+      // Ensure tables have schema objects
+      const data = response.data;
+      if (data.tables) {
+        data.tables = data.tables.map(table => ({
+          ...table,
+          schema: table.schema || {} // Add empty schema if undefined
+        }));
+      }
+
+      setDatabase(data);
     } catch (error) {
       console.error("Error fetching database details:", error);
       setSnackbar({
         open: true,
-        message:
-          error.response?.data?.error || "Failed to fetch database details",
+        message: error.response?.data?.error || "Failed to fetch database details",
         severity: "error",
       });
     } finally {
       setLoading(false);
     }
   };
+
 
   useEffect(() => {
     fetchDatabaseDetails();
@@ -604,7 +614,7 @@ const DatabaseDetails = () => {
         }}
       >
         <Toolbar />
-        <Container maxWidth="lg">
+       <Container maxWidth={false}>
           <Box sx={{ mt: 4, mb: 4 }}>
             <Box
               sx={{
@@ -659,6 +669,7 @@ const DatabaseDetails = () => {
               <TableContainer
                 sx={{
                   maxHeight: 'calc(100vh - 300px)',
+                  width: '100%',
                   overflow: 'auto',
                   '&::-webkit-scrollbar': {
                     width: '8px',

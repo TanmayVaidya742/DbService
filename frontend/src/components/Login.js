@@ -42,7 +42,7 @@ const StyledPaper = styled(Paper)({
 });
 
 const Login = () => {
-  const [formData, setFormData] = useState({ username: '', password: '' });
+  const [formData, setFormData] = useState({ email: '', password: '' });
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
   const navigate = useNavigate();
@@ -55,19 +55,28 @@ const Login = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
-    if (!formData.username.trim()) {
-      setError('Please enter your username');
+  
+    // Check for email instead of username
+    if (!formData.email.trim()) {
+      setError('Please enter your email');
       return;
     }
-
+  
+    if (!formData.password) {
+      setError('Please enter your password');
+      return;
+    }
+  
     try {
-      const res = await axios.post('http://localhost:5000/api/auth/login', formData);
-
+      const res = await axios.post('http://localhost:5000/api/auth/login', {
+        email: formData.email,
+        password: formData.password
+      });
+  
       localStorage.setItem('token', res.data.token);
       localStorage.setItem('user', JSON.stringify(res.data.user));
       setSuccess(true);
-
+  
       setTimeout(() => {
         const userType = res.data.user.user_type;
         if (userType === 'superadmin') {
@@ -85,7 +94,6 @@ const Login = () => {
       setError(err.response?.data?.message || 'Login failed. Please check your credentials.');
     }
   };
-
   return (
     <MainSection>
       <WaveBackground>
@@ -123,15 +131,15 @@ const Login = () => {
                     margin="normal"
                     required
                     fullWidth
-                    label="Username"
-                    name="username"
-                    autoComplete="username"
+                    label="Email Address"
+                    name="email"
+                    autoComplete="email"
                     autoFocus
-                    value={formData.username}
+                    value={formData.email}
                     onChange={handleChange}
                     error={Boolean(error)}
                     helperText={error}
-                    placeholder="Enter your username"
+                    placeholder="Enter your email"
                   />
                   <TextField
                     margin="normal"
