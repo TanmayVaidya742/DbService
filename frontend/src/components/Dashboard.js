@@ -3,13 +3,13 @@ import {
   Box, Drawer, AppBar, Toolbar, Typography, IconButton,
   List, ListItem, ListItemIcon, ListItemText, Divider, Container,
   Button, TextField, Paper, Table, TableBody, TableCell,
-  TableContainer, TableHead, TableRow, Snackbar, Alert, Dialog, DialogTitle, DialogContent,Grid,
+  TableContainer, TableHead, TableRow, Snackbar, Alert, Dialog, DialogTitle, DialogContent, Grid,
   DialogActions, DialogContentText
 } from '@mui/material';
 import {
   Menu as MenuIcon, Add as AddIcon, Settings as SettingsIcon,
   Dashboard as DashboardIcon, Search as SearchIcon,
-  Groups as GroupsIcon, Delete as DeleteIcon, Visibility as VisibilityIcon, 
+  Groups as GroupsIcon, Delete as DeleteIcon, Visibility as VisibilityIcon,
   VisibilityOff as VisibilityOffIcon
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
@@ -98,9 +98,9 @@ const Dashboard = () => {
 
   const handleSubmit = async () => {
     // Validate all fields are filled
-    if (!formData.organizationName || !formData.domainName || 
-        !formData.ownerEmail || !formData.fullName || 
-        !formData.password) {
+    if (!formData.organizationName || !formData.domainName ||
+      !formData.ownerEmail || !formData.fullName ||
+      !formData.password) {
       setSnackbar({
         open: true,
         message: 'Please fill in all fields',
@@ -451,19 +451,69 @@ const Dashboard = () => {
           <Dialog
             open={deleteDialogOpen}
             onClose={handleCloseDeleteDialog}
+            fullWidth
+            maxWidth="sm"
+            slotProps={{
+              paper: {
+                sx: {
+                  backgroundColor: 'var(--bg-paper)',
+                  borderRadius: 'var(--border-radius)',
+                  padding: 2,
+                  boxShadow: 'var(--shadow-lg)'
+                }
+              }
+            }}
           >
-            <DialogTitle>Confirm Deletion</DialogTitle>
-            <DialogContent>
-              <DialogContentText>
+            <DialogTitle sx={{
+              color: 'var(--text-primary)',
+              fontWeight: 'bold',
+              fontSize: '1.25rem',
+              pb: 2
+            }}>
+              Confirm Deletion
+            </DialogTitle>
+
+            <DialogContent sx={{ pt: 3 }}>
+              <DialogContentText sx={{
+                color: 'var(--text-secondary)',
+                fontSize: '0.875rem',
+                lineHeight: 1.5
+              }}>
                 Are you sure you want to delete this organization? This action cannot be undone.
               </DialogContentText>
             </DialogContent>
-            <DialogActions>
-              <Button onClick={handleCloseDeleteDialog} color="primary">
+
+            <DialogActions sx={{
+              padding: 2,
+              gap: 2,
+            }}>
+              <Button
+                onClick={handleCloseDeleteDialog}
+                variant="outlined"
+                sx={{
+                  color: 'var(--text-primary)',
+                  borderColor: 'var(--border-color)',
+                  '&:hover': {
+                    backgroundColor: 'var(--primary-light-hover)',
+                    borderColor: 'var(--primary-color)'
+                  }
+                }}
+              >
                 Cancel
               </Button>
-              <Button onClick={handleDeleteUser} color="error" variant="contained">
-                Delete
+
+              <Button
+                onClick={handleDeleteUser}
+                variant="contained"
+                startIcon={<DeleteIcon />}
+                sx={{
+                  backgroundColor: 'var(--error-color)',
+                  '&:hover': {
+                    backgroundColor: '#d32f2f',
+                  },
+                }}
+              >
+                Delete Organization
               </Button>
             </DialogActions>
           </Dialog>

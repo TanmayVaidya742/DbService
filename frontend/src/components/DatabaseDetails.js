@@ -795,17 +795,32 @@ const DatabaseDetails = () => {
             onSubmit={handleCreateTable}
           />
 
-          <Dialog open={deleteDialog.open} onClose={() => setDeleteDialog({ ...deleteDialog, open: false })}>
-            <DialogTitle style={{ color: 'var(--text-primary)' }}>
+          <Dialog
+            open={deleteDialog.open}
+            onClose={() => setDeleteDialog({ ...deleteDialog, open: false })}
+            fullWidth
+            maxWidth="sm"
+            slotProps={{
+              paper: {
+                sx: {
+                  backgroundColor: 'var(--bg-paper)',
+                  borderRadius: 'var(--border-radius)',
+                  padding: 2
+                }
+              }
+            }}
+          >
+             <DialogTitle sx={{ color: 'var(--text-primary)', fontWeight: 'bold' }}>
               Delete Table
             </DialogTitle>
+
             <DialogContent>
-              <DialogContentText style={{ color: 'var(--text-primary)' }}>
+              <DialogContentText sx={{ color: 'var(--text-secondary)', mb: 2 }}>
                 Are you sure you want to delete table "{deleteDialog.tableName}"?
                 This action cannot be undone.
               </DialogContentText>
             </DialogContent>
-            <DialogActions>
+            <DialogActions sx={{ padding: 2, gap: 2 }}>
               <Button
                 onClick={() => setDeleteDialog({ ...deleteDialog, open: false })}
                 sx={{
