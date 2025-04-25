@@ -81,14 +81,17 @@ const EditTableDialog = ({
     setIsSaving(true);
     
     try {
-      setSnackbar({
-        open: true,
-        message: "Saving changes...",
-        severity: "info",
-      });
-  
-      await onSave(dbName, tableName, editedColumns);
-      // Remove the onClose() call here - let the parent handle it
+      const success = await onSave(dbName, tableName, editedColumns);
+      
+      if (success) {
+        onClose();
+      } else {
+        setSnackbar({
+          open: true,
+          message: "Failed to save changes",
+          severity: "error",
+        });
+      }
     } catch (error) {
       console.error('Error in save handler:', error);
       setSnackbar({
@@ -96,11 +99,11 @@ const EditTableDialog = ({
         message: error.message || 'Failed to save changes',
         severity: 'error'
       });
-      throw error; // Re-throw the error so parent can handle it
     } finally {
       setIsSaving(false);
     }
   };
+
   const handleCloseSnackbar = () => {
     setSnackbar({ ...snackbar, open: false });
   };
