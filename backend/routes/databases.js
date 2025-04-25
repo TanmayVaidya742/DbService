@@ -684,6 +684,10 @@ router.put('/:dbName/:tableName', verifyToken, async (req, res) => {
 
     await dbPool.query('COMMIT');
     await client.query('COMMIT');
+    res.json({ 
+      message: 'Table structure updated successfully',
+      schema // Optionally send updated schema
+    });
   } catch (error) {
     console.error('Error updating table:', error);
     

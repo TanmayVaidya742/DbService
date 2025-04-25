@@ -150,26 +150,17 @@ const DatabaseDetails = () => {
       const response = await axios.put(
         `http://localhost:5000/api/databases/${dbName}/${tableName}`,
         { columns },
-        {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-          },
-        }
+        { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } }
       );
 
-      // Update the local state
+      // Update local state
       const updatedDatabase = JSON.parse(JSON.stringify(database));
       const tableIndex = updatedDatabase.tables.findIndex(
         table => table.tablename === tableName
       );
 
       if (tableIndex !== -1) {
-        const newSchema = {};
-        columns.forEach(col => {
-          newSchema[col.column_name] = col.data_type;
-        });
-        updatedDatabase.tables[tableIndex].schema = newSchema;
-        updatedDatabase.tables[tableIndex].columns = columns;
+        updatedDatabase.tables[tableIndex].schema = response.data.schema;
       }
 
       setDatabase(updatedDatabase);
@@ -180,14 +171,7 @@ const DatabaseDetails = () => {
         severity: "success",
       });
 
-      // Close the dialog by resetting the editDialog state
-      setEditDialog({
-        open: false,
-        dbName: "",
-        tableName: "",
-        columns: []
-      });
-
+      return true;
     } catch (error) {
       console.error("Error updating table:", error);
       setSnackbar({
@@ -195,9 +179,10 @@ const DatabaseDetails = () => {
         message: error.response?.data?.error || "Failed to update table",
         severity: "error",
       });
-      throw error; // Re-throw to prevent dialog from closing
+      return false; // Return failure status
     }
   };
+
 
   const fetchDatabaseDetails = async () => {
     try {
@@ -766,8 +751,20 @@ const DatabaseDetails = () => {
             dbName={editDialog.dbName}
             tableName={editDialog.tableName}
             columns={editDialog.columns}
-            onSave={handleSaveTableChanges}
+            onSave={async (dbName, tableName, columns) => {
+              const success = await handleSaveTableChanges(dbName, tableName, columns);
+              if (success) {
+                setEditDialog({
+                  open: false,
+                  dbName: "",
+                  tableName: "",
+                  columns: []
+                });
+              }
+              return success;
+            }}
           />
+
           <Menu
             id="table-actions-menu"
             anchorEl={anchorEl}
@@ -810,7 +807,7 @@ const DatabaseDetails = () => {
               }
             }}
           >
-             <DialogTitle sx={{ color: 'var(--text-primary)', fontWeight: 'bold' }}>
+            <DialogTitle sx={{ color: 'var(--text-primary)', fontWeight: 'bold' }}>
               Delete Table
             </DialogTitle>
 
