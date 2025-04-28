@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
 import {
@@ -41,15 +41,14 @@ import {
   Person as PersonIcon,
   MoreVert as MoreVertIcon,
   Edit as EditIcon,
-  Delete as DeleteIcon
+  Delete as DeleteIcon,
+  Visibility as VisibilityIcon
 } from "@mui/icons-material";
 import EditTableDialog from "./EditTableDialog";
 import AddIcon from "@mui/icons-material/Add";
 import CreateTableDialog from "./CreateTableDialog";
 import { FaDatabase } from "react-icons/fa";
 import { CiViewTable } from "react-icons/ci";
-
-
 
 const drawerWidth = 240;
 
@@ -78,9 +77,15 @@ const DatabaseDetails = () => {
     open: false,
     tableName: "",
   });
+  
+  const [viewDataDialog, setViewDataDialog] = useState({
+    open: false,
+    tableName: "",
+    data: [],
+    columns: [],
+    loading: false
+  });
 
-
-  // Add this handler function:
   const handleCreateTable = async (dbName, formData) => {
     try {
       setSnackbar({
@@ -107,7 +112,6 @@ const DatabaseDetails = () => {
         severity: "success",
       });
 
-      // Refresh the database details
       await fetchDatabaseDetails();
       setOpenTableDialog(false);
     } catch (error) {
@@ -157,7 +161,6 @@ const DatabaseDetails = () => {
         { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } }
       );
 
-      // Update local state
       const updatedDatabase = JSON.parse(JSON.stringify(database));
       const tableIndex = updatedDatabase.tables.findIndex(
         table => table.tablename === tableName
@@ -183,10 +186,98 @@ const DatabaseDetails = () => {
         message: error.response?.data?.error || "Failed to update table",
         severity: "error",
       });
-      return false; // Return failure status
+      return false;
     }
   };
 
+  const handleViewTableData = async (tableName) => {
+    setViewDataDialog({
+      open: true,
+      tableName,
+      data: [],
+      columns: [],
+      loading: true
+    });
+    
+    try {
+      const response = await axios.get(
+        `http://localhost:5000/api/databases/${encodeURIComponent(dbName)}/tables/${encodeURIComponent(tableName)}/data`,
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+        }
+      );
+      
+      const tableSchema = database.tables.find(t => t.tablename === tableName)?.schema || {};
+      const columnNames = Object.keys(tableSchema);
+      
+      setViewDataDialog({
+        open: true,
+        tableName,
+        data: response.data.data || [], // Notice the .data.data since our API returns { data: [], pagination: {} }
+        columns: columnNames,
+        loading: false
+      });
+    } catch (error) {
+      console.error(`Error fetching data for table ${tableName}:`, error);
+      setSnackbar({
+        open: true,
+        message: error.response?.data?.error || `Failed to fetch data from ${tableName}`,
+        severity: "error",
+      });
+      
+      setViewDataDialog(prev => ({
+        ...prev,
+        loading: false
+      }));
+    }
+  };
+
+  // const handleViewTableData = async (tableName) => {
+  //   setViewDataDialog({
+  //     open: true,
+  //     tableName,
+  //     data: [],
+  //     columns: [],
+  //     loading: true
+  //   });
+    
+  //   try {
+  //     const response = await axios.get(
+  //       `http://localhost:5000/api/databases/${decodeURIComponent(dbName)}/tables/${decodeURIComponent(tableName)}/data`,
+  //       {},
+  //       {
+  //         headers: {
+  //           Authorization: `Bearer ${localStorage.getItem("token")}`,
+  //         },
+  //       }
+  //     );
+      
+  //     const tableSchema = database.tables.find(t => t.tablename === tableName)?.schema || {};
+  //     const columnNames = Object.keys(tableSchema);
+      
+  //     setViewDataDialog({
+  //       open: true,
+  //       tableName,
+  //       data: response.data || [],
+  //       columns: columnNames,
+  //       loading: false
+  //     });
+  //   } catch (error) {
+  //     console.error(`Error fetching data for table ${tableName}:`, error);
+  //     setSnackbar({
+  //       open: true,
+  //       message: error.response?.data?.error || `Failed to fetch data from ${tableName}`,
+  //       severity: "error",
+  //     });
+      
+  //     setViewDataDialog(prev => ({
+  //       ...prev,
+  //       loading: false
+  //     }));
+  //   }
+  // };
 
   const fetchDatabaseDetails = async () => {
     try {
@@ -199,14 +290,13 @@ const DatabaseDetails = () => {
         }
       );
 
-      // Ensure tables have schema objects
       const data = response.data;
       data.tables = data.tables || [];
 
       if (data.tables) {
         data.tables = data.tables.map(table => ({
           ...table,
-          schema: table.schema || {} // Add empty schema if undefined
+          schema: table.schema || {}
         }));
       }
 
@@ -222,7 +312,6 @@ const DatabaseDetails = () => {
       setLoading(false);
     }
   };
-
 
   useEffect(() => {
     fetchDatabaseDetails();
@@ -553,15 +642,10 @@ const DatabaseDetails = () => {
           >
             <MenuIcon />
           </IconButton>
-          {/* <Typography variant="h6" noWrap component="div">
-          <FaDatabase color="primary"size={24} />
-            Database: {database.dbname}
-          </Typography> */}
-
           <Box sx={{ display: "flex", alignItems: "center", mb: 1, ml:2}}>
-                <FaDatabase color="primary"size={24} />
-                <Typography variant="h5"  sx={{ml: 2 , color: "var(--primary-text)"}}> Database: {database.dbname}</Typography>
-              </Box>
+            <FaDatabase color="primary" size={24} />
+            <Typography variant="h5" sx={{ml: 2 , color: "var(--primary-text)"}}> Database: {database.dbname}</Typography>
+          </Box>
           
           <IconButton color="inherit" sx={{ ml: "auto" }}>
             <SettingsIcon />
@@ -658,7 +742,7 @@ const DatabaseDetails = () => {
               boxShadow: 'var(--shadow-lg)'
             }}>
               <Box sx={{ display: "flex", alignItems: "center", mb: 1, ml:2}}>
-                <FaDatabase color="primary"size={24} />
+                <FaDatabase color="primary" size={24} />
                 <Typography variant="h4" sx={{ml: 2}}>{database.dbname}</Typography>
               </Box>
 
@@ -669,21 +753,17 @@ const DatabaseDetails = () => {
                   maxHeight: 'calc(100vh - 300px)',
                   width: '100%',
                   overflow: 'auto',
-                  '&::-webkit-scrollbar': { /* ... */ }
                 }}
               >
                 <Table stickyHeader>
                   <TableHead>
                     <TableRow>
-                      <TableCell sx={{ backgroundColor: "var(--primary-light)",  fontWeight: "bold" }}>Table Name</TableCell>
-                      <TableCell sx={{ backgroundColor: "var(--primary-light)" ,  fontWeight: "bold"}}>Columns</TableCell>
+                      <TableCell sx={{ backgroundColor: "var(--primary-light)", fontWeight: "bold" }}>Table Name</TableCell>
+                      <TableCell sx={{ backgroundColor: "var(--primary-light)", fontWeight: "bold"}}>Columns</TableCell>
                       <TableCell sx={{ backgroundColor: "var(--primary-light)", fontWeight: "bold"}}>Url Actions</TableCell>
                       <TableCell sx={{ backgroundColor: "var(--primary-light)", fontWeight: "bold"}}>Edit Table</TableCell>
-
-                      <TableCell sx={{ backgroundColor: "var(--primary-light)" , fontWeight: "bold"}}>Delete Table</TableCell>
-                      <TableCell sx={{ backgroundColor: "var(--primary-light)" , fontWeight: "bold"}}>Select</TableCell>
-
-
+                      <TableCell sx={{ backgroundColor: "var(--primary-light)", fontWeight: "bold"}}>Delete Table</TableCell>
+                      <TableCell sx={{ backgroundColor: "var(--primary-light)", fontWeight: "bold"}}>Select</TableCell>
                     </TableRow>
                   </TableHead>
                   <TableBody>
@@ -704,7 +784,7 @@ const DatabaseDetails = () => {
                             )}
                           </TableCell>
                           <TableCell>
-                            {table.tablename && ( // Only show actions if table exists
+                            {table.tablename && (
                               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                                 <IconButton
                                   aria-label="more"
@@ -714,14 +794,11 @@ const DatabaseDetails = () => {
                                 >
                                   <MoreVertIcon />
                                 </IconButton>
-                               
-                                
                               </Box>
                             )}
                           </TableCell>
-
                           <TableCell>
-                            {table.tablename && ( // Only show actions if table exists
+                            {table.tablename && (
                               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                                 <IconButton
                                   onClick={(e) => {
@@ -737,9 +814,8 @@ const DatabaseDetails = () => {
                               </Box>
                             )}
                           </TableCell>
-
                           <TableCell>
-                            {table.tablename && ( // Only show actions if table exists
+                            {table.tablename && (
                               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                                 <IconButton
                                   size="small"
@@ -756,14 +832,29 @@ const DatabaseDetails = () => {
                               </Box>
                             )}
                           </TableCell>
-
-
-
+                          <TableCell>
+                            {table.tablename && (
+                              <Button
+                                variant="contained"
+                                size="small"
+                                startIcon={<VisibilityIcon />}
+                                onClick={() => handleViewTableData(table.tablename)}
+                                sx={{
+                                  backgroundColor: "var(--primary-color)",
+                                  "&:hover": {
+                                    backgroundColor: "var(--primary-hover)",
+                                  },
+                                }}
+                              >
+                                View Data
+                              </Button>
+                            )}
+                          </TableCell>
                         </TableRow>
                       ))
                     ) : (
                       <TableRow>
-                        <TableCell colSpan={3} align="center" sx={{ py: 4 }}>
+                        <TableCell colSpan={6} align="center" sx={{ py: 4 }}>
                           <Typography variant="body1" color="textSecondary">
                             No tables present in the database
                           </Typography>
@@ -821,12 +912,92 @@ const DatabaseDetails = () => {
               Delete Data
             </MenuItem>
           </Menu>
+          
           <CreateTableDialog
             open={openTableDialog}
             onClose={() => setOpenTableDialog(false)}
             dbName={dbName}
             onSubmit={handleCreateTable}
           />
+
+          <Dialog
+            open={viewDataDialog.open}
+            onClose={() => setViewDataDialog(prev => ({ ...prev, open: false }))}
+            fullWidth
+            maxWidth="lg"
+            PaperProps={{
+              sx: {
+                height: '80vh',
+                backgroundColor: 'var(--bg-paper)',
+                borderRadius: 'var(--border-radius)'
+              }
+            }}
+          >
+            <DialogTitle sx={{ 
+              backgroundColor: 'var(--primary-light)', 
+              color: 'var(--text-primary)',
+              fontWeight: 'bold' 
+            }}>
+              {viewDataDialog.tableName} - Table Data
+            </DialogTitle>
+            <DialogContent dividers>
+              {viewDataDialog.loading ? (
+                <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
+                  <Typography>Loading table data...</Typography>
+                </Box>
+              ) : viewDataDialog.data.length === 0 ? (
+                <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
+                  <Typography>No data available in this table</Typography>
+                </Box>
+              ) : (
+                <TableContainer sx={{ maxHeight: '60vh' }}>
+                  <Table stickyHeader>
+                    <TableHead>
+                      <TableRow>
+                        {viewDataDialog.columns.map((column) => (
+                          <TableCell 
+                            key={column} 
+                            sx={{ 
+                              backgroundColor: "var(--primary-light)",
+                              fontWeight: "bold" 
+                            }}
+                          >
+                            {column}
+                          </TableCell>
+                        ))}
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {viewDataDialog.data.map((row, rowIndex) => (
+                        <TableRow key={rowIndex}>
+                          {viewDataDialog.columns.map((column) => (
+                            <TableCell key={`${rowIndex}-${column}`}>
+                              {row[column] !== undefined && row[column] !== null
+                                ? typeof row[column] === 'object'
+                                  ? JSON.stringify(row[column])
+                                  : String(row[column])
+                                : ''}
+                            </TableCell>
+                          ))}
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+              )}
+            </DialogContent>
+            <DialogActions>
+              <Button 
+                onClick={() => setViewDataDialog(prev => ({ ...prev, open: false }))}
+                sx={{
+                  color: 'var(--primary-color)',
+                  fontWeight: 'bold'
+                }}
+              >
+                Close
+              </Button>
+            </DialogActions>
+          </Dialog>
 
           <Dialog
             open={deleteDialog.open}

@@ -82,7 +82,7 @@ const Login = () => {
         if (userType === 'superadmin') {
           navigate('/superadmin-dashboard');
         } else {
-          navigate('/dashboard');
+          navigate('/databases');
         }
       }, 2000);
     } catch (err) {
