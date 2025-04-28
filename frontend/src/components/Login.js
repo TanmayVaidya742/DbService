@@ -80,9 +80,9 @@ const Login = () => {
       setTimeout(() => {
         const userType = res.data.user.user_type;
         if (userType === 'superadmin') {
-          navigate('/dashboard');
+          navigate('/superadmin-dashboard');
         } else {
-          navigate('/userdashboard');
+          navigate('/dashboard');
         }
       }, 2000);
     } catch (err) {

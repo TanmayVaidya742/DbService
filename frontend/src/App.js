@@ -65,14 +65,14 @@ function App() {
             element={<Register />} 
           />
           <Route
-            path="/dashboard"
+            path="/superadmin-dashboard"
             element={
               <PrivateRoute>
                 <Dashboard />
               </PrivateRoute>
             }
           />
-          <Route path="/userdashboard" element={<UserDashboard />} />
+          <Route path="/databases" element={<UserDashboard />} />
           <Route path="/organizations" element={<Organizations />} />
           <Route path="/database/:dbName" element={<DatabaseDetails />} />
 

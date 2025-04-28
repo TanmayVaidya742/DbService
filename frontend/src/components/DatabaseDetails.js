@@ -46,6 +46,9 @@ import {
 import EditTableDialog from "./EditTableDialog";
 import AddIcon from "@mui/icons-material/Add";
 import CreateTableDialog from "./CreateTableDialog";
+import { FaDatabase } from "react-icons/fa";
+import { CiViewTable } from "react-icons/ci";
+
 
 
 const drawerWidth = 240;
@@ -75,6 +78,7 @@ const DatabaseDetails = () => {
     open: false,
     tableName: "",
   });
+
 
   // Add this handler function:
   const handleCreateTable = async (dbName, formData) => {
@@ -363,11 +367,11 @@ const DatabaseDetails = () => {
       </Toolbar>
       <Divider />
       <List>
-        <ListItem button onClick={() => navigate("/UserDashboard")}>
+        <ListItem button onClick={() => navigate("/dashboard")}>
           <ListItemIcon>
             <PersonIcon />
           </ListItemIcon>
-          <ListItemText primary="Users Dashboard" />
+          <ListItemText primary="Dashboard" />
         </ListItem>
       </List>
     </div>
@@ -549,9 +553,16 @@ const DatabaseDetails = () => {
           >
             <MenuIcon />
           </IconButton>
-          <Typography variant="h6" noWrap component="div">
+          {/* <Typography variant="h6" noWrap component="div">
+          <FaDatabase color="primary"size={24} />
             Database: {database.dbname}
-          </Typography>
+          </Typography> */}
+
+          <Box sx={{ display: "flex", alignItems: "center", mb: 1, ml:2}}>
+                <FaDatabase color="primary"size={24} />
+                <Typography variant="h5"  sx={{ml: 2 , color: "var(--primary-text)"}}> Database: {database.dbname}</Typography>
+              </Box>
+          
           <IconButton color="inherit" sx={{ ml: "auto" }}>
             <SettingsIcon />
           </IconButton>
@@ -614,7 +625,7 @@ const DatabaseDetails = () => {
             >
               <Button
                 startIcon={<ArrowBackIcon />}
-                onClick={() => navigate("/UserDashboard")}
+                onClick={() => navigate("/databases")}
                 sx={{
                   color: "var(--text-primary)",
                   "&:hover": {
@@ -622,12 +633,12 @@ const DatabaseDetails = () => {
                   },
                 }}
               >
-                Back to Dashboard
+                Back to Databases
               </Button>
 
               <Button
                 variant="contained"
-                startIcon={<AddIcon />}
+                startIcon={<CiViewTable />}
                 onClick={() => setOpenTableDialog(true)}
                 sx={{
                   backgroundColor: "var(--primary-color)",
@@ -640,15 +651,15 @@ const DatabaseDetails = () => {
               </Button>
             </Box>
             <Paper elevation={3} sx={{
-              p: 3,
+              p:3,
               mb: 3,
               backgroundColor: 'var(--bg-paper)',
               borderRadius: 'var(--border-radius)',
               boxShadow: 'var(--shadow-lg)'
             }}>
-              <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
-                <StorageIcon color="primary" sx={{ mr: 2, fontSize: 40 }} />
-                <Typography variant="h4">{database.dbname}</Typography>
+              <Box sx={{ display: "flex", alignItems: "center", mb: 1, ml:2}}>
+                <FaDatabase color="primary"size={24} />
+                <Typography variant="h4" sx={{ml: 2}}>{database.dbname}</Typography>
               </Box>
 
               <Divider sx={{ my: 2 }} />
@@ -664,9 +675,15 @@ const DatabaseDetails = () => {
                 <Table stickyHeader>
                   <TableHead>
                     <TableRow>
-                      <TableCell sx={{ backgroundColor: "var(--primary-light)" }}>Table Name</TableCell>
-                      <TableCell sx={{ backgroundColor: "var(--primary-light)" }}>Columns</TableCell>
-                      <TableCell sx={{ backgroundColor: "var(--primary-light)" }}>Actions</TableCell>
+                      <TableCell sx={{ backgroundColor: "var(--primary-light)",  fontWeight: "bold" }}>Table Name</TableCell>
+                      <TableCell sx={{ backgroundColor: "var(--primary-light)" ,  fontWeight: "bold"}}>Columns</TableCell>
+                      <TableCell sx={{ backgroundColor: "var(--primary-light)", fontWeight: "bold"}}>Url Actions</TableCell>
+                      <TableCell sx={{ backgroundColor: "var(--primary-light)", fontWeight: "bold"}}>Edit Table</TableCell>
+
+                      <TableCell sx={{ backgroundColor: "var(--primary-light)" , fontWeight: "bold"}}>Delete Table</TableCell>
+                      <TableCell sx={{ backgroundColor: "var(--primary-light)" , fontWeight: "bold"}}>Select</TableCell>
+
+
                     </TableRow>
                   </TableHead>
                   <TableBody>
@@ -697,6 +714,15 @@ const DatabaseDetails = () => {
                                 >
                                   <MoreVertIcon />
                                 </IconButton>
+                               
+                                
+                              </Box>
+                            )}
+                          </TableCell>
+
+                          <TableCell>
+                            {table.tablename && ( // Only show actions if table exists
+                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                                 <IconButton
                                   onClick={(e) => {
                                     e.stopPropagation();
@@ -708,6 +734,13 @@ const DatabaseDetails = () => {
                                 >
                                   <EditIcon fontSize="small" />
                                 </IconButton>
+                              </Box>
+                            )}
+                          </TableCell>
+
+                          <TableCell>
+                            {table.tablename && ( // Only show actions if table exists
+                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                                 <IconButton
                                   size="small"
                                   onClick={(e) => {
@@ -723,6 +756,9 @@ const DatabaseDetails = () => {
                               </Box>
                             )}
                           </TableCell>
+
+
+
                         </TableRow>
                       ))
                     ) : (
