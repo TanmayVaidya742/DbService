@@ -713,4 +713,95 @@ router.put('/:dbName/:tableName', verifyToken, async (req, res) => {
     if (client) client.release();
   }
 });
+
+
+router.get('/:dbName/tables/:tableName/data', verifyToken, async (req, res) => {
+  const { dbName, tableName } = req.params;
+  const userId = req.user.user_id;
+  const { page = 1, limit = 50, sort_by, sort_order = 'ASC', filter_column, filter_value } = req.query;
+  
+  let dbPool = null;
+  let client = null;
+
+  try {
+    // First verify the user has access to this database
+    client = await req.mainPool.connect();
+    const dbResult = await client.query(
+      'SELECT dbid FROM db_collection WHERE dbname = $1 AND user_id = $2',
+      [dbName, userId]
+    );
+
+    if (dbResult.rows.length === 0) {
+      return res.status(404).json({ error: 'Database not found or access denied' });
+    }
+
+    // Connect to the specific database
+    dbPool = new Pool({
+      user: process.env.DB_USER || 'postgres',
+      host: process.env.DB_HOST || 'localhost',
+      database: dbName,
+      password: process.env.DB_PASSWORD || 'postgres',
+      port: process.env.DB_PORT || 5432,
+    });
+
+    // Calculate offset for pagination
+    const offset = (page - 1) * limit;
+    
+    // Build the base query
+    let query = `SELECT * FROM ${tableName}`;
+    const queryParams = [];
+    let paramCount = 1;
+    
+    // Add filtering if provided
+    if (filter_column && filter_value !== undefined) {
+      query += ` WHERE ${filter_column} LIKE $${paramCount}`;
+      queryParams.push(`%${filter_value}%`);
+      paramCount++;
+    }
+    
+    // Add sorting if provided
+    if (sort_by) {
+      const direction = sort_order.toUpperCase() === 'DESC' ? 'DESC' : 'ASC';
+      query += ` ORDER BY ${sort_by} ${direction}`;
+    }
+    
+    // Add pagination
+    query += ` LIMIT $${paramCount} OFFSET $${paramCount + 1}`;
+    queryParams.push(limit, offset);
+    
+    // Execute the query
+    const dataResult = await dbPool.query(query, queryParams);
+    
+    // Get total count for pagination info
+    let countQuery = `SELECT COUNT(*) FROM ${tableName}`;
+    if (filter_column && filter_value !== undefined) {
+      countQuery += ` WHERE ${filter_column} LIKE $1`;
+      countQuery = {
+        text: countQuery,
+        values: [`%${filter_value}%`]
+      };
+    }
+    
+    const countResult = await dbPool.query(countQuery);
+    const totalCount = parseInt(countResult.rows[0].count, 10);
+    const totalPages = Math.ceil(totalCount / limit);
+    
+    // Return the data with pagination info
+    res.json({
+      data: dataResult.rows,
+      pagination: {
+        total_records: totalCount,
+        total_pages: totalPages,
+        current_page: parseInt(page, 10),
+        page_size: parseInt(limit, 10)
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching table data:', error);
+    res.status(500).json({ error: 'Failed to fetch table data', details: error.message });
+  } finally {
+    if (dbPool) await dbPool.end().catch(console.error);
+    if (client) client.release();
+  }
+});
 module.exports = router;

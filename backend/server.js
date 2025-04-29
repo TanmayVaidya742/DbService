@@ -205,6 +205,11 @@ app.get('/api/protected', verifyToken, (req, res) => {
 });
 
 const port = process.env.PORT || 5000;
+
+
+app.get('/', async(req, res) => {
+  res.send(`Welcome`);
+});
 app.listen(port, () => {
   console.log(`Server is running on port ${port}`);
 });

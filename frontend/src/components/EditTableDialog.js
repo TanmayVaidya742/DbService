@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import {
   Dialog, DialogTitle, DialogContent, DialogActions,
@@ -122,73 +121,93 @@ const EditTableDialog = ({
             <Typography variant="h6" gutterBottom>
               Existing Columns
             </Typography>
-            <Table size="small">
-              <TableHead>
-                <TableRow>
-                  <TableCell>Column Name</TableCell>
-                  <TableCell>Data Type</TableCell>
-                  <TableCell>Default Value</TableCell>
-                  <TableCell>Nullable</TableCell>
-                  <TableCell>Actions</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {editedColumns.map((col, index) => (
-                  <TableRow key={index}>
-                    <TableCell>
-                      <TextField
-                        value={col.column_name}
-                        onChange={(e) => handleColumnChange(index, 'column_name', e.target.value)}
-                        fullWidth
-                        size="small"
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <FormControl fullWidth size="small">
-                        <Select
-                          value={col.data_type}
-                          onChange={(e) => handleColumnChange(index, 'data_type', e.target.value)}
-                        >
-                          <MenuItem value="TEXT">TEXT</MenuItem>
-                          <MenuItem value="INTEGER">INTEGER</MenuItem>
-                          <MenuItem value="BIGINT">BIGINT</MenuItem>
-                          <MenuItem value="NUMERIC">NUMERIC</MenuItem>
-                          <MenuItem value="BOOLEAN">BOOLEAN</MenuItem>
-                          <MenuItem value="DATE">DATE</MenuItem>
-                          <MenuItem value="TIMESTAMP">TIMESTAMP</MenuItem>
-                          <MenuItem value="JSONB">JSONB</MenuItem>
-                        </Select>
-                      </FormControl>
-                    </TableCell>
-                    <TableCell>
-                      <TextField
-                        value={col.column_default || ''}
-                        onChange={(e) => handleColumnChange(index, 'column_default', e.target.value)}
-                        fullWidth
-                        size="small"
-                        placeholder="NULL"
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <FormControl fullWidth size="small">
-                        <Select
-                          value={col.is_nullable}
-                          onChange={(e) => handleColumnChange(index, 'is_nullable', e.target.value)}
-                        >
-                          <MenuItem value="YES">YES</MenuItem>
-                          <MenuItem value="NO">NO</MenuItem>
-                        </Select>
-                      </FormControl>
-                    </TableCell>
-                    <TableCell>
-                      <IconButton onClick={() => handleRemoveColumn(index)}>
-                        <DeleteIcon color="error" />
-                      </IconButton>
-                    </TableCell>
+            <Box
+              sx={{
+                maxHeight: 300,
+                overflow: 'auto',
+                border: '1px solid #e0e0e0',
+                borderRadius: 1,
+                '&::-webkit-scrollbar': {
+                  width: '8px',
+                  height: '8px',
+                },
+                '&::-webkit-scrollbar-thumb': {
+                  backgroundColor: '#bdbdbd',
+                  borderRadius: '4px',
+                },
+                '&::-webkit-scrollbar-track': {
+                  backgroundColor: '#f5f5f5',
+                },
+              }}
+            >
+              <Table size="small" stickyHeader>
+                <TableHead>
+                  <TableRow>
+                    <TableCell>Column Name</TableCell>
+                    <TableCell>Data Type</TableCell>
+                    <TableCell>Default Value</TableCell>
+                    <TableCell>Nullable</TableCell>
+                    <TableCell>Actions</TableCell>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHead>
+                <TableBody>
+                  {editedColumns.map((col, index) => (
+                    <TableRow key={index}>
+                      <TableCell>
+                        <TextField
+                          value={col.column_name}
+                          onChange={(e) => handleColumnChange(index, 'column_name', e.target.value)}
+                          fullWidth
+                          size="small"
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <FormControl fullWidth size="small">
+                          <Select
+                            value={col.data_type}
+                            onChange={(e) => handleColumnChange(index, 'data_type', e.target.value)}
+                          >
+                            <MenuItem value="TEXT">TEXT</MenuItem>
+                            <MenuItem value="INTEGER">INTEGER</MenuItem>
+                            <MenuItem value="BIGINT">BIGINT</MenuItem>
+                            <MenuItem value="NUMERIC">NUMERIC</MenuItem>
+                            <MenuItem value="BOOLEAN">BOOLEAN</MenuItem>
+                            <MenuItem value="DATE">DATE</MenuItem>
+                            <MenuItem value="TIMESTAMP">TIMESTAMP</MenuItem>
+                            <MenuItem value="JSONB">JSONB</MenuItem>
+                          </Select>
+                        </FormControl>
+                      </TableCell>
+                      <TableCell>
+                        <TextField
+                          value={col.column_default || ''}
+                          onChange={(e) => handleColumnChange(index, 'column_default', e.target.value)}
+                          fullWidth
+                          size="small"
+                          placeholder="NULL"
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <FormControl fullWidth size="small">
+                          <Select
+                            value={col.is_nullable}
+                            onChange={(e) => handleColumnChange(index, 'is_nullable', e.target.value)}
+                          >
+                            <MenuItem value="YES">YES</MenuItem>
+                            <MenuItem value="NO">NO</MenuItem>
+                          </Select>
+                        </FormControl>
+                      </TableCell>
+                      <TableCell>
+                        <IconButton onClick={() => handleRemoveColumn(index)}>
+                          <DeleteIcon color="error" />
+                        </IconButton>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </Box>
           </Box>
 
           <Box mt={4}>

@@ -108,7 +108,7 @@ const LandingPage = () => {
               1SPOC
             </Typography>
             <NavButtons>
-              <Button
+              {/* <Button
                 variant="outlined"
                 sx={{
                   borderColor: 'var(--primary-color)',
@@ -124,7 +124,7 @@ const LandingPage = () => {
                 onClick={() => navigate('/register')}
               >
                 Register
-              </Button>
+              </Button> */}
               <Button
                 variant="contained"
                 sx={{
