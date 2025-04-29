@@ -49,6 +49,9 @@ import CreateTableDialog from "./CreateTableDialog";
 import { FaDatabase } from "react-icons/fa";
 import { CiViewTable } from "react-icons/ci";
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
+// Add these imports at the top with other icon imports
+import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
+import LinkIcon from '@mui/icons-material/Link';
 
 
 
@@ -680,7 +683,6 @@ const DatabaseDetails = () => {
                       <TableCell sx={{ backgroundColor: "var(--primary-light)", fontWeight: "bold" }}>Columns</TableCell>
                       <TableCell sx={{ backgroundColor: "var(--primary-light)", fontWeight: "bold" }}>Urls</TableCell>
                       <TableCell sx={{ backgroundColor: "var(--primary-light)", fontWeight: "bold" }}>Edit Table</TableCell>
-
                       <TableCell sx={{ backgroundColor: "var(--primary-light)", fontWeight: "bold" }}>Delete Table</TableCell>
                       <TableCell sx={{ backgroundColor: "var(--primary-light)", fontWeight: "bold" }}>Select</TableCell>
 
@@ -705,7 +707,7 @@ const DatabaseDetails = () => {
                             )}
                           </TableCell>
                           <TableCell>
-                            {table.tablename && ( // Only show actions if table exists
+                            {table.tablename && (
                               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                                 <Button
                                   variant="outlined"
@@ -716,20 +718,32 @@ const DatabaseDetails = () => {
                                     textTransform: "none",
                                     borderColor: "var(--primary-color)",
                                     color: "var(--primary-color)",
+                                    borderRadius: "8px",
+                                    padding: "8px 16px",
+                                    transition: "all 0.3s ease",
+                                    gap: 1,
                                     "&:hover": {
                                       borderColor: "var(--primary-hover)",
+                                      backgroundColor: "rgba(var(--primary-rgb), 0.08)",
+                                      transform: "translateY(-1px)",
                                     },
+                                    "&:active": {
+                                      transform: "translateY(0)",
+                                      backgroundColor: "rgba(var(--primary-rgb), 0.12)",
+                                    },
+                                    "& .MuiSvgIcon-root": {
+                                      fontSize: "1.2rem",
+                                      marginLeft: "4px",
+                                    }
                                   }}
                                 >
+                                  <LinkIcon sx={{ fontSize: "1.1rem", opacity: 0.9 }} /> {/* Added URL icon */}
                                   Urls
-                                  <MoreVertIcon />
+                                  <KeyboardArrowDownIcon sx={{ fontSize: "1.2rem" }} /> {/* Changed to dropdown icon */}
                                 </Button>
-
-
                               </Box>
                             )}
                           </TableCell>
-
                           <TableCell>
                             {table.tablename && ( // Only show actions if table exists
                               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
