@@ -1,6 +1,11 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
+
+import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
+
+
+import LinkIcon from '@mui/icons-material/Link';
 import {
   Box,
   Typography,
@@ -31,8 +36,15 @@ import {
   DialogTitle,
   DialogContent,
   DialogContentText,
-  DialogActions
+  DialogActions,
+  Modal,
+  Backdrop,
+  Fade,
+  TextField,
+  InputAdornment,
+  TablePagination
 } from "@mui/material";
+import SearchIcon from "@mui/icons-material/Search";
 import {
   ArrowBack as ArrowBackIcon,
   Storage as StorageIcon,
@@ -42,7 +54,8 @@ import {
   MoreVert as MoreVertIcon,
   Edit as EditIcon,
   Delete as DeleteIcon,
-  Visibility as VisibilityIcon
+  Close as CloseIcon,
+  Visibility as VisibilityIcon,
 } from "@mui/icons-material";
 import EditTableDialog from "./EditTableDialog";
 import AddIcon from "@mui/icons-material/Add";
@@ -50,9 +63,6 @@ import CreateTableDialog from "./CreateTableDialog";
 import { FaDatabase } from "react-icons/fa";
 import { CiViewTable } from "react-icons/ci";
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
-// Add these imports at the top with other icon imports
-import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
-import LinkIcon from '@mui/icons-material/Link';
 
 
 
@@ -83,13 +93,15 @@ const DatabaseDetails = () => {
     open: false,
     tableName: "",
   });
-  
+
   const [viewDataDialog, setViewDataDialog] = useState({
     open: false,
     tableName: "",
     data: [],
     columns: [],
-    loading: false
+    searchTerm: "",
+    page: 0,
+    rowsPerPage: 10
   });
 
   const handleCreateTable = async (dbName, formData) => {
@@ -195,95 +207,6 @@ const DatabaseDetails = () => {
       return false;
     }
   };
-
-  const handleViewTableData = async (tableName) => {
-    setViewDataDialog({
-      open: true,
-      tableName,
-      data: [],
-      columns: [],
-      loading: true
-    });
-    
-    try {
-      const response = await axios.get(
-        `http://localhost:5000/api/databases/${encodeURIComponent(dbName)}/tables/${encodeURIComponent(tableName)}/data`,
-        {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-          },
-        }
-      );
-      
-      const tableSchema = database.tables.find(t => t.tablename === tableName)?.schema || {};
-      const columnNames = Object.keys(tableSchema);
-      
-      setViewDataDialog({
-        open: true,
-        tableName,
-        data: response.data.data || [], // Notice the .data.data since our API returns { data: [], pagination: {} }
-        columns: columnNames,
-        loading: false
-      });
-    } catch (error) {
-      console.error(`Error fetching data for table ${tableName}:`, error);
-      setSnackbar({
-        open: true,
-        message: error.response?.data?.error || `Failed to fetch data from ${tableName}`,
-        severity: "error",
-      });
-      
-      setViewDataDialog(prev => ({
-        ...prev,
-        loading: false
-      }));
-    }
-  };
-
-  // const handleViewTableData = async (tableName) => {
-  //   setViewDataDialog({
-  //     open: true,
-  //     tableName,
-  //     data: [],
-  //     columns: [],
-  //     loading: true
-  //   });
-    
-  //   try {
-  //     const response = await axios.get(
-  //       `http://localhost:5000/api/databases/${decodeURIComponent(dbName)}/tables/${decodeURIComponent(tableName)}/data`,
-  //       {},
-  //       {
-  //         headers: {
-  //           Authorization: `Bearer ${localStorage.getItem("token")}`,
-  //         },
-  //       }
-  //     );
-      
-  //     const tableSchema = database.tables.find(t => t.tablename === tableName)?.schema || {};
-  //     const columnNames = Object.keys(tableSchema);
-      
-  //     setViewDataDialog({
-  //       open: true,
-  //       tableName,
-  //       data: response.data || [],
-  //       columns: columnNames,
-  //       loading: false
-  //     });
-  //   } catch (error) {
-  //     console.error(`Error fetching data for table ${tableName}:`, error);
-  //     setSnackbar({
-  //       open: true,
-  //       message: error.response?.data?.error || `Failed to fetch data from ${tableName}`,
-  //       severity: "error",
-  //     });
-      
-  //     setViewDataDialog(prev => ({
-  //       ...prev,
-  //       loading: false
-  //     }));
-  //   }
-  // };
 
   const fetchDatabaseDetails = async () => {
     try {
@@ -419,6 +342,80 @@ const DatabaseDetails = () => {
     }));
   };
 
+  const handleViewData = async (table) => {
+    try {
+      const columnsResponse = await axios.get(
+        `http://localhost:5000/api/databases/${dbName}/tables/${table.tablename}/columns`,
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+        }
+      );
+  
+      const dataResponse = await axios.get(
+        `http://localhost:5000/api/databases/${dbName}/tables/${table.tablename}/data`,
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+        }
+      );
+  
+      setViewDataDialog({
+        open: true,
+        tableName: table.tablename,
+        data: dataResponse.data,
+        columns: columnsResponse.data,
+        searchTerm: "",
+        page: 0,
+        rowsPerPage: 10
+      });
+    } catch (error) {
+      console.error("Error fetching table data:", error);
+      setSnackbar({
+        open: true,
+        message: error.response?.data?.error || "Failed to fetch table data",
+        severity: "error",
+      });
+    }
+  };
+  
+  const handleSearchChange = (event) => {
+    setViewDataDialog(prev => ({
+      ...prev,
+      searchTerm: event.target.value,
+      page: 0
+    }));
+  };
+  
+  const handleChangePage = (event, newPage) => {
+    setViewDataDialog(prev => ({
+      ...prev,
+      page: newPage
+    }));
+  };
+  
+  const handleChangeRowsPerPage = (event) => {
+    setViewDataDialog(prev => ({
+      ...prev,
+      rowsPerPage: parseInt(event.target.value, 10),
+      page: 0
+    }));
+  };
+  
+  const handleCloseViewData = () => {
+    setViewDataDialog({
+      open: false,
+      tableName: "",
+      data: [],
+      columns: [],
+      searchTerm: "",
+      page: 0,
+      rowsPerPage: 10
+    });
+  };
+
   const handleDeleteTable = async () => {
     try {
       await axios.delete(
@@ -447,6 +444,19 @@ const DatabaseDetails = () => {
       });
     }
   };
+  
+  const filteredData = viewDataDialog.data.filter(row => {
+    if (!viewDataDialog.searchTerm) return true;
+    
+    return Object.values(row).some(value => 
+      String(value).toLowerCase().includes(viewDataDialog.searchTerm.toLowerCase())
+    );
+  });
+  
+  const paginatedData = filteredData.slice(
+    viewDataDialog.page * viewDataDialog.rowsPerPage,
+    (viewDataDialog.page + 1) * viewDataDialog.rowsPerPage
+  );
 
   const handleDeleteClick = (table) => {
     setDeleteDialog({
@@ -653,11 +663,11 @@ const DatabaseDetails = () => {
             Database: {database.dbname}
           </Typography> */}
 
-          <Box sx={{ display: "flex", alignItems: "center", mb: 1, ml: 2 }}>
-            <FaDatabase color="primary" size={24} />
-            <Typography variant="h5" sx={{ ml: 2, color: "var(--primary-text)" }}> Database: {database.dbname}</Typography>
-          </Box>
-
+          <Box sx={{ display: "flex", alignItems: "center", mb: 1, ml:2}}>
+                <FaDatabase color="primary"size={24} />
+                <Typography variant="h5"  sx={{ml: 2 , color: "var(--primary-text)"}}> Database: {database.dbname}</Typography>
+              </Box>
+          
           <IconButton color="inherit" sx={{ ml: "auto" }}>
             <SettingsIcon />
           </IconButton>
@@ -752,9 +762,9 @@ const DatabaseDetails = () => {
               borderRadius: 'var(--border-radius)',
               boxShadow: 'var(--shadow-lg)'
             }}>
-              <Box sx={{ display: "flex", alignItems: "center", mb: 1, ml: 2 }}>
-                <FaDatabase color="primary" size={24} />
-                <Typography variant="h4" sx={{ ml: 2 }}>{database.dbname}</Typography>
+              <Box sx={{ display: "flex", alignItems: "center", mb: 1, ml:2}}>
+                <FaDatabase color="primary"size={24} />
+                <Typography variant="h4" sx={{ml: 2}}>{database.dbname}</Typography>
               </Box>
 
               <Divider sx={{ my: 2 }} />
@@ -773,6 +783,7 @@ const DatabaseDetails = () => {
                       <TableCell sx={{ backgroundColor: "var(--primary-light)", fontWeight: "bold" }}>Columns</TableCell>
                       <TableCell sx={{ backgroundColor: "var(--primary-light)", fontWeight: "bold" }}>Urls</TableCell>
                       <TableCell sx={{ backgroundColor: "var(--primary-light)", fontWeight: "bold" }}>Edit Table</TableCell>
+
                       <TableCell sx={{ backgroundColor: "var(--primary-light)", fontWeight: "bold" }}>Delete Table</TableCell>
                       <TableCell sx={{ backgroundColor: "var(--primary-light)", fontWeight: "bold" }}>Select</TableCell>
 
@@ -831,6 +842,8 @@ const DatabaseDetails = () => {
                                   Urls
                                   <KeyboardArrowDownIcon sx={{ fontSize: "1.2rem" }} /> {/* Changed to dropdown icon */}
                                 </Button>
+
+
                               </Box>
                             )}
                           </TableCell>
@@ -851,6 +864,7 @@ const DatabaseDetails = () => {
                               </Box>
                             )}
                           </TableCell>
+
                           <TableCell>
                             {table.tablename && (
                               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -869,19 +883,14 @@ const DatabaseDetails = () => {
                               </Box>
                             )}
                           </TableCell>
+
                           <TableCell>
                             {table.tablename && (
                               <Button
-                                variant="contained"
-                                size="small"
+                                variant="outlined"
                                 startIcon={<VisibilityIcon />}
-                                onClick={() => handleViewTableData(table.tablename)}
-                                sx={{
-                                  backgroundColor: "var(--primary-color)",
-                                  "&:hover": {
-                                    backgroundColor: "var(--primary-hover)",
-                                  },
-                                }}
+                                onClick={() => handleViewData(table)}
+                               
                               >
                                 View Data
                               </Button>
@@ -1001,92 +1010,12 @@ const DatabaseDetails = () => {
               </MenuItem>
             ))}
           </Menu>
-          
           <CreateTableDialog
             open={openTableDialog}
             onClose={() => setOpenTableDialog(false)}
             dbName={dbName}
             onSubmit={handleCreateTable}
           />
-
-          <Dialog
-            open={viewDataDialog.open}
-            onClose={() => setViewDataDialog(prev => ({ ...prev, open: false }))}
-            fullWidth
-            maxWidth="lg"
-            PaperProps={{
-              sx: {
-                height: '80vh',
-                backgroundColor: 'var(--bg-paper)',
-                borderRadius: 'var(--border-radius)'
-              }
-            }}
-          >
-            <DialogTitle sx={{ 
-              backgroundColor: 'var(--primary-light)', 
-              color: 'var(--text-primary)',
-              fontWeight: 'bold' 
-            }}>
-              {viewDataDialog.tableName} - Table Data
-            </DialogTitle>
-            <DialogContent dividers>
-              {viewDataDialog.loading ? (
-                <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
-                  <Typography>Loading table data...</Typography>
-                </Box>
-              ) : viewDataDialog.data.length === 0 ? (
-                <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
-                  <Typography>No data available in this table</Typography>
-                </Box>
-              ) : (
-                <TableContainer sx={{ maxHeight: '60vh' }}>
-                  <Table stickyHeader>
-                    <TableHead>
-                      <TableRow>
-                        {viewDataDialog.columns.map((column) => (
-                          <TableCell 
-                            key={column} 
-                            sx={{ 
-                              backgroundColor: "var(--primary-light)",
-                              fontWeight: "bold" 
-                            }}
-                          >
-                            {column}
-                          </TableCell>
-                        ))}
-                      </TableRow>
-                    </TableHead>
-                    <TableBody>
-                      {viewDataDialog.data.map((row, rowIndex) => (
-                        <TableRow key={rowIndex}>
-                          {viewDataDialog.columns.map((column) => (
-                            <TableCell key={`${rowIndex}-${column}`}>
-                              {row[column] !== undefined && row[column] !== null
-                                ? typeof row[column] === 'object'
-                                  ? JSON.stringify(row[column])
-                                  : String(row[column])
-                                : ''}
-                            </TableCell>
-                          ))}
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </TableContainer>
-              )}
-            </DialogContent>
-            <DialogActions>
-              <Button 
-                onClick={() => setViewDataDialog(prev => ({ ...prev, open: false }))}
-                sx={{
-                  color: 'var(--primary-color)',
-                  fontWeight: 'bold'
-                }}
-              >
-                Close
-              </Button>
-            </DialogActions>
-          </Dialog>
 
           <Dialog
             open={deleteDialog.open}
@@ -1106,7 +1035,6 @@ const DatabaseDetails = () => {
             <DialogTitle sx={{ color: 'var(--text-primary)', fontWeight: 'bold' }}>
               Delete Table
             </DialogTitle>
-
             <DialogContent>
               <DialogContentText sx={{ color: 'var(--text-secondary)', mb: 2 }}>
                 Are you sure you want to delete table "{deleteDialog.tableName}"?
@@ -1140,6 +1068,128 @@ const DatabaseDetails = () => {
               </Button>
             </DialogActions>
           </Dialog>
+
+          {/* View Data Dialog */}
+          <Dialog
+            open={viewDataDialog.open}
+            onClose={handleCloseViewData}
+            maxWidth="lg"
+            fullWidth
+            scroll="paper"
+            TransitionComponent={Fade}
+            PaperProps={{
+              sx: {
+                backgroundColor: 'var(--bg-paper)',
+                borderRadius: 'var(--border-radius)',
+                maxHeight: '80vh',
+                display: 'flex',
+                flexDirection: 'column'
+              }
+            }}
+          >
+            <DialogTitle sx={{ 
+              backgroundColor: 'var(--primary-light)',
+              color: 'var(--text-primary)',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              padding: '16px 24px'
+            }}>
+              <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
+                Data from {viewDataDialog.tableName}
+              </Typography>
+              <IconButton 
+                onClick={handleCloseViewData}
+                sx={{ color: 'var(--text-primary)' }}
+              >
+                <CloseIcon />
+              </IconButton>
+            </DialogTitle>
+            
+            <DialogContent dividers sx={{ flex: 1, padding: 0 }}>
+              <Box sx={{ padding: '16px 24px' }}>
+                <TextField
+                  fullWidth
+                  variant="outlined"
+                  placeholder="Search data..."
+                  value={viewDataDialog.searchTerm}
+                  onChange={handleSearchChange}
+                  sx={{ mb: 2 }}
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <SearchIcon />
+                      </InputAdornment>
+                    ),
+                  }}
+                />
+              </Box>
+              
+              <TableContainer sx={{ flex: 1, maxHeight: '100%' }}>
+                <Table stickyHeader size="small">
+                  <TableHead>
+                    <TableRow>
+                      {viewDataDialog.columns.map(column => (
+                        <TableCell 
+                          key={column.column_name} 
+                          sx={{ 
+                            backgroundColor: 'var(--primary-light)',
+                            fontWeight: 'bold',
+                            padding: '8px 16px'
+                          }}
+                        >
+                          {column.column_name}
+                        </TableCell>
+                      ))}
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {paginatedData.length > 0 ? (
+                      paginatedData.map((row, rowIndex) => (
+                        <TableRow key={rowIndex}>
+                          {viewDataDialog.columns.map(column => (
+                            <TableCell 
+                              key={`${rowIndex}-${column.column_name}`}
+                              sx={{ padding: '8px 16px' }}
+                            >
+                              {String(row[column.column_name])}
+                            </TableCell>
+                          ))}
+                        </TableRow>
+                      ))
+                    ) : (
+                      <TableRow>
+                        <TableCell 
+                          colSpan={viewDataDialog.columns.length} 
+                          align="center"
+                          sx={{ padding: '16px' }}
+                        >
+                          <Typography variant="body1">
+                            {viewDataDialog.searchTerm ? 'No matching data found' : 'No data available'}
+                          </Typography>
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            </DialogContent>
+            
+            <TablePagination
+              rowsPerPageOptions={[5, 10, 25]}
+              component="div"
+              count={filteredData.length}
+              rowsPerPage={viewDataDialog.rowsPerPage}
+              page={viewDataDialog.page}
+              onPageChange={handleChangePage}
+              onRowsPerPageChange={handleChangeRowsPerPage}
+              sx={{
+                backgroundColor: 'var(--primary-light)',
+                borderTop: '1px solid var(--divider-color)'
+              }}
+            />
+          </Dialog>
+
           <Snackbar
             open={snackbar.open}
             autoHideDuration={6000}
