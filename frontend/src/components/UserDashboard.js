@@ -68,6 +68,11 @@ const UserDashboard = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
   const navigate = useNavigate();
   const [openDialog, setOpenDialog] = useState(false);
+  const [openTableDialog, setOpenTableDialog] = useState(false);
+  const [currentDbForTable, setCurrentDbForTable] = useState('');
+  const [tableFormData, setTableFormData] = useState({
+    tableName: '',
+  });
   const [databaseFormData, setDatabaseFormData] = useState({
     databaseName: "",
   });
@@ -163,6 +168,19 @@ const UserDashboard = () => {
     setDatabaseFormData({
       databaseName: "",
     });
+  };
+
+  const handleOpenTableDialog = (dbName) => {
+    setCurrentDbForTable(dbName);
+    setOpenTableDialog(true);
+  };
+
+  const handleCloseTableDialog = () => {
+    setOpenTableDialog(false);
+    setTableFormData({
+      tableName: '',
+    });
+    setCurrentDbForTable('');
   };
 
   const handleDatabaseSubmit = async (formData) => {

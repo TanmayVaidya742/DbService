@@ -49,6 +49,12 @@ import AddIcon from "@mui/icons-material/Add";
 import CreateTableDialog from "./CreateTableDialog";
 import { FaDatabase } from "react-icons/fa";
 import { CiViewTable } from "react-icons/ci";
+import ContentCopyIcon from '@mui/icons-material/ContentCopy';
+// Add these imports at the top with other icon imports
+import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
+import LinkIcon from '@mui/icons-material/Link';
+
+
 
 const drawerWidth = 240;
 
@@ -642,11 +648,16 @@ const DatabaseDetails = () => {
           >
             <MenuIcon />
           </IconButton>
-          <Box sx={{ display: "flex", alignItems: "center", mb: 1, ml:2}}>
+          {/* <Typography variant="h6" noWrap component="div">
+          <FaDatabase color="primary"size={24} />
+            Database: {database.dbname}
+          </Typography> */}
+
+          <Box sx={{ display: "flex", alignItems: "center", mb: 1, ml: 2 }}>
             <FaDatabase color="primary" size={24} />
-            <Typography variant="h5" sx={{ml: 2 , color: "var(--primary-text)"}}> Database: {database.dbname}</Typography>
+            <Typography variant="h5" sx={{ ml: 2, color: "var(--primary-text)" }}> Database: {database.dbname}</Typography>
           </Box>
-          
+
           <IconButton color="inherit" sx={{ ml: "auto" }}>
             <SettingsIcon />
           </IconButton>
@@ -735,15 +746,15 @@ const DatabaseDetails = () => {
               </Button>
             </Box>
             <Paper elevation={3} sx={{
-              p:3,
+              p: 3,
               mb: 3,
               backgroundColor: 'var(--bg-paper)',
               borderRadius: 'var(--border-radius)',
               boxShadow: 'var(--shadow-lg)'
             }}>
-              <Box sx={{ display: "flex", alignItems: "center", mb: 1, ml:2}}>
+              <Box sx={{ display: "flex", alignItems: "center", mb: 1, ml: 2 }}>
                 <FaDatabase color="primary" size={24} />
-                <Typography variant="h4" sx={{ml: 2}}>{database.dbname}</Typography>
+                <Typography variant="h4" sx={{ ml: 2 }}>{database.dbname}</Typography>
               </Box>
 
               <Divider sx={{ my: 2 }} />
@@ -759,11 +770,13 @@ const DatabaseDetails = () => {
                   <TableHead>
                     <TableRow>
                       <TableCell sx={{ backgroundColor: "var(--primary-light)", fontWeight: "bold" }}>Table Name</TableCell>
-                      <TableCell sx={{ backgroundColor: "var(--primary-light)", fontWeight: "bold"}}>Columns</TableCell>
-                      <TableCell sx={{ backgroundColor: "var(--primary-light)", fontWeight: "bold"}}>Url Actions</TableCell>
-                      <TableCell sx={{ backgroundColor: "var(--primary-light)", fontWeight: "bold"}}>Edit Table</TableCell>
-                      <TableCell sx={{ backgroundColor: "var(--primary-light)", fontWeight: "bold"}}>Delete Table</TableCell>
-                      <TableCell sx={{ backgroundColor: "var(--primary-light)", fontWeight: "bold"}}>Select</TableCell>
+                      <TableCell sx={{ backgroundColor: "var(--primary-light)", fontWeight: "bold" }}>Columns</TableCell>
+                      <TableCell sx={{ backgroundColor: "var(--primary-light)", fontWeight: "bold" }}>Urls</TableCell>
+                      <TableCell sx={{ backgroundColor: "var(--primary-light)", fontWeight: "bold" }}>Edit Table</TableCell>
+                      <TableCell sx={{ backgroundColor: "var(--primary-light)", fontWeight: "bold" }}>Delete Table</TableCell>
+                      <TableCell sx={{ backgroundColor: "var(--primary-light)", fontWeight: "bold" }}>Select</TableCell>
+
+
                     </TableRow>
                   </TableHead>
                   <TableBody>
@@ -786,14 +799,38 @@ const DatabaseDetails = () => {
                           <TableCell>
                             {table.tablename && (
                               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                <IconButton
-                                  aria-label="more"
+                                <Button
+                                  variant="outlined"
                                   aria-controls={`table-menu-${table.tablename}`}
                                   aria-haspopup="true"
                                   onClick={(e) => handleMenuOpen(e, table)}
+                                  sx={{
+                                    textTransform: "none",
+                                    borderColor: "var(--primary-color)",
+                                    color: "var(--primary-color)",
+                                    borderRadius: "8px",
+                                    padding: "8px 16px",
+                                    transition: "all 0.3s ease",
+                                    gap: 1,
+                                    "&:hover": {
+                                      borderColor: "var(--primary-hover)",
+                                      backgroundColor: "rgba(var(--primary-rgb), 0.08)",
+                                      transform: "translateY(-1px)",
+                                    },
+                                    "&:active": {
+                                      transform: "translateY(0)",
+                                      backgroundColor: "rgba(var(--primary-rgb), 0.12)",
+                                    },
+                                    "& .MuiSvgIcon-root": {
+                                      fontSize: "1.2rem",
+                                      marginLeft: "4px",
+                                    }
+                                  }}
                                 >
-                                  <MoreVertIcon />
-                                </IconButton>
+                                  <LinkIcon sx={{ fontSize: "1.1rem", opacity: 0.9 }} /> {/* Added URL icon */}
+                                  Urls
+                                  <KeyboardArrowDownIcon sx={{ fontSize: "1.2rem" }} /> {/* Changed to dropdown icon */}
+                                </Button>
                               </Box>
                             )}
                           </TableCell>
@@ -898,19 +935,71 @@ const DatabaseDetails = () => {
             keepMounted
             open={Boolean(anchorEl)}
             onClose={handleMenuClose}
+            PaperProps={{
+              sx: {
+                borderRadius: '8px',
+                boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
+                minWidth: '220px',
+                marginTop: '8px',
+              }
+            }}
           >
-            <MenuItem onClick={() => handleMenuAction("read")}>
-              Read Data
-            </MenuItem>
-            <MenuItem onClick={() => handleMenuAction("insert")}>
-              Insert Data
-            </MenuItem>
-            <MenuItem onClick={() => handleMenuAction("update")}>
-              Update Data
-            </MenuItem>
-            <MenuItem onClick={() => handleMenuAction("delete")}>
-              Delete Data
-            </MenuItem>
+            <Box sx={{ px: 2, py: 1 }}>
+              <Typography variant="subtitle2" sx={{
+                fontWeight: 600,
+                color: "var(--text-primary)",
+                fontSize: '0.875rem'
+              }}>
+                API Endpoints
+              </Typography>
+              <Typography variant="caption" sx={{
+                color: "var(--text-secondary)",
+                lineHeight: 1.2
+              }}>
+                Click to copy URL
+              </Typography>
+            </Box>
+            <Divider sx={{ my: 1 }} />
+
+            {['read', 'insert', 'update', 'delete'].map((action) => (
+              <MenuItem
+                key={action}
+                onClick={() => handleMenuAction(action)}
+                sx={{
+                  py: 1.5,
+                  px: 2,
+                  '&:hover': {
+                    backgroundColor: 'var(--primary-light-hover)',
+                  },
+                  transition: 'background-color 0.2s ease',
+                }}
+              >
+                <ContentCopyIcon fontSize="small" sx={{
+                  color: "var(--text-secondary)",
+                  mr: 1.5,
+                  fontSize: '18px'
+                }} />
+                <Box>
+                  <Typography variant="body2" sx={{
+                    fontWeight: 500,
+                    color: "var(--text-primary)",
+                    textTransform: 'capitalize'
+                  }}>
+                    {action} Data Url
+                  </Typography>
+                  <Typography variant="caption" sx={{
+                    color: "var(--text-secondary)",
+                    display: 'block',
+                    fontSize: '0.75rem'
+                  }}>
+                    {action === 'read' && 'POST /get'}
+                    {action === 'insert' && 'POST /insert'}
+                    {action === 'update' && 'POST /update'}
+                    {action === 'delete' && 'POST /delete'}
+                  </Typography>
+                </Box>
+              </MenuItem>
+            ))}
           </Menu>
           
           <CreateTableDialog
