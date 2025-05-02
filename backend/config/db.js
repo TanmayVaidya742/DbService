@@ -1,16 +1,19 @@
 const { Pool } = require('pg');
 require('dotenv').config();
 
-const pool = new Pool({
+// Unified configuration
+const dbConfig = {
   user: process.env.DB_USER || 'postgres',
   host: process.env.DB_HOST || 'localhost',
   database: process.env.DB_NAME || 'superadmin_db',
-  password: process.env.DB_PASSWORD || 'pass',
+  password: process.env.DB_PASSWORD || 'pass', // Default from first file
   port: process.env.DB_PORT || 5432,
-});
+};
 
-// Test the connection
-pool.connect((err, client, release) => {
+const mainPool = new Pool(dbConfig);
+
+// Test database connection
+mainPool.connect((err, client, release) => {
   if (err) {
     console.error('Error connecting to the database:', err);
     return;
@@ -19,9 +22,10 @@ pool.connect((err, client, release) => {
   release();
 });
 
-// Add error handling for the pool
-pool.on('error', (err) => {
+// Handle pool errors
+mainPool.on('error', (err) => {
   console.error('Unexpected error on idle client', err);
 });
 
-module.exports = pool; 
+// Export both the pool and configuration
+module.exports = { mainPool, dbConfig };

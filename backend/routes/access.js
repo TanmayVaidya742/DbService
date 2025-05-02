@@ -2,7 +2,7 @@
 const express = require('express');
 const router = express.Router();
 const { Pool } = require('pg');
-const { mainPool } = require('../mainpool/db');
+const {mainPool} = require('../config/db')
 
 // ✅ Middleware to validate API key
 const validateApiKey = async (req, res, next) => {
@@ -34,7 +34,7 @@ const getDbPool = (dbname) => {
       user: process.env.DB_USER || 'postgres',
       host: process.env.DB_HOST || 'localhost',
       database: dbname,
-      password: process.env.DB_PASSWORD || 'postgres',
+      password: process.env.DB_PASSWOcclRD || 'postgres',
       port: process.env.DB_PORT || 5432,
     });
   }

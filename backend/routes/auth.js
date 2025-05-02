@@ -2,12 +2,12 @@ const express = require('express');
 const router = express.Router();
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
-const pool = require('../config/db');
+const {mainPool} = require('../config/db')
 
 // Check if any superadmin exists
 router.get('/check-users', async (req, res) => {
   try {
-    const result = await pool.query('SELECT COUNT(*) FROM superadmins');
+    const result = await mainPool.query('SELECT COUNT(*) FROM superadmins');
     const hasUsers = result.rows[0].count > 0;
     res.json({ hasUsers });
   } catch (error) {
@@ -26,7 +26,7 @@ router.post('/register', async (req, res) => {
       return res.status(400).json({ message: 'All fields are required' });
     }
 
-    const emailCheck = await pool.query(
+    const emailCheck = await mainPool.query(
       'SELECT * FROM superadmins WHERE email = $1',
       [email]
     );
@@ -36,7 +36,7 @@ router.post('/register', async (req, res) => {
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    const result = await pool.query(
+    const result = await mainPool.query(
       `INSERT INTO superadmins 
        (name, mobile_no, address, email, organization, password) 
        VALUES ($1, $2, $3, $4, $5, $6) 
@@ -77,7 +77,7 @@ router.post('/login', async (req, res) => {
     }
 
     // First check in superadmins table
-    let user = await pool.query(
+    let user = await mainPool.query(
       'SELECT * FROM superadmins WHERE email = $1',
       [email]
     );
@@ -86,7 +86,7 @@ router.post('/login', async (req, res) => {
     
     // If not found in superadmins, check in users table
     if (user.rows.length === 0) {
-      user = await pool.query(
+      user = await mainPool.query(
         'SELECT * FROM users WHERE owner_email = $1',
         [email]
       );

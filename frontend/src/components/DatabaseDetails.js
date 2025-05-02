@@ -42,7 +42,8 @@ import {
   Fade,
   TextField,
   InputAdornment,
-  TablePagination
+  TablePagination,
+  Popover
 } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
 import {
@@ -64,7 +65,7 @@ import { FaDatabase } from "react-icons/fa";
 import { CiViewTable } from "react-icons/ci";
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 
-
+import StoreIcon from '@mui/icons-material/Store';
 
 const drawerWidth = 240;
 
@@ -103,6 +104,21 @@ const DatabaseDetails = () => {
     page: 0,
     rowsPerPage: 10
   });
+
+
+  const [columnsAnchorEl, setColumnsAnchorEl] = useState(null);
+  const [expandedTable, setExpandedTable] = useState(null);
+
+
+  const handleShowMoreColumns = (event, table) => {
+    setColumnsAnchorEl(event.currentTarget);
+    setExpandedTable(table);
+  };
+
+  const handleCloseColumnsPopup = () => {
+    setColumnsAnchorEl(null);
+    setExpandedTable(null);
+  };
 
   const handleCreateTable = async (dbName, formData) => {
     try {
@@ -352,7 +368,7 @@ const DatabaseDetails = () => {
           },
         }
       );
-  
+
       const dataResponse = await axios.get(
         `http://localhost:5000/api/databases/${dbName}/tables/${table.tablename}/data`,
         {
@@ -361,7 +377,7 @@ const DatabaseDetails = () => {
           },
         }
       );
-  
+
       setViewDataDialog({
         open: true,
         tableName: table.tablename,
@@ -380,7 +396,7 @@ const DatabaseDetails = () => {
       });
     }
   };
-  
+
   const handleSearchChange = (event) => {
     setViewDataDialog(prev => ({
       ...prev,
@@ -388,14 +404,14 @@ const DatabaseDetails = () => {
       page: 0
     }));
   };
-  
+
   const handleChangePage = (event, newPage) => {
     setViewDataDialog(prev => ({
       ...prev,
       page: newPage
     }));
   };
-  
+
   const handleChangeRowsPerPage = (event) => {
     setViewDataDialog(prev => ({
       ...prev,
@@ -403,7 +419,7 @@ const DatabaseDetails = () => {
       page: 0
     }));
   };
-  
+
   const handleCloseViewData = () => {
     setViewDataDialog({
       open: false,
@@ -444,15 +460,15 @@ const DatabaseDetails = () => {
       });
     }
   };
-  
+
   const filteredData = viewDataDialog.data.filter(row => {
     if (!viewDataDialog.searchTerm) return true;
-    
-    return Object.values(row).some(value => 
+
+    return Object.values(row).some(value =>
       String(value).toLowerCase().includes(viewDataDialog.searchTerm.toLowerCase())
     );
   });
-  
+
   const paginatedData = filteredData.slice(
     viewDataDialog.page * viewDataDialog.rowsPerPage,
     (viewDataDialog.page + 1) * viewDataDialog.rowsPerPage
@@ -465,6 +481,8 @@ const DatabaseDetails = () => {
     });
   };
 
+
+
   const drawer = (
     <div>
       <Toolbar>
@@ -472,11 +490,11 @@ const DatabaseDetails = () => {
       </Toolbar>
       <Divider />
       <List>
-        <ListItem button onClick={() => navigate("/dashboard")}>
+        <ListItem button onClick={() => navigate("/databases")}>
           <ListItemIcon>
             <PersonIcon />
           </ListItemIcon>
-          <ListItemText primary="Dashboard" />
+          <ListItemText primary="Databases" />
         </ListItem>
       </List>
     </div>
@@ -663,11 +681,11 @@ const DatabaseDetails = () => {
             Database: {database.dbname}
           </Typography> */}
 
-          <Box sx={{ display: "flex", alignItems: "center", mb: 1, ml:2}}>
-                <FaDatabase color="primary"size={24} />
-                <Typography variant="h5"  sx={{ml: 2 , color: "var(--primary-text)"}}> Database: {database.dbname}</Typography>
-              </Box>
-          
+          <Box sx={{ display: "flex", alignItems: "center", mb: 1, ml: 2 }}>
+            <FaDatabase color="primary" size={24} />
+            <Typography variant="h5" sx={{ ml: 2, color: "var(--primary-text)" }}> Database: {database.dbname}</Typography>
+          </Box>
+
           <IconButton color="inherit" sx={{ ml: "auto" }}>
             <SettingsIcon />
           </IconButton>
@@ -767,6 +785,8 @@ const DatabaseDetails = () => {
                 <Typography variant="h4" sx={{ml: 2}}>{database.dbname}</Typography>
               </Box>
 
+
+
               <Divider sx={{ my: 2 }} />
 
               <TableContainer
@@ -779,13 +799,12 @@ const DatabaseDetails = () => {
                 <Table stickyHeader>
                   <TableHead>
                     <TableRow>
-                      <TableCell sx={{ backgroundColor: "var(--primary-light)", fontWeight: "bold" }}>Table Name</TableCell>
-                      <TableCell sx={{ backgroundColor: "var(--primary-light)", fontWeight: "bold" }}>Columns</TableCell>
-                      <TableCell sx={{ backgroundColor: "var(--primary-light)", fontWeight: "bold" }}>Urls</TableCell>
-                      <TableCell sx={{ backgroundColor: "var(--primary-light)", fontWeight: "bold" }}>Edit Table</TableCell>
-
-                      <TableCell sx={{ backgroundColor: "var(--primary-light)", fontWeight: "bold" }}>Delete Table</TableCell>
-                      <TableCell sx={{ backgroundColor: "var(--primary-light)", fontWeight: "bold" }}>Select</TableCell>
+                      <TableCell align="center" sx={{ backgroundColor: "var(--primary-light)", fontWeight: "bold" }}>Table Name</TableCell>
+                      <TableCell align="center" sx={{ backgroundColor: "var(--primary-light)", fontWeight: "bold" }}>Columns</TableCell>
+                      <TableCell align="center" sx={{ backgroundColor: "var(--primary-light)", fontWeight: "bold" }}>URL</TableCell>
+                      <TableCell align="center" sx={{ backgroundColor: "var(--primary-light)", fontWeight: "bold" }}>Edit Table</TableCell>
+                      <TableCell align="center" sx={{ backgroundColor: "var(--primary-light)", fontWeight: "bold" }}>Delete Table</TableCell>
+                      <TableCell align="center" sx={{ backgroundColor: "var(--primary-light)", fontWeight: "bold" }}>Select</TableCell>
 
 
                     </TableRow>
@@ -794,22 +813,72 @@ const DatabaseDetails = () => {
                     {database.tables && database.tables.length > 0 ? (
                       database.tables.map((table) => (
                         <TableRow key={table.tablename}>
-                          <TableCell>{table.tablename}</TableCell>
-                          <TableCell>
-                            {Object.entries(table.schema).map(
-                              ([colName, colType]) => (
+                          <TableCell align="center" >{table.tablename}</TableCell>
+                          <TableCell align="center">
+                            {Object.entries(table.schema).slice(0, 2).map(([colName, colType]) => (
+                              <Chip
+                                key={colName}
+                                label={`${colName}: ${colType}`}
+                                sx={{ mr: 1, mb: 1, backgroundColor: "var(--primary-light)" }}
+                                variant="outlined"
+                              />
+                            ))}
+                            {Object.keys(table.schema).length > 3 && (
+                              <>
                                 <Chip
-                                  key={colName}
-                                  label={`${colName}: ${colType}`}
-                                  sx={{ mr: 1, mb: 1, backgroundColor: "var(--primary-light)" }}
+                                  label={`+${Object.keys(table.schema).length - 2} more`}
+                                  onClick={(e) => handleShowMoreColumns(e, table)}
+                                  sx={{
+                                    mr: 1,
+                                    mb: 1,
+                                    backgroundColor: "var(--primary-light)",
+                                    cursor: "pointer",
+                                    "&:hover": {
+                                      backgroundColor: "var(--primary-hover)"
+                                    }
+                                  }}
                                   variant="outlined"
                                 />
-                              )
+                                <Popover
+                                  open={Boolean(columnsAnchorEl)}
+                                  anchorEl={columnsAnchorEl}
+                                  onClose={handleCloseColumnsPopup}
+                                  anchorOrigin={{
+                                    vertical: 'bottom',
+                                    horizontal: 'center',
+                                  }}
+                                  transformOrigin={{
+                                    vertical: 'top',
+                                    horizontal: 'center',
+                                  }}
+                                >
+                                  <Box sx={{ p: 2, maxWidth: 400, backgroundColor: 'var(--bg-paper)' }}>
+                                    <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 'bold' }}>
+                                      All columns in {expandedTable?.tablename}
+                                    </Typography>
+                                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                                      {expandedTable && Object.entries(expandedTable.schema).map(([colName, colType]) => (
+                                        <Chip
+                                          key={colName}
+                                          label={`${colName}: ${colType}`}
+                                          sx={{
+                                            backgroundColor: "var(--primary-light)",
+                                            "&:hover": {
+                                              backgroundColor: "var(--primary-hover)"
+                                            }
+                                          }}
+                                          variant="outlined"
+                                        />
+                                      ))}
+                                    </Box>
+                                  </Box>
+                                </Popover>
+                              </>
                             )}
                           </TableCell>
-                          <TableCell>
+                          <TableCell align="center">
                             {table.tablename && (
-                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                              <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 1 }}>
                                 <Button
                                   variant="outlined"
                                   aria-controls={`table-menu-${table.tablename}`}
@@ -838,18 +907,23 @@ const DatabaseDetails = () => {
                                     }
                                   }}
                                 >
-                                  <LinkIcon sx={{ fontSize: "1.1rem", opacity: 0.9 }} /> {/* Added URL icon */}
-                                  Urls
-                                  <KeyboardArrowDownIcon sx={{ fontSize: "1.2rem" }} /> {/* Changed to dropdown icon */}
+                                  <LinkIcon sx={{ fontSize: "1.1rem", opacity: 0.9 }} />
+                                  URLs
+                                  <KeyboardArrowDownIcon sx={{ fontSize: "1.2rem" }} />
                                 </Button>
 
 
                               </Box>
                             )}
                           </TableCell>
-                          <TableCell>
+                          <TableCell align="center">
                             {table.tablename && (
-                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                              <Box sx={{
+                                display: 'flex',
+                                justifyContent: 'center',
+                                alignItems: 'center',
+                                gap: 1
+                              }}>
                                 <IconButton
                                   onClick={(e) => {
                                     e.stopPropagation();
@@ -864,10 +938,14 @@ const DatabaseDetails = () => {
                               </Box>
                             )}
                           </TableCell>
-
-                          <TableCell>
+                          <TableCell align="center">
                             {table.tablename && (
-                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                              <Box sx={{
+                                display: 'flex',
+                                justifyContent: 'center',
+                                alignItems: 'center',
+                                gap: 1
+                              }}>
                                 <IconButton
                                   size="small"
                                   onClick={(e) => {
@@ -884,13 +962,13 @@ const DatabaseDetails = () => {
                             )}
                           </TableCell>
 
-                          <TableCell>
+                          <TableCell align="center">
                             {table.tablename && (
                               <Button
                                 variant="outlined"
                                 startIcon={<VisibilityIcon />}
                                 onClick={() => handleViewData(table)}
-                               
+
                               >
                                 View Data
                               </Button>
@@ -965,7 +1043,7 @@ const DatabaseDetails = () => {
                 color: "var(--text-secondary)",
                 lineHeight: 1.2
               }}>
-                Click to copy URL
+                Click to copy URLs
               </Typography>
             </Box>
             <Divider sx={{ my: 1 }} />
@@ -984,7 +1062,7 @@ const DatabaseDetails = () => {
                 }}
               >
                 <ContentCopyIcon fontSize="small" sx={{
-                  color: "var(--text-secondary)",
+                  color: "var(--primary-color)",
                   mr: 1.5,
                   fontSize: '18px'
                 }} />
@@ -1087,7 +1165,7 @@ const DatabaseDetails = () => {
               }
             }}
           >
-            <DialogTitle sx={{ 
+            <DialogTitle sx={{
               backgroundColor: 'var(--primary-light)',
               color: 'var(--text-primary)',
               display: 'flex',
@@ -1098,14 +1176,14 @@ const DatabaseDetails = () => {
               <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
                 Data from {viewDataDialog.tableName}
               </Typography>
-              <IconButton 
+              <IconButton
                 onClick={handleCloseViewData}
                 sx={{ color: 'var(--text-primary)' }}
               >
                 <CloseIcon />
               </IconButton>
             </DialogTitle>
-            
+
             <DialogContent dividers sx={{ flex: 1, padding: 0 }}>
               <Box sx={{ padding: '16px 24px' }}>
                 <TextField
@@ -1124,15 +1202,15 @@ const DatabaseDetails = () => {
                   }}
                 />
               </Box>
-              
+
               <TableContainer sx={{ flex: 1, maxHeight: '100%' }}>
                 <Table stickyHeader size="small">
                   <TableHead>
                     <TableRow>
                       {viewDataDialog.columns.map(column => (
-                        <TableCell 
-                          key={column.column_name} 
-                          sx={{ 
+                        <TableCell
+                          key={column.column_name}
+                          sx={{
                             backgroundColor: 'var(--primary-light)',
                             fontWeight: 'bold',
                             padding: '8px 16px'
@@ -1148,7 +1226,7 @@ const DatabaseDetails = () => {
                       paginatedData.map((row, rowIndex) => (
                         <TableRow key={rowIndex}>
                           {viewDataDialog.columns.map(column => (
-                            <TableCell 
+                            <TableCell
                               key={`${rowIndex}-${column.column_name}`}
                               sx={{ padding: '8px 16px' }}
                             >
@@ -1159,8 +1237,8 @@ const DatabaseDetails = () => {
                       ))
                     ) : (
                       <TableRow>
-                        <TableCell 
-                          colSpan={viewDataDialog.columns.length} 
+                        <TableCell
+                          colSpan={viewDataDialog.columns.length}
                           align="center"
                           sx={{ padding: '16px' }}
                         >
@@ -1174,7 +1252,7 @@ const DatabaseDetails = () => {
                 </Table>
               </TableContainer>
             </DialogContent>
-            
+
             <TablePagination
               rowsPerPageOptions={[5, 10, 25]}
               component="div"
