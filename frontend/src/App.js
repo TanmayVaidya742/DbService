@@ -10,6 +10,8 @@ import Organizations from './components/Organizations';
 import axios from 'axios';
 import DatabaseDetails from './components/DatabaseDetails';
 import './styles/theme.css';
+import PricingPlans from './components/PricingPlans';
+
 
 const theme = createTheme({
   palette: {
@@ -75,6 +77,8 @@ function App() {
           <Route path="/databases" element={<UserDashboard />} />
           <Route path="/organizations" element={<Organizations />} />
           <Route path="/database/:dbName" element={<DatabaseDetails />} />
+          <Route path="/pricing" element={<PricingPlans />} />
+
 
         </Routes>
       </Router>

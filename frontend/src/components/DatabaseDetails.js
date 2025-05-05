@@ -64,6 +64,7 @@ import CreateTableDialog from "./CreateTableDialog";
 import { FaDatabase } from "react-icons/fa";
 import { CiViewTable } from "react-icons/ci";
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
+import UpgradeDialog from './UpgradeDialog';
 
 import StoreIcon from '@mui/icons-material/Store';
 
@@ -108,6 +109,7 @@ const DatabaseDetails = () => {
 
   const [columnsAnchorEl, setColumnsAnchorEl] = useState(null);
   const [expandedTable, setExpandedTable] = useState(null);
+  const [upgradeDialogOpen, setUpgradeDialogOpen] = useState(false);
 
 
   const handleShowMoreColumns = (event, table) => {
@@ -121,7 +123,11 @@ const DatabaseDetails = () => {
   };
 
   const handleCreateTable = async (dbName, formData) => {
+    // Clear any existing messages
+    setSnackbar({ open: false, message: "" });
+
     try {
+      // Show loading indicator only AFTER successful pre-check
       setSnackbar({
         open: true,
         message: "Creating table...",
@@ -140,21 +146,31 @@ const DatabaseDetails = () => {
         }
       );
 
+      // Handle success
       setSnackbar({
         open: true,
         message: "Table created successfully!",
         severity: "success",
       });
-
       await fetchDatabaseDetails();
       setOpenTableDialog(false);
+
     } catch (error) {
-      console.error("Error creating table:", error);
-      setSnackbar({
-        open: true,
-        message: error.response?.data?.error || "Failed to create table",
-        severity: "error",
-      });
+      // Close loading immediately
+      setSnackbar({ open: false, message: "" });
+
+      if (error.response?.status === 403) {
+        // Directly show upgrade dialog for limit exceeded
+        setUpgradeDialogOpen(true);
+      } else {
+        // Show regular error for other cases
+        console.error("Error creating table:", error);
+        setSnackbar({
+          open: true,
+          message: error.response?.data?.error || "Failed to create table",
+          severity: "error",
+        });
+      }
     }
   };
 
@@ -497,6 +513,18 @@ const DatabaseDetails = () => {
           <ListItemText primary="Databases" />
         </ListItem>
       </List>
+      <List>
+        <ListItem
+          button
+          onClick={() => navigate("/pricing")}
+          style={{ color: "var(--text-primary)" }}
+        >
+          <ListItemIcon>
+            <PersonIcon/>
+          </ListItemIcon>
+          <ListItemText primary="Purchase" />
+        </ListItem>
+      </List>
     </div>
   );
 
@@ -780,9 +808,9 @@ const DatabaseDetails = () => {
               borderRadius: 'var(--border-radius)',
               boxShadow: 'var(--shadow-lg)'
             }}>
-              <Box sx={{ display: "flex", alignItems: "center", mb: 1, ml:2}}>
-                <FaDatabase color="primary"size={24} />
-                <Typography variant="h4" sx={{ml: 2}}>{database.dbname}</Typography>
+              <Box sx={{ display: "flex", alignItems: "center", mb: 1, ml: 2 }}>
+                <FaDatabase color="primary" size={24} />
+                <Typography variant="h4" sx={{ ml: 2 }}>{database.dbname}</Typography>
               </Box>
 
 
@@ -1267,6 +1295,11 @@ const DatabaseDetails = () => {
               }}
             />
           </Dialog>
+
+          <UpgradeDialog
+            open={upgradeDialogOpen}
+            onClose={() => setUpgradeDialogOpen(false)}
+          />
 
           <Snackbar
             open={snackbar.open}

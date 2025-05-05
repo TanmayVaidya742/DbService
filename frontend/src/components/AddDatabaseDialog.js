@@ -60,7 +60,7 @@ const AddDatabaseDialog = ({ open, onClose, onSubmit }) => {
       <StyledDialogTitle>
         <Typography variant="h6" style={{ color: 'var(--primary-text)' }}>Create New Database</Typography>
         <IconButton aria-label="close" onClick={onClose}>
-          <CloseIcon />
+          <CloseIcon style={{ color: 'var(--primary-text)' }} />
         </IconButton>
       </StyledDialogTitle>
       <DialogContent dividers>

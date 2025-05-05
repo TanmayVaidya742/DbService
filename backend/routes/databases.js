@@ -202,10 +202,42 @@ router.post('/:dbName/create-table', upload.single('csvFile'), async (req, res) 
   let client = null;
 
   try {
+    // Validate inputs first
     if (!dbName || !tableName) {
       throw new Error('Database name and table name are required');
     }
 
+    // Start transaction early
+    client = await req.mainPool.connect();
+    await client.query('BEGIN');
+
+    // Check database exists and get dbid
+    const dbResult = await client.query(
+      'SELECT dbid FROM db_collection WHERE dbname = $1 AND user_id = $2',
+      [dbName, userId]
+    );
+
+    if (dbResult.rows.length === 0) {
+      throw new Error('Database not found in metadata');
+    }
+
+    const dbid = dbResult.rows[0].dbid;
+
+    // Check table count BEFORE any processing
+    const tableCountResult = await client.query(
+      'SELECT COUNT(*) AS count FROM table_collection WHERE dbid = $1',
+      [dbid]
+    );
+    const tableCount = parseInt(tableCountResult.rows[0].count, 10);
+
+    if (tableCount >= 3) {
+      await client.query('ROLLBACK');
+      return res.status(403).json({
+        error: 'Table limit exceeded. You can only create up to 3 tables per database.'
+      });
+    }
+
+    // Now process CSV or columns
     let parsedColumns = [];
     if (columns) {
       try {
@@ -219,6 +251,7 @@ router.post('/:dbName/create-table', upload.single('csvFile'), async (req, res) 
       throw new Error('Either columns or CSV file must be provided');
     }
 
+    // Connect to target database
     dbPool = new Pool({
       user: process.env.DB_USER || 'postgres',
       host: process.env.DB_HOST || 'localhost',
@@ -227,6 +260,7 @@ router.post('/:dbName/create-table', upload.single('csvFile'), async (req, res) 
       port: process.env.DB_PORT || 5432,
     });
 
+    // Process CSV/file upload
     let tableColumns = [];
     let schema = {};
 
@@ -251,30 +285,18 @@ router.post('/:dbName/create-table', upload.single('csvFile'), async (req, res) 
       });
     }
 
-    // Create the table with constraints
+    // Create table
     const createTableQuery = `CREATE TABLE ${tableName} (${tableColumns.join(', ')})`;
     await dbPool.query(createTableQuery);
 
-    client = await req.mainPool.connect();
-    await client.query('BEGIN');
-
-    const dbResult = await client.query(
-      'SELECT dbid FROM db_collection WHERE dbname = $1 AND user_id = $2',
-      [dbName, userId]
-    );
-
-    if (dbResult.rows.length === 0) {
-      throw new Error('Database not found in metadata');
-    }
-
-    const dbid = dbResult.rows[0].dbid;
-
+    // Insert metadata
     await client.query(
       `INSERT INTO table_collection (dbid, tablename, schema)
        VALUES ($1, $2, $3)`,
       [dbid, tableName, schema]
     );
 
+    // Commit transaction
     await client.query('COMMIT');
 
     if (csvFile) {
@@ -282,22 +304,31 @@ router.post('/:dbName/create-table', upload.single('csvFile'), async (req, res) 
     }
 
     res.status(201).json({
-      message: `Table '${tableName}' created successfully in database '${dbName}'`,
+      message: `Table '${tableName}' created successfully`,
       dbid: dbid
     });
 
   } catch (error) {
-    console.error('Error creating table in existing DB:', error);
+    console.error('Error creating table:', error);
+    
+    // Rollback transaction if any
     if (client) {
       try {
         await client.query('ROLLBACK');
       } catch (rollbackError) {
-        console.error('Error rolling back transaction:', rollbackError);
+        console.error('Rollback error:', rollbackError);
       }
     }
-    res.status(500).json({ error: error.message });
-  } finally {
+    
+    // Cleanup created database connection
     if (dbPool) await dbPool.end().catch(console.error);
+    
+    res.status(500).json({ 
+      error: error.message.includes('already exists') 
+        ? 'Table already exists' 
+        : error.message 
+    });
+  } finally {
     if (client) client.release();
   }
 });
