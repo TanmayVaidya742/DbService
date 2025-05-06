@@ -11,25 +11,21 @@ const usersRoutes = require('./routes/users');
 const databasesRoutes = require('./routes/databases');
 const superadminRoutes = require('./routes/superadmin');
 const accessRoutes = require('./routes/access');
-const { verifyToken } = require('./middleware/authMiddleware'); // Moved to top
+const { verifyToken } = require('./middleware/authMiddleware');
 
 const app = express();
 
-// Load environment variables
 dotenv.config();
 
-// Middleware
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Create uploads directory if it doesn't exist
 const uploadsDir = path.join(__dirname, 'uploads');
 if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir, { recursive: true });
 }
 
-// Configure multer for file upload
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
     cb(null, uploadsDir);
@@ -50,40 +46,31 @@ const upload = multer({
   }
 });
 
-// Database configuration
 const dbConfig = {
   user: process.env.DB_USER || 'postgres',
   host: process.env.DB_HOST || 'localhost',
- 
   password: process.env.DB_PASSWORD || 'ptspl1234',
-  database: process.env.DB_NAME || 'superadmin_db', // Changed from 'postgres'
- 
+  database: process.env.DB_NAME || 'superadmin_db',
   port: process.env.DB_PORT || 5432,
 };
-
-
 
 console.log('Connecting with user:', dbConfig.user);
 console.log('Database host:', dbConfig.host);
 console.log('Database port:', dbConfig.port);
 
-// Function to create database if it doesn't exist
 const createDatabase = async () => {
-  // Connect to default postgres database
   const defaultPool = new Pool({
     ...dbConfig,
     database: 'postgres'
   });
 
   try {
-    // Check if database exists
     const result = await defaultPool.query(
       "SELECT 1 FROM pg_database WHERE datname = $1",
       [dbConfig.database]
     );
 
     if (result.rows.length === 0) {
-      // Create database if it doesn't exist
       await defaultPool.query(`CREATE DATABASE ${dbConfig.database}`);
       console.log(`Database ${dbConfig.database} created successfully`);
     } else {
@@ -96,10 +83,8 @@ const createDatabase = async () => {
   }
 };
 
-// Create main connection pool
 const mainPool = new Pool(dbConfig);
 
-// Test connection
 mainPool.connect((err, client, release) => {
   if (err) {
     console.error('Error connecting to PostgreSQL:', err);
@@ -109,21 +94,17 @@ mainPool.connect((err, client, release) => {
   release();
 });
 
-
 app.use((req, res, next) => {
-  req.mainPool = mainPool; // Attach the pool to the request object
+  req.mainPool = mainPool;
   next();
 });
-// Initialize database
+
 const initializeDatabase = async () => {
   try {
-    // First create the database if it doesn't exist
     await createDatabase();
 
-    // Enable uuid-ossp extension
     await mainPool.query(`CREATE EXTENSION IF NOT EXISTS "uuid-ossp";`);
 
-    // Create superadmins table if not exists
     await mainPool.query(`
       CREATE TABLE IF NOT EXISTS superadmins (
         id SERIAL PRIMARY KEY,
@@ -137,7 +118,6 @@ const initializeDatabase = async () => {
       )
     `);
 
-    // Create users table with UUID primary key
     await mainPool.query(`
       CREATE TABLE IF NOT EXISTS users (
         user_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -149,9 +129,7 @@ const initializeDatabase = async () => {
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
     `);
-    
 
-    // Create organizations table
     await mainPool.query(`
       CREATE TABLE IF NOT EXISTS organizations (
         id SERIAL PRIMARY KEY,
@@ -172,7 +150,6 @@ const initializeDatabase = async () => {
       )
     `);
 
-    // Create table_collection table
     await mainPool.query(`
       CREATE TABLE IF NOT EXISTS table_collection (
         tableid UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -184,21 +161,31 @@ const initializeDatabase = async () => {
       )
     `);
 
+    // Add password_reset_tokens table
+    await mainPool.query(`
+      CREATE TABLE IF NOT EXISTS password_reset_tokens (
+        id SERIAL PRIMARY KEY,
+        email VARCHAR(255) NOT NULL,
+        token VARCHAR(255) NOT NULL,
+        expires_at TIMESTAMP NOT NULL,
+        used BOOLEAN DEFAULT FALSE,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
     console.log('Database tables initialized successfully');
   } catch (err) {
     console.error('Error initializing database:', err);
   }
 };
 
-// Initialize database
 initializeDatabase();
 
-// Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/users', usersRoutes);
 app.use('/api/databases', verifyToken, databasesRoutes);
 app.use('/api/superadmin', superadminRoutes);
-app.use('/api/query', accessRoutes); // Added access routes
+app.use('/api/query', accessRoutes);
 
 app.get('/api/protected', verifyToken, (req, res) => {
   res.json({ message: `Welcome, ${req.user.username}!` });
@@ -206,13 +193,12 @@ app.get('/api/protected', verifyToken, (req, res) => {
 
 const port = process.env.PORT || 5000;
 
-
 app.get('/', async(req, res) => {
   res.send(`Welcome`);
 });
+
 app.listen(port, () => {
   console.log(`Server is running on port ${port}`);
 });
 
-// Export the mainPool for use in other files
 module.exports = { mainPool };

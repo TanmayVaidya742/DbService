@@ -9,7 +9,7 @@ const MainSection = styled('section')({
   overflow: 'hidden',
   overflowY: 'hidden',
   backgroundColor: 'rgba(250, 247, 247, 0.1)',
-  backgroundImage: 'url(/assets/images/db.jpg)',
+  backgroundImage: 'url(/assets/images/database.jpg)',
   backgroundPosition: 'center right',
   backgroundRepeat: 'no-repeat',
   backgroundSize: 'contain',
@@ -112,6 +112,23 @@ const LandingPage = () => {
               1SPOC Database Service
             </Typography>
             <NavButtons>
+            <Button
+                variant="outlined"
+                sx={{
+                  borderColor: 'var(--primary-color)',
+                  color: 'var(--primary-color)',
+                  textTransform: 'none',
+                  px: 3,
+                  borderRadius: 'var(--border-radius)',
+                  '&:hover': {
+                    borderColor: 'var(--primary-hover)',
+                    backgroundColor: 'var(--primary-light)',
+                  }
+                }}
+                onClick={() => navigate('/register')}
+              >
+                Register
+              </Button>
               <Button
                 variant="contained"
                 sx={{
