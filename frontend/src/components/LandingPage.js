@@ -7,7 +7,15 @@ const MainSection = styled('section')({
   minHeight: '100vh',
   position: 'relative',
   overflow: 'hidden',
-  backgroundColor: 'var(--bg-primary)',
+  overflowY: 'hidden',
+  backgroundColor: 'rgba(250, 247, 247, 0.1)',
+  backgroundImage: 'url(/assets/images/db.jpg)',
+  backgroundPosition: 'center right',
+  backgroundRepeat: 'no-repeat',
+  backgroundSize: 'contain',
+  display: 'flex',
+  flexDirection: 'column',
+  justifyContent: 'center', // Center content vertically
 });
 
 const WaveBackground = styled('div')({
@@ -16,51 +24,44 @@ const WaveBackground = styled('div')({
   left: 0,
   right: 0,
   zIndex: 0,
+  opacity: 0.8, // Slightly reduce opacity for better blending
 });
 
 const Navbar = styled('nav')({
   position: 'relative',
-  zIndex: 1,
-  padding: '1rem 0',
+  zIndex: 2,
+  padding: '1.5rem 0', // Increased padding for better spacing
 });
 
 const NavContent = styled('div')({
   display: 'flex',
   justifyContent: 'space-between',
   alignItems: 'center',
+  padding: '0 1rem', // Add padding for better alignment
+});
+
+const LogoContainer = styled('div')({
+  display: 'flex',
+  alignItems: 'center',
 });
 
 const NavButtons = styled('div')({
   display: 'flex',
-  gap: 'var(--spacing-unit)',
+  gap: '1.5rem', // Increased gap for better spacing between buttons
+  justifyContent: 'flex-end',
 });
 
 const MainContent = styled('main')({
   position: 'relative',
   zIndex: 1,
-  marginTop: '4rem',
+  marginTop: '4rem', // Reduced to bring content closer to navbar
+  flexGrow: 1, // Allow content to take remaining space
 });
 
 const ButtonGroup = styled('div')({
   display: 'flex',
-  gap: 'var(--spacing-unit)',
-  marginTop: '2rem',
-});
-
-const ImageContainer = styled('div')({
-  display: 'flex',
-  justifyContent: 'center',
-  alignItems: 'center',
-  '& img': {
-    maxWidth: '90%',
-    height: 'auto',
-    borderRadius: 'var(--border-radius)',
-    boxShadow: 'var(--shadow-md)',
-    transition: 'transform 0.3s ease',
-    '&:hover': {
-      transform: 'scale(1.02)',
-    },
-  },
+  gap: '1.5rem', // Increased gap for better spacing
+  marginTop: '2.5rem', // Slightly increased for balance
 });
 
 const ContentContainer = styled('div')({
@@ -68,7 +69,9 @@ const ContentContainer = styled('div')({
   flexDirection: 'column',
   justifyContent: 'center',
   height: '100%',
-  padding: '2rem 0',
+  padding: '3rem', // Increased padding for better spacing
+  borderRadius: 'var(--border-radius)',
+  maxWidth: '600px', // Constrain width for better readability
 });
 
 const LandingPage = () => {
@@ -93,38 +96,22 @@ const LandingPage = () => {
       </WaveBackground>
 
       <Navbar>
-        <Container maxWidth="lg">
+        <Grid paddingLeft={10} marginTop={3}>
           <NavContent>
             <Typography
               variant="h5"
               sx={{
                 color: 'var(--text-primary)',
-                fontWeight: 600,
+                fontWeight: 900,
+                
                 cursor: 'pointer',
                 '&:hover': { color: 'var(--primary-color)' }
               }}
               onClick={() => navigate('/')}
             >
-              1SPOC
+              1SPOC Database Service
             </Typography>
             <NavButtons>
-              {/* <Button
-                variant="outlined"
-                sx={{
-                  borderColor: 'var(--primary-color)',
-                  color: 'var(--primary-color)',
-                  textTransform: 'none',
-                  px: 3,
-                  borderRadius: 'var(--border-radius)',
-                  '&:hover': {
-                    borderColor: 'var(--primary-hover)',
-                    backgroundColor: 'var(--primary-light)',
-                  }
-                }}
-                onClick={() => navigate('/register')}
-              >
-                Register
-              </Button> */}
               <Button
                 variant="contained"
                 sx={{
@@ -135,7 +122,10 @@ const LandingPage = () => {
                   borderRadius: 'var(--border-radius)',
                   '&:hover': {
                     bgcolor: 'var(--primary-hover)',
-                  }
+                  },
+                  mr: '70px'
+
+
                 }}
                 onClick={() => navigate('/login')}
               >
@@ -143,28 +133,30 @@ const LandingPage = () => {
               </Button>
             </NavButtons>
           </NavContent>
-        </Container>
+        </Grid>
       </Navbar>
 
       <MainContent>
-        <Container maxWidth="lg">
+        <Grid maxWidth="lg">
           <Grid
             container
-            spacing={8}
+            spacing={4} // Reduced spacing for a tighter layout
             alignItems="center"
-            justifyContent="space-between"
-            sx={{ minHeight: 'calc(100vh - 200px)', flexWrap: 'nowrap', marginRight: '244px' }}
+            justifyContent="flex-start"
+            sx={{ minHeight: 'calc(100vh - 300px)' }}
           >
             <Grid item xs={12} md={6} sx={{ display: 'flex', flexDirection: 'column' }}>
               <ContentContainer>
                 <Typography
-                  variant="h3"
-                  component="h1"
+                  variant="h4"
+                  component="h3"
                   gutterBottom
                   sx={{
                     fontWeight: 700,
                     color: 'var(--text-primary)',
                     mb: 3,
+                    
+                    ml: 4,
                     fontSize: { xs: '2.5rem', md: '3.5rem' },
                     lineHeight: 1.2,
                   }}
@@ -176,13 +168,17 @@ const LandingPage = () => {
                   sx={{
                     color: 'var(--text-secondary)',
                     mb: 4,
+                    ml:4,
                     fontSize: '1.125rem',
                     lineHeight: 1.7,
+                    overflowWrap: 'break-word',
+                    whiteSpace: 'normal',
                   }}
                 >
                   A web-based platform that enables users to invite and manage users from other organizations. Invited users can create and manage databases through an intuitive UI, facilitating seamless collaboration and data management across organizations.
                 </Typography>
-                <ButtonGroup>
+                <ButtonGroup
+                sx={{ml: 4}}>
                   <Button
                     variant="contained"
                     sx={{
@@ -191,10 +187,13 @@ const LandingPage = () => {
                       textTransform: 'none',
                       px: 6,
                       py: 1.5,
-                      fontSize: '1.125rem',
+                      fontSize: '1.25rem', // Increased font size for emphasis
+                      fontWeight: 600, // Bold for emphasis
                       borderRadius: 'var(--border-radius)',
+                      boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)', // Add subtle shadow
                       '&:hover': {
                         bgcolor: 'var(--primary-hover)',
+                        boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)', // Enhanced hover effect
                       },
                     }}
                     onClick={() => navigate('/login')}
@@ -204,18 +203,8 @@ const LandingPage = () => {
                 </ButtonGroup>
               </ContentContainer>
             </Grid>
-
-            <Grid item xs={12} md={6} sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-              <ImageContainer>
-                <img
-                  src="/assets/images/1.png"
-                  alt="Landing page illustration"
-                  style={{ maxWidth: '160%', height: 'auto', animation: 'float 6s ease-in-out infinite' }}
-                />
-              </ImageContainer>
-            </Grid>
           </Grid>
-        </Container>
+        </Grid>
       </MainContent>
     </MainSection>
   );

@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Box,
   Button,
@@ -10,96 +10,113 @@ import {
   Alert,
   Grid,
   Paper,
-} from '@mui/material';
-import { styled } from '@mui/material/styles';
-import axios from 'axios';
+} from "@mui/material";
+import { styled } from "@mui/material/styles";
+import axios from "axios";
 
-const MainSection = styled('section')({
-  minHeight: '100vh',
-  position: 'relative',
-  backgroundColor: 'var(--bg-primary)',
-  overflow: 'hidden',
+const MainSection = styled("section")({
+  minHeight: "100vh",
+  position: "relative",
+  backgroundColor: "#f0f7ff", // Added background color
+  overflow: "hidden",
+  display: "flex", // Added flex display
+  alignItems: "center", // Center vertically
+  justifyContent: "center", // Center horizontally
 });
 
-const WaveBackground = styled('div')({
-  position: 'absolute',
+const WaveBackground = styled("div")({
+  position: "absolute",
   top: 0,
   left: 0,
   right: 0,
   zIndex: 0,
 });
 
-const ContentWrapper = styled('div')({
-  position: 'relative',
+const ContentWrapper = styled("div")({
+  position: "relative",
   zIndex: 1,
-  paddingTop: '5rem',
+  width: "100%", // Ensure full width for container
 });
 
 const StyledPaper = styled(Paper)({
-  padding: '2rem',
-  borderRadius: 'var(--border-radius)',
-  boxShadow: 'var(--shadow-lg)',
+  padding: "2rem",
+  borderRadius: "var(--border-radius)",
+  boxShadow: "var(--shadow-lg)",
+  backgroundColor: "white", // Ensure paper has white background
 });
 
 const Login = () => {
-  const [formData, setFormData] = useState({ email: '', password: '' });
-  const [error, setError] = useState('');
+  const [formData, setFormData] = useState({ email: "", password: "" });
+  const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
   const navigate = useNavigate();
 
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
-    if (error) setError('');
+    if (error) setError("");
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-  
+
     // Check for email instead of username
     if (!formData.email.trim()) {
-      setError('Please enter your email');
+      setError("Please enter your email");
       return;
     }
-  
+
     if (!formData.password) {
-      setError('Please enter your password');
+      setError("Please enter your password");
       return;
     }
-  
+
     try {
-      const res = await axios.post('http://localhost:5000/api/auth/login', {
+      const res = await axios.post("http://localhost:5000/api/auth/login", {
         email: formData.email,
-        password: formData.password
+        password: formData.password,
       });
-  
-      localStorage.setItem('token', res.data.token);
-      localStorage.setItem('user', JSON.stringify(res.data.user));
+
+      localStorage.setItem("token", res.data.token);
+      localStorage.setItem("user", JSON.stringify(res.data.user));
       setSuccess(true);
-  
+
       setTimeout(() => {
         const userType = res.data.user.user_type;
-        if (userType === 'superadmin') {
-          navigate('/superadmin-dashboard');
+        if (userType === "superadmin") {
+          navigate("/superadmin-dashboard");
         } else {
-          navigate('/databases');
+          navigate("/databases");
         }
       }, 2000);
     } catch (err) {
-      console.error('Login error details:', {
+      console.error("Login error details:", {
         message: err.message,
         response: err.response?.data,
-        status: err.response?.status
+        status: err.response?.status,
       });
-      setError(err.response?.data?.message || 'Login failed. Please check your credentials.');
+      setError(
+        err.response?.data?.message ||
+          "Login failed. Please check your credentials."
+      );
     }
   };
   return (
     <MainSection>
       <WaveBackground>
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 320" style={{ display: 'block' }}>
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 1440 320"
+          style={{ display: "block" }}
+        >
           <defs>
-            <linearGradient id="wave-gradient" x1="0%" y1="0%" x2="100%" y2="0%">
+            <linearGradient
+              id="wave-gradient"
+              x1="0%"
+              y1="0%"
+              x2="100%"
+              y2="0%"
+            >
               <stop offset="0%" stopColor="var(--secondary-color)" />
               <stop offset="100%" stopColor="var(--primary-color)" />
             </linearGradient>
@@ -121,12 +138,17 @@ const Login = () => {
                   variant="h4"
                   align="center"
                   gutterBottom
-                  sx={{ fontWeight: 600, color: 'var(--text-primary)' }}
+                  sx={{ fontWeight: 600, color: "var(--text-primary)" }}
                 >
                   Login
                 </Typography>
 
-                <Box component="form" onSubmit={handleSubmit} noValidate sx={{ mt: 3 }}>
+                <Box
+                  component="form"
+                  onSubmit={handleSubmit}
+                  noValidate
+                  sx={{ mt: 3 }}
+                >
                   <TextField
                     margin="normal"
                     required
@@ -159,12 +181,12 @@ const Login = () => {
                     variant="contained"
                     sx={{
                       mt: 3,
-                      bgcolor: 'var(--primary-color)',
-                      textTransform: 'none',
-                      fontSize: 'var(--font-size-base)',
-                      padding: '0.75rem',
-                      borderRadius: 'var(--border-radius)',
-                      '&:hover': { bgcolor: 'var(--primary-hover)' },
+                      bgcolor: "var(--primary-color)",
+                      textTransform: "none",
+                      fontSize: "var(--font-size-base)",
+                      padding: "0.75rem",
+                      borderRadius: "var(--border-radius)",
+                      "&:hover": { bgcolor: "var(--primary-hover)" },
                     }}
                   >
                     Sign In
@@ -177,13 +199,21 @@ const Login = () => {
       </ContentWrapper>
 
       <Snackbar open={success} autoHideDuration={4000}>
-        <Alert severity="success" sx={{ width: '100%' }}>
+        <Alert severity="success" sx={{ width: "100%" }}>
           Login successful! Redirecting to dashboard...
         </Alert>
       </Snackbar>
 
-      <Snackbar open={Boolean(error)} autoHideDuration={4000} onClose={() => setError('')}>
-        <Alert onClose={() => setError('')} severity="error" sx={{ width: '100%' }}>
+      <Snackbar
+        open={Boolean(error)}
+        autoHideDuration={4000}
+        onClose={() => setError("")}
+      >
+        <Alert
+          onClose={() => setError("")}
+          severity="error"
+          sx={{ width: "100%" }}
+        >
           {error}
         </Alert>
       </Snackbar>

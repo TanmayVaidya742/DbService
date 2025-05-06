@@ -514,15 +514,15 @@ const DatabaseDetails = () => {
         </ListItem>
       </List>
       <List>
-        <ListItem
+      <ListItem
           button
-          onClick={() => navigate("/pricing")}
+          onClick={() => navigate("/pricing", { state: { dbName: dbName } })}
           style={{ color: "var(--text-primary)" }}
         >
           <ListItemIcon>
-            <PersonIcon/>
+            <StoreIcon />
           </ListItemIcon>
-          <ListItemText primary="Purchase" />
+          <ListItemText primary="Upgrade Plan" />
         </ListItem>
       </List>
     </div>
