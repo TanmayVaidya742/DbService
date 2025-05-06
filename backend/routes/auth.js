@@ -2,9 +2,9 @@ const express = require('express');
 const router = express.Router();
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
-const {mainPool} = require('../config/db')
+const { mainPool } = require('../config/db');
+const nodemailer = require('nodemailer');
 
-// Check if any superadmin exists
 router.get('/check-users', async (req, res) => {
   try {
     const result = await mainPool.query('SELECT COUNT(*) FROM superadmins');
@@ -16,8 +16,6 @@ router.get('/check-users', async (req, res) => {
   }
 });
 
-// Register Superadmin
-// Register Superadmin - Updated to remove username
 router.post('/register', async (req, res) => {
   const { name, mobile_no, address, email, organization, password } = req.body;
 
@@ -67,7 +65,6 @@ router.post('/register', async (req, res) => {
   }
 });
 
-// Login - Updated to only use email
 router.post('/login', async (req, res) => {
   const { email, password } = req.body;
 
@@ -76,7 +73,6 @@ router.post('/login', async (req, res) => {
       return res.status(400).json({ message: 'Email and password are required' });
     }
 
-    // First check in superadmins table
     let user = await mainPool.query(
       'SELECT * FROM superadmins WHERE email = $1',
       [email]
@@ -84,7 +80,6 @@ router.post('/login', async (req, res) => {
 
     let isSuperadmin = true;
     
-    // If not found in superadmins, check in users table
     if (user.rows.length === 0) {
       user = await mainPool.query(
         'SELECT * FROM users WHERE owner_email = $1',
@@ -102,7 +97,6 @@ router.post('/login', async (req, res) => {
       return res.status(401).json({ message: 'Invalid credentials' });
     }
 
-    // Create token
     const tokenPayload = {
       user_id: isSuperadmin ? user.rows[0].id : user.rows[0].user_id,
       email: isSuperadmin ? user.rows[0].email : user.rows[0].owner_email,
@@ -115,7 +109,6 @@ router.post('/login', async (req, res) => {
       { expiresIn: '24h' }
     );
 
-    // Prepare response
     const responseData = isSuperadmin ? {
       token,
       user: {
@@ -142,6 +135,131 @@ router.post('/login', async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Configure Nodemailer transporter
+const transporter = nodemailer.createTransport({
+  service: 'gmail',
+  auth: {
+    user: process.env.EMAIL_USER || 'your-email@gmail.com',
+    pass: process.env.EMAIL_PASS || 'your-app-password', // Use an App Password for Gmail
+  },
+});
+
+// Request an OTP for password reset
+router.post('/request-reset', async (req, res) => {
+  const { email } = req.body;
+
+  try {
+    if (!email) {
+      return res.status(400).json({ message: 'Email is required' });
+    }
+
+    let user = await mainPool.query(
+      'SELECT * FROM superadmins WHERE email = $1',
+      [email]
+    );
+
+    let isSuperadmin = true;
+
+    if (user.rows.length === 0) {
+      user = await mainPool.query(
+        'SELECT * FROM users WHERE owner_email = $1',
+        [email]
+      );
+      isSuperadmin = false;
+    }
+
+    if (user.rows.length === 0) {
+      return res.status(404).json({ message: 'Email not found' });
+    }
+
+    // Generate a 6-digit OTP
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes expiry
+
+    // Store the OTP in the database
+    await mainPool.query(
+      `INSERT INTO password_reset_tokens (email, token, expires_at)
+       VALUES ($1, $2, $3)`,
+      [email, otp, expiresAt]
+    );
+
+    // Send the OTP via email
+    const mailOptions = {
+      from: process.env.EMAIL_USER || 'your-email@gmail.com',
+      to: email,
+      subject: 'Password Reset OTP',
+      text: `Your OTP for password reset is: ${otp}. It is valid for 10 minutes.`,
+    };
+
+    await transporter.sendMail(mailOptions);
+
+    res.json({ message: 'OTP sent to your email' });
+  } catch (err) {
+    console.error('Request reset error:', err);
+    res.status(500).json({ message: 'Server error during reset request' });
+  }
+});
+
+// Reset password with OTP
+router.post('/reset-password', async (req, res) => {
+  const { email, otp, newPassword } = req.body;
+
+  try {
+    if (!email || !otp || !newPassword) {
+      return res.status(400).json({ message: 'Email, OTP, and new password are required' });
+    }
+
+    // Verify the OTP
+    const otpResult = await mainPool.query(
+      `SELECT * FROM password_reset_tokens 
+       WHERE email = $1 AND token = $2 AND expires_at > NOW() AND used = FALSE`,
+      [email, otp]
+    );
+
+    if (otpResult.rows.length === 0) {
+      return res.status(400).json({ message: 'Invalid or expired OTP' });
+    }
+
+    let user = await mainPool.query(
+      'SELECT * FROM superadmins WHERE email = $1',
+      [email]
+    );
+
+    let isSuperadmin = true;
+    let tableName = 'superadmins';
+
+    if (user.rows.length === 0) {
+      user = await mainPool.query(
+        'SELECT * FROM users WHERE owner_email = $1',
+        [email]
+      );
+      isSuperadmin = false;
+      tableName = 'users';
+    }
+
+    if (user.rows.length === 0) {
+      return res.status(404).json({ message: 'Email not found' });
+    }
+
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    await mainPool.query(
+      `UPDATE ${tableName} SET password = $1 WHERE ${isSuperadmin ? 'email' : 'owner_email'} = $2`,
+      [hashedPassword, email]
+    );
+
+    await mainPool.query(
+      `UPDATE password_reset_tokens SET used = TRUE WHERE token = $1`,
+      [otp]
+    );
+
+    res.json({ message: 'Password reset successful' });
+  } catch (err) {
+    console.error('Password reset error:', err);
+    res.status(500).json({ message: 'Server error during password reset' });
   }
 });
 
