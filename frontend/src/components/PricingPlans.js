@@ -52,11 +52,10 @@ const PricingPlans = () => {
  const navigate = useNavigate();
  const location = useLocation();
  const { dbName } = location.state || {};
- const [selectedPlan, setSelectedPlan] = useState(null);
+ const [selectedPlan, setSelectedPlan] = useState(0); // Default to Current plan (index 0)
  const [mobileOpen, setMobileOpen] = useState(false);
  const [animate, setAnimate] = useState(false);
 
- // Trigger animation on component mount
  useEffect(() => {
  setAnimate(true);
  }, []);
@@ -70,9 +69,7 @@ const PricingPlans = () => {
  cta: 'Current Plan',
  recommended: false,
  icon: <Star fontSize="large" />,
-
-
- color: theme.palette.grey[500]
+ color: '#1E88E5' // Darker blue color for Current plan
  },
  {
  title: 'Pro',
@@ -89,9 +86,8 @@ const PricingPlans = () => {
  cta: 'Upgrade Now',
  recommended: true,
  icon: <Bolt fontSize="large" />,
- color: theme.palette.primary.main,
- ribbon: 'Most Popular',
- savings: 'Save 20%'
+ color: '#4CAF50', // Darker green for Pro plan
+ ribbon: 'Most Popular'
  },
  {
  title: 'Enterprise',
@@ -155,9 +151,7 @@ const PricingPlans = () => {
  );
 
  const handleCardClick = (index) => {
- setSelectedPlan(selectedPlan === index ? null : index);
- 
- // Trigger card animation
+ setSelectedPlan(index);
  const cards = document.querySelectorAll('.pricing-card');
  cards.forEach((card, idx) => {
  if (idx === index) {
@@ -238,7 +232,6 @@ const PricingPlans = () => {
  flexGrow: 1,
  p: 3,
  width: { sm: `calc(100% - ${drawerWidth}px)` },
- 
  '@keyframes pulse': {
  '0%': { transform: 'scale(1)' },
  '50%': { transform: 'scale(1.05)' },
@@ -248,9 +241,6 @@ const PricingPlans = () => {
  '0%': { boxShadow: '0 5px 15px rgba(0,0,0,0.05)' },
  '50%': { boxShadow: '0 5px 25px rgba(104, 109, 224, 0.5)' },
  '100%': { boxShadow: '0 5px 15px rgba(0,0,0,0.05)' },
- },
- '.card-float': {
- animation: 'float 3s ease-in-out infinite'
  },
  '.card-pulse': {
  animation: 'pulse 0.5s ease-in-out'
@@ -288,7 +278,6 @@ const PricingPlans = () => {
  </Typography>
  </Box>
 
- {/* Equal size cards with improved animations */}
  <Grid container spacing={5} justifyContent="center" alignItems="stretch" sx={{ mb: 8 }}>
  {plans.map((plan, index) => (
  <Grid item xs={12} md={6} lg={4} key={plan.title} sx={{ display: 'flex', justifyContent: 'center' }}>
@@ -298,7 +287,7 @@ const PricingPlans = () => {
  style={{ transformOrigin: '50% 10% 0' }}
  >
  <Card
- className={`pricing-card ${index === 1 ? 'card-glow' : 'card-float'}`}
+ className={`pricing-card ${index === 1 ? 'card-glow' : ''}`}
  sx={{
  display: 'flex',
  flexDirection: 'column',
@@ -308,14 +297,20 @@ const PricingPlans = () => {
  height: '100%',
  position: 'relative',
  overflow: 'visible',
- border: `2px solid ${plan.recommended ? plan.color : theme.palette.divider}`,
- boxShadow: theme.shadows[4],
+ border: `2px solid ${selectedPlan === index ? plan.color : theme.palette.divider}`,
+ boxShadow: selectedPlan === index 
+ ? `0 0 20px ${plan.color}80` 
+ : theme.shadows[4],
  transition: 'all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
  cursor: 'pointer',
  borderRadius: '16px',
+ background: selectedPlan === index 
+ ? `linear-gradient(145deg, ${plan.color}10 0%, ${theme.palette.background.paper} 100%)`
+ : 'inherit',
  '&:hover': {
  transform: 'translateY(-8px) scale(1.02)',
- boxShadow: `0 20px 30px -10px ${plan.color}33`
+ boxShadow: `0 20px 30px -10px ${plan.color}33`,
+ border: `2px solid ${plan.color}`
  },
  '&:active': {
  transform: 'translateY(-2px) scale(0.98)'
@@ -339,31 +334,15 @@ const PricingPlans = () => {
  height: 32,
  borderRadius: 16,
  bgcolor: plan.color,
- color: 'white'
+ color: 'white',
+ boxShadow: `0 4px 10px ${plan.color}40`
  }}
  />
  </Zoom>
  )}
 
- {plan.savings && (
- <Chip
- label={plan.savings}
- color="success"
- size="small"
- sx={{
- position: 'absolute',
- top: 16,
- left: -10,
- zIndex: 1,
- transform: 'rotate(-15deg)',
- fontWeight: 'bold'
- }}
- />
- )}
-
  <CardContent sx={{
  p: 4,
- background: `linear-gradient(145deg, ${theme.palette.background.paper} 0%, ${theme.palette.action.hover} 100%)`,
  position: 'relative',
  overflow: 'hidden',
  flexGrow: 1,
@@ -393,13 +372,14 @@ const PricingPlans = () => {
  mb: 2,
  mx: 'auto',
  transition: 'all 0.5s',
+ boxShadow: selectedPlan === index ? `0 0 15px ${plan.color}80` : 'none',
  '&:hover': {
  transform: 'rotate(15deg) scale(1.1)',
  }
  }}>
  {plan.icon}
  </Avatar>
- <Typography variant="h4" fontWeight={800} gutterBottom>
+ <Typography variant="h4" fontWeight={800} gutterBottom sx={{ color: plan.color }}>
  {plan.title}
  </Typography>
  <Box sx={{ display: 'flex', alignItems: 'baseline', justifyContent: 'center' }}>
@@ -419,10 +399,11 @@ const PricingPlans = () => {
  sx={{
  px: 0,
  py: 1,
+ borderRadius: '8px',
  transition: 'all 0.3s',
  '&:hover': {
  transform: 'translateX(8px)',
- bgcolor: 'action.hover'
+ bgcolor: `${plan.color}10`
  }
  }}
  >
@@ -438,7 +419,7 @@ const PricingPlans = () => {
 
  <Button
  fullWidth
- variant={plan.recommended ? 'contained' : 'outlined'}
+ variant="outlined"
  size="large"
  sx={{
  py: 1.5,
@@ -449,9 +430,9 @@ const PricingPlans = () => {
  overflow: 'hidden',
  mt: 'auto',
  transition: 'all 0.3s',
- backgroundColor: plan.recommended ? plan.color : 'transparent',
- color: plan.recommended ? 'white' : plan.color,
+ color: plan.color,
  borderColor: plan.color,
+ backgroundColor: selectedPlan === index ? `${plan.color}20` : 'transparent',
  '&:after': {
  content: '""',
  position: 'absolute',
@@ -464,7 +445,7 @@ const PricingPlans = () => {
  transition: 'all 0.5s'
  },
  '&:hover': {
- backgroundColor: plan.recommended ? `${plan.color}CC` : `${plan.color}10`,
+ backgroundColor: `${plan.color}30`,
  boxShadow: `0 4px 12px ${plan.color}33`
  },
  '&:hover:after': {
@@ -472,7 +453,7 @@ const PricingPlans = () => {
  }
  }}
  >
- {plan.cta}
+ {selectedPlan === index ? 'Selected' : plan.cta}
  </Button>
  </CardContent>
  </Card>
@@ -514,12 +495,26 @@ const PricingPlans = () => {
  }
  }}>
  <TableCell>Feature</TableCell>
- <TableCell align="center">Current</TableCell>
  <TableCell align="center" sx={{ 
- bgcolor: `${plans[1].color}10`,
+ bgcolor: selectedPlan === 0 ? `${plans[0].color}10` : 'inherit',
  position: 'relative',
  '&::after': {
- content: '""',
+ content: selectedPlan === 0 ? '""' : 'none',
+ position: 'absolute',
+ top: 0,
+ left: 0,
+ right: 0,
+ height: '4px',
+ bgcolor: plans[0].color
+ }
+ }}>
+ Current
+ </TableCell>
+ <TableCell align="center" sx={{ 
+ bgcolor: selectedPlan === 1 ? `${plans[1].color}10` : 'inherit',
+ position: 'relative',
+ '&::after': {
+ content: selectedPlan === 1 ? '""' : 'none',
  position: 'absolute',
  top: 0,
  left: 0,
@@ -530,7 +525,21 @@ const PricingPlans = () => {
  }}>
  Professional
  </TableCell>
- <TableCell align="center">Enterprise</TableCell>
+ <TableCell align="center" sx={{ 
+ bgcolor: selectedPlan === 2 ? `${plans[2].color}10` : 'inherit',
+ position: 'relative',
+ '&::after': {
+ content: selectedPlan === 2 ? '""' : 'none',
+ position: 'absolute',
+ top: 0,
+ left: 0,
+ right: 0,
+ height: '4px',
+ bgcolor: plans[2].color
+ }
+ }}>
+ Enterprise
+ </TableCell>
  </TableRow>
  </TableHead>
  <TableBody>
@@ -552,7 +561,10 @@ const PricingPlans = () => {
  }}>
  {row.feature}
  </TableCell>
- <TableCell align="center" sx={{ py: 2 }}>
+ <TableCell align="center" sx={{ 
+ py: 2,
+ bgcolor: selectedPlan === 0 ? `${plans[0].color}05` : 'inherit'
+ }}>
  <Chip
  label={row.starter}
  variant="outlined"
@@ -562,7 +574,10 @@ const PricingPlans = () => {
  }}
  />
  </TableCell>
- <TableCell align="center" sx={{ py: 2 }}>
+ <TableCell align="center" sx={{ 
+ py: 2,
+ bgcolor: selectedPlan === 1 ? `${plans[1].color}05` : 'inherit'
+ }}>
  <Chip
  label={row.pro}
  variant={row.pro === '✔' ? 'filled' : 'outlined'}
@@ -573,7 +588,10 @@ const PricingPlans = () => {
  }}
  />
  </TableCell>
- <TableCell align="center" sx={{ py: 2 }}>
+ <TableCell align="center" sx={{ 
+ py: 2,
+ bgcolor: selectedPlan === 2 ? `${plans[2].color}05` : 'inherit'
+ }}>
  <Chip
  label={row.enterprise}
  variant={row.enterprise === '✔' ? 'filled' : 'outlined'}
