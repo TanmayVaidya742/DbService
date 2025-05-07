@@ -11,6 +11,7 @@ const usersRoutes = require('./routes/users');
 const databasesRoutes = require('./routes/databases');
 const superadminRoutes = require('./routes/superadmin');
 const accessRoutes = require('./routes/access');
+const oDataAccessRoutes = require('./routes/oDataAccess');
 const { verifyToken } = require('./middleware/authMiddleware');
 
 const app = express();
@@ -18,7 +19,10 @@ const app = express();
 dotenv.config();
 
 app.use(cors());
-app.use(express.json());
+app.use(express.json({
+  strict: false // Allow empty bodies
+}
+));
 app.use(express.urlencoded({ extended: true }));
 
 const uploadsDir = path.join(__dirname, 'uploads');
@@ -185,7 +189,9 @@ app.use('/api/auth', authRoutes);
 app.use('/api/users', usersRoutes);
 app.use('/api/databases', verifyToken, databasesRoutes);
 app.use('/api/superadmin', superadminRoutes);
-app.use('/api/query', accessRoutes);
+app.use('/api/query', accessRoutes); // Added access routes
+app.use('/api/access', oDataAccessRoutes);
+
 
 app.get('/api/protected', verifyToken, (req, res) => {
   res.json({ message: `Welcome, ${req.user.username}!` });
