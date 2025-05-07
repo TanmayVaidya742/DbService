@@ -1,0 +1,15 @@
+{
+  "success": true,
+  "@odata.context": "$metadata#user_details",
+  "value": [
+    {
+      "id": "e0r5i0c1-7cc2-4765-ccb5-e05a3ce09735",
+      "city": "Mumbai",
+      "email": "piyush@gmail.com",
+      "state": "Maharashtra",
+      "mobile_no": "8793282196",
+      "user_name": "Piyush",
+      "address": "17 behind Tuli mall, Bandra, Mumbai, Maharashtra, 400028"
+    }
+  ]
+}

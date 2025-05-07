@@ -87,7 +87,7 @@ const Organizations = () => {
       </Toolbar>
       <Divider />
       <List>
-        <ListItem button onClick={() => navigate('/dashboard')}>
+        <ListItem button onClick={() => navigate('/databases')}>
           <ListItemIcon><DashboardIcon /></ListItemIcon>
           <ListItemText primary="Dashboard" />
         </ListItem>
