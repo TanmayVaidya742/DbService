@@ -1,10 +1,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
-
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
-
-
 import LinkIcon from '@mui/icons-material/Link';
 import {
   Box,
@@ -65,7 +62,6 @@ import { FaDatabase } from "react-icons/fa";
 import { CiViewTable } from "react-icons/ci";
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import UpgradeDialog from './UpgradeDialog';
-
 import StoreIcon from '@mui/icons-material/Store';
 
 const drawerWidth = 240;
@@ -84,7 +80,6 @@ const DatabaseDetails = () => {
   const [anchorEl, setAnchorEl] = useState(null);
   const [currentTable, setCurrentTable] = useState(null);
   const [openTableDialog, setOpenTableDialog] = useState(false);
-
   const [editDialog, setEditDialog] = useState({
     open: false,
     dbName: "",
@@ -95,7 +90,6 @@ const DatabaseDetails = () => {
     open: false,
     tableName: "",
   });
-
   const [viewDataDialog, setViewDataDialog] = useState({
     open: false,
     tableName: "",
@@ -105,12 +99,9 @@ const DatabaseDetails = () => {
     page: 0,
     rowsPerPage: 10
   });
-
-
   const [columnsAnchorEl, setColumnsAnchorEl] = useState(null);
   const [expandedTable, setExpandedTable] = useState(null);
   const [upgradeDialogOpen, setUpgradeDialogOpen] = useState(false);
-
 
   const handleShowMoreColumns = (event, table) => {
     setColumnsAnchorEl(event.currentTarget);
@@ -123,18 +114,14 @@ const DatabaseDetails = () => {
   };
 
   const handleCreateTable = async (dbName, formData) => {
-    // Clear any existing messages
     setSnackbar({ open: false, message: "" });
-
     try {
-      // Show loading indicator only AFTER successful pre-check
       setSnackbar({
         open: true,
         message: "Creating table...",
         severity: "info",
         autoHideDuration: null,
       });
-
       const response = await axios.post(
         `http://localhost:5000/api/databases/${dbName}/create-table`,
         formData,
@@ -145,8 +132,6 @@ const DatabaseDetails = () => {
           },
         }
       );
-
-      // Handle success
       setSnackbar({
         open: true,
         message: "Table created successfully!",
@@ -154,16 +139,11 @@ const DatabaseDetails = () => {
       });
       await fetchDatabaseDetails();
       setOpenTableDialog(false);
-
     } catch (error) {
-      // Close loading immediately
       setSnackbar({ open: false, message: "" });
-
       if (error.response?.status === 403) {
-        // Directly show upgrade dialog for limit exceeded
         setUpgradeDialogOpen(true);
       } else {
-        // Show regular error for other cases
         console.error("Error creating table:", error);
         setSnackbar({
           open: true,
@@ -210,24 +190,19 @@ const DatabaseDetails = () => {
         { columns },
         { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } }
       );
-
       const updatedDatabase = JSON.parse(JSON.stringify(database));
       const tableIndex = updatedDatabase.tables.findIndex(
         table => table.tablename === tableName
       );
-
       if (tableIndex !== -1) {
         updatedDatabase.tables[tableIndex].schema = response.data.schema;
       }
-
       setDatabase(updatedDatabase);
-
       setSnackbar({
         open: true,
         message: response.data?.message || "Table updated successfully!",
         severity: "success",
       });
-
       return true;
     } catch (error) {
       console.error("Error updating table:", error);
@@ -250,17 +225,14 @@ const DatabaseDetails = () => {
           },
         }
       );
-
       const data = response.data;
       data.tables = data.tables || [];
-
       if (data.tables) {
         data.tables = data.tables.map(table => ({
           ...table,
           schema: table.schema || {}
         }));
       }
-
       setDatabase(data);
     } catch (error) {
       console.error("Error fetching database details:", error);
@@ -298,39 +270,47 @@ const DatabaseDetails = () => {
 
   const generateandCopyUrlByActionType = (dbName, tableName, action) => {
     const baseUrl = process.env.REACT_APP_SERVER_BASE_URL;
-    const queryRoute = process.env.REACT_APP_QUERY_ROUTE || "/api/query";
-
+    const queryRoute = process.env.REACT_APP_QUERY_ROUTE_ODATA || "/api/query";
     let url = "";
-    let method = "";
-
+  
     switch (action) {
       case "read":
-        url = `${baseUrl}${queryRoute}/${dbName}/${tableName}/get`;
-        method = "POST";
+        url = `${baseUrl}${queryRoute}/${dbName}/${tableName}?$filter=name eq 'John'&$select=id,name&$orderby=created_at desc&$top=10&$skip=0&$count=true`;
         break;
       case "insert":
         url = `${baseUrl}${queryRoute}/${dbName}/${tableName}/insert`;
-        method = "POST";
         break;
       case "update":
-        url = `${baseUrl}${queryRoute}/${dbName}/${tableName}/update`;
-        method = "POST";
+        url = `${baseUrl}${queryRoute}/${dbName}/${tableName}?$filter=id eq 1&$update=name=Jane,age=31`;
         break;
       case "delete":
-        url = `${baseUrl}${queryRoute}/${dbName}/${tableName}/delete`;
-        method = "POST";
+        url = `${baseUrl}${queryRoute}/${dbName}/${tableName}?$filter=id eq 1`;
         break;
       default:
-        console.error("Invalid action!!");
+        console.error("Invalid action!");
         return;
     }
-
+  
     navigator.clipboard
       .writeText(url)
       .then(() => {
         setSnackbar({
           open: true,
-          message: `${method} ${url} copied to clipboard!`,
+          message: (
+            <div>
+              <div>{`${action.charAt(0).toUpperCase() + action.slice(1)} URL copied to clipboard!`}</div>
+              <div style={{
+                fontFamily: 'monospace',
+                padding: '8px',
+                borderRadius: '4px',
+                marginTop: '8px',
+                wordBreak: 'break-all',
+                fontSize: '0.9em'
+              }}>
+                {url}
+              </div>
+            </div>
+          ),
           severity: "success",
         });
       })
@@ -342,36 +322,13 @@ const DatabaseDetails = () => {
           severity: "error",
         });
       });
-
+  
     return url;
   };
 
   const handleMenuAction = (action) => {
     generateandCopyUrlByActionType(dbName, currentTable.tablename, action);
     handleMenuClose();
-
-    let message = "";
-    switch (action) {
-      case "read":
-        message = "Send a POST request with filter object in body";
-        break;
-      case "insert":
-        message = "Send a POST request with data object in body";
-        break;
-      case "update":
-        message = "Send a POST request with filter and data objects in body";
-        break;
-      case "delete":
-        message = "Send a POST request with filter object in body";
-        break;
-      default:
-        message = "";
-    }
-
-    setSnackbar((prev) => ({
-      ...prev,
-      message: `${prev.message}\n${message}`,
-    }));
   };
 
   const handleViewData = async (table) => {
@@ -384,7 +341,6 @@ const DatabaseDetails = () => {
           },
         }
       );
-
       const dataResponse = await axios.get(
         `http://localhost:5000/api/databases/${dbName}/tables/${table.tablename}/data`,
         {
@@ -393,7 +349,6 @@ const DatabaseDetails = () => {
           },
         }
       );
-
       setViewDataDialog({
         open: true,
         tableName: table.tablename,
@@ -458,13 +413,11 @@ const DatabaseDetails = () => {
           },
         }
       );
-
       setSnackbar({
         open: true,
         message: "Table deleted successfully!",
         severity: "success",
       });
-
       setDeleteDialog({ open: false, tableName: "" });
       await fetchDatabaseDetails();
     } catch (error) {
@@ -479,7 +432,6 @@ const DatabaseDetails = () => {
 
   const filteredData = viewDataDialog.data.filter(row => {
     if (!viewDataDialog.searchTerm) return true;
-
     return Object.values(row).some(value =>
       String(value).toLowerCase().includes(viewDataDialog.searchTerm.toLowerCase())
     );
@@ -497,8 +449,6 @@ const DatabaseDetails = () => {
     });
   };
 
-
-
   const drawer = (
     <div>
       <Toolbar>
@@ -514,7 +464,7 @@ const DatabaseDetails = () => {
         </ListItem>
       </List>
       <List>
-      <ListItem
+        <ListItem
           button
           onClick={() => navigate("/pricing", { state: { dbName: dbName } })}
           style={{ color: "var(--text-primary)" }}
@@ -704,16 +654,10 @@ const DatabaseDetails = () => {
           >
             <MenuIcon />
           </IconButton>
-          {/* <Typography variant="h6" noWrap component="div">
-          <FaDatabase color="primary"size={24} />
-            Database: {database.dbname}
-          </Typography> */}
-
           <Box sx={{ display: "flex", alignItems: "center", mb: 1, ml: 2 }}>
             <FaDatabase color="primary" size={24} />
             <Typography variant="h5" sx={{ ml: 2, color: "var(--primary-text)" }}> Database: {database.dbname}</Typography>
           </Box>
-
           <IconButton color="inherit" sx={{ ml: "auto" }}>
             <SettingsIcon />
           </IconButton>
@@ -786,7 +730,6 @@ const DatabaseDetails = () => {
               >
                 Back to Databases
               </Button>
-
               <Button
                 variant="contained"
                 startIcon={<CiViewTable />}
@@ -812,11 +755,7 @@ const DatabaseDetails = () => {
                 <FaDatabase color="primary" size={24} />
                 <Typography variant="h4" sx={{ ml: 2 }}>{database.dbname}</Typography>
               </Box>
-
-
-
               <Divider sx={{ my: 2 }} />
-
               <TableContainer
                 sx={{
                   maxHeight: 'calc(100vh - 300px)',
@@ -833,15 +772,13 @@ const DatabaseDetails = () => {
                       <TableCell align="center" sx={{ backgroundColor: "var(--primary-light)", fontWeight: "bold" }}>Edit Table</TableCell>
                       <TableCell align="center" sx={{ backgroundColor: "var(--primary-light)", fontWeight: "bold" }}>Delete Table</TableCell>
                       <TableCell align="center" sx={{ backgroundColor: "var(--primary-light)", fontWeight: "bold" }}>Select</TableCell>
-
-
                     </TableRow>
                   </TableHead>
                   <TableBody>
                     {database.tables && database.tables.length > 0 ? (
                       database.tables.map((table) => (
                         <TableRow key={table.tablename}>
-                          <TableCell align="center" >{table.tablename}</TableCell>
+                          <TableCell align="center">{table.tablename}</TableCell>
                           <TableCell align="center">
                             {Object.entries(table.schema).slice(0, 2).map(([colName, colType]) => (
                               <Chip
@@ -939,8 +876,6 @@ const DatabaseDetails = () => {
                                   URLs
                                   <KeyboardArrowDownIcon sx={{ fontSize: "1.2rem" }} />
                                 </Button>
-
-
                               </Box>
                             )}
                           </TableCell>
@@ -989,14 +924,12 @@ const DatabaseDetails = () => {
                               </Box>
                             )}
                           </TableCell>
-
                           <TableCell align="center">
                             {table.tablename && (
                               <Button
                                 variant="outlined"
                                 startIcon={<VisibilityIcon />}
                                 onClick={() => handleViewData(table)}
-
                               >
                                 View Data
                               </Button>
@@ -1018,7 +951,6 @@ const DatabaseDetails = () => {
               </TableContainer>
             </Paper>
           </Box>
-
           <EditTableDialog
             open={editDialog.open}
             onClose={() => setEditDialog({
@@ -1043,7 +975,6 @@ const DatabaseDetails = () => {
               return success;
             }}
           />
-
           <Menu
             id="table-actions-menu"
             anchorEl={anchorEl}
@@ -1075,7 +1006,6 @@ const DatabaseDetails = () => {
               </Typography>
             </Box>
             <Divider sx={{ my: 1 }} />
-
             {['read', 'insert', 'update', 'delete'].map((action) => (
               <MenuItem
                 key={action}
@@ -1107,10 +1037,10 @@ const DatabaseDetails = () => {
                     display: 'block',
                     fontSize: '0.75rem'
                   }}>
-                    {action === 'read' && 'POST /get'}
-                    {action === 'insert' && 'POST /insert'}
-                    {action === 'update' && 'POST /update'}
-                    {action === 'delete' && 'POST /delete'}
+                    {action === 'read' && 'GET query'}
+                    {action === 'insert' && 'POST query'}
+                    {action === 'update' && 'PATCH query'}
+                    {action === 'delete' && 'DELETE query'}
                   </Typography>
                 </Box>
               </MenuItem>
@@ -1122,7 +1052,6 @@ const DatabaseDetails = () => {
             dbName={dbName}
             onSubmit={handleCreateTable}
           />
-
           <Dialog
             open={deleteDialog.open}
             onClose={() => setDeleteDialog({ ...deleteDialog, open: false })}
@@ -1174,8 +1103,6 @@ const DatabaseDetails = () => {
               </Button>
             </DialogActions>
           </Dialog>
-
-          {/* View Data Dialog */}
           <Dialog
             open={viewDataDialog.open}
             onClose={handleCloseViewData}
@@ -1211,7 +1138,6 @@ const DatabaseDetails = () => {
                 <CloseIcon />
               </IconButton>
             </DialogTitle>
-
             <DialogContent dividers sx={{ flex: 1, padding: 0 }}>
               <Box sx={{ padding: '16px 24px' }}>
                 <TextField
@@ -1230,7 +1156,6 @@ const DatabaseDetails = () => {
                   }}
                 />
               </Box>
-
               <TableContainer sx={{ flex: 1, maxHeight: '100%' }}>
                 <Table stickyHeader size="small">
                   <TableHead>
@@ -1280,7 +1205,6 @@ const DatabaseDetails = () => {
                 </Table>
               </TableContainer>
             </DialogContent>
-
             <TablePagination
               rowsPerPageOptions={[5, 10, 25]}
               component="div"
@@ -1295,12 +1219,10 @@ const DatabaseDetails = () => {
               }}
             />
           </Dialog>
-
           <UpgradeDialog
             open={upgradeDialogOpen}
             onClose={() => setUpgradeDialogOpen(false)}
           />
-
           <Snackbar
             open={snackbar.open}
             autoHideDuration={6000}
