@@ -9,13 +9,14 @@ import {
 import { Add as AddIcon, Delete as DeleteIcon } from '@mui/icons-material';
 import axios from 'axios';
 
-const EditTableDialog = ({ 
-  open, 
-  onClose, 
-  dbName, 
-  tableName, 
-  columns: initialColumns, 
-  onSave 
+const EditTableDialog = ({
+  open,
+  onClose,
+  dbName,
+  tableName,
+  columns: initialColumns,
+  onSave,
+  hasData // Add this new prop
 }) => {
   const [editedColumns, setEditedColumns] = useState([]);
   const [newColumn, setNewColumn] = useState({
@@ -82,14 +83,14 @@ const EditTableDialog = ({
 
   const handleAddColumn = () => {
     if (!newColumn.name) return;
-    
+
     setEditedColumns([...editedColumns, {
       column_name: newColumn.name,
       data_type: newColumn.type,
       column_default: newColumn.defaultValue,
       is_nullable: newColumn.isNullable
     }]);
-    
+
     setNewColumn({
       name: '',
       type: 'TEXT',
@@ -107,10 +108,10 @@ const EditTableDialog = ({
   const handleSave = async () => {
     if (isSaving) return;
     setIsSaving(true);
-    
+
     try {
       const success = await onSave(dbName, tableName, editedColumns);
-      
+
       if (success) {
         onClose();
       } else {
@@ -194,9 +195,10 @@ const EditTableDialog = ({
                         <FormControl fullWidth size="small">
                           <InputLabel>Data Type</InputLabel>
                           <Select
-                            value={col.data_type || 'TEXT'} // Ensure a default value
+                            value={col.data_type || 'TEXT'}
                             onChange={(e) => handleColumnChange(index, 'data_type', e.target.value)}
                             label="Data Type"
+                            disabled={hasData} // Disable if table has data
                           >
                             <MenuItem value="TEXT">TEXT</MenuItem>
                             <MenuItem value="INTEGER">INTEGER</MenuItem>
@@ -251,14 +253,14 @@ const EditTableDialog = ({
               <TextField
                 label="Column Name"
                 value={newColumn.name}
-                onChange={(e) => setNewColumn({...newColumn, name: e.target.value})}
+                onChange={(e) => setNewColumn({ ...newColumn, name: e.target.value })}
                 size="small"
               />
               <FormControl size="small" sx={{ minWidth: 120 }}>
                 <InputLabel>Data Type</InputLabel>
                 <Select
                   value={newColumn.type}
-                  onChange={(e) => setNewColumn({...newColumn, type: e.target.value})}
+                  onChange={(e) => setNewColumn({ ...newColumn, type: e.target.value })}
                   label="Data Type"
                 >
                   <MenuItem value="TEXT">TEXT</MenuItem>
@@ -274,21 +276,21 @@ const EditTableDialog = ({
               <TextField
                 label="Default Value"
                 value={newColumn.defaultValue}
-                onChange={(e) => setNewColumn({...newColumn, defaultValue: e.target.value})}
+                onChange={(e) => setNewColumn({ ...newColumn, defaultValue: e.target.value })}
                 size="small"
               />
               <FormControl size="small" sx={{ minWidth: 100 }}>
                 <InputLabel>Nullable</InputLabel>
                 <Select
                   value={newColumn.isNullable}
-                  onChange={(e) => setNewColumn({...newColumn, isNullable: e.target.value})}
+                  onChange={(e) => setNewColumn({ ...newColumn, isNullable: e.target.value })}
                   label="Nullable"
                 >
                   <MenuItem value="YES">YES</MenuItem>
                   <MenuItem value="NO">NO</MenuItem>
                 </Select>
               </FormControl>
-              <IconButton 
+              <IconButton
                 onClick={handleAddColumn}
                 color="primary"
                 disabled={!newColumn.name}
@@ -300,9 +302,9 @@ const EditTableDialog = ({
         </DialogContent>
         <DialogActions>
           <Button onClick={onClose} disabled={isSaving}>Cancel</Button>
-          <Button 
-            onClick={handleSave} 
-            variant="contained" 
+          <Button
+            onClick={handleSave}
+            variant="contained"
             color="primary"
             disabled={isSaving}
           >
@@ -316,8 +318,8 @@ const EditTableDialog = ({
         autoHideDuration={6000}
         onClose={handleCloseSnackbar}
       >
-        <Alert 
-          onClose={handleCloseSnackbar} 
+        <Alert
+          onClose={handleCloseSnackbar}
           severity={snackbar.severity}
           sx={{ width: '100%' }}
         >

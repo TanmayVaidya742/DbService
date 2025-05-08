@@ -611,6 +611,7 @@ router.get('/:dbName/tables/:tableName/columns', verifyToken, async (req, res) =
 
 
 // PUT route to update table structure
+// PUT route to update table structure
 router.put('/:dbName/:tableName', verifyToken, async (req, res) => {
   const { dbName, tableName } = req.params;
   const { columns } = req.body;
@@ -619,7 +620,7 @@ router.put('/:dbName/:tableName', verifyToken, async (req, res) => {
   let client = null;
 
   try {
-    // First verify the user has access to this database
+    // Verify user access
     client = await req.mainPool.connect();
     const dbResult = await client.query(
       'SELECT dbid FROM db_collection WHERE dbname = $1 AND user_id = $2',
@@ -641,14 +642,25 @@ router.put('/:dbName/:tableName', verifyToken, async (req, res) => {
       port: process.env.DB_PORT || 5432,
     });
 
-    // Get current columns to compare
+    // Check if table has data
+    const hasDataResult = await dbPool.query(
+      `SELECT EXISTS (SELECT 1 FROM ${tableName} LIMIT 1)`
+    );
+    const hasData = hasDataResult.rows[0].exists;
+
+    // Get current columns
     const currentColumns = await dbPool.query(`
-      SELECT column_name 
+      SELECT column_name, data_type
       FROM information_schema.columns 
       WHERE table_name = $1
     `, [tableName]);
 
-    const currentColumnNames = currentColumns.rows.map(row => row.column_name);
+    const currentColumnMap = {};
+    currentColumns.rows.forEach(row => {
+      currentColumnMap[row.column_name] = row.data_type;
+    });
+
+    const currentColumnNames = Object.keys(currentColumnMap);
     const newColumnNames = columns.map(col => col.column_name);
 
     // Determine columns to add and remove
@@ -660,6 +672,21 @@ router.put('/:dbName/:tableName', verifyToken, async (req, res) => {
     );
 
     await dbPool.query('BEGIN');
+    await client.query('BEGIN');
+
+    // Check for type changes when data exists
+    if (hasData) {
+      for (const column of columns) {
+        if (currentColumnMap[column.column_name] && 
+            column.data_type.toLowerCase() !== currentColumnMap[column.column_name].toLowerCase()) {
+          await dbPool.query('ROLLBACK');
+          await client.query('ROLLBACK');
+          return res.status(400).json({ 
+            error: `Cannot change data type of column ${column.column_name} Because it contains data`
+          });
+        }
+      }
+    }
 
     // Remove columns
     for (const columnName of columnsToRemove) {
@@ -683,13 +710,20 @@ router.put('/:dbName/:tableName', verifyToken, async (req, res) => {
           `ALTER TABLE ${tableName} ADD COLUMN ${columnDef}`
         );
       } else {
-        // Modify existing column
-        await dbPool.query(
-          `ALTER TABLE ${tableName} ALTER COLUMN ${column.column_name} TYPE ${column.data_type}`
-        );
+        // Modify existing column - only if no data or not changing type
+        if (!hasData && column.data_type.toLowerCase() !== currentColumnMap[column.column_name].toLowerCase()) {
+          await dbPool.query(
+            `ALTER TABLE ${tableName} ALTER COLUMN ${column.column_name} TYPE ${column.data_type} 
+             USING ${column.column_name}::${column.data_type}`
+          );
+        }
+
+        // Handle null constraint
         await dbPool.query(
           `ALTER TABLE ${tableName} ALTER COLUMN ${column.column_name} ${column.is_nullable === 'NO' ? 'SET NOT NULL' : 'DROP NOT NULL'}`
         );
+
+        // Handle default value
         if (column.column_default) {
           await dbPool.query(
             `ALTER TABLE ${tableName} ALTER COLUMN ${column.column_name} SET DEFAULT ${column.column_default}`
@@ -715,9 +749,10 @@ router.put('/:dbName/:tableName', verifyToken, async (req, res) => {
 
     await dbPool.query('COMMIT');
     await client.query('COMMIT');
+    
     res.json({ 
       message: 'Table structure updated successfully',
-      schema // Optionally send updated schema
+      schema
     });
   } catch (error) {
     console.error('Error updating table:', error);
@@ -744,6 +779,7 @@ router.put('/:dbName/:tableName', verifyToken, async (req, res) => {
     if (client) client.release();
   }
 });
+
 
 
 
