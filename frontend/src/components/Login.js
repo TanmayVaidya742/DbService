@@ -22,33 +22,35 @@ import VisibilityOff from '@mui/icons-material/VisibilityOff';
 
 const MainSection = styled('section')({
   minHeight: '100vh',
-  position: 'relative',
-  backgroundColor: '#f0f7ff',
+  display: 'flex',
+  flexDirection: 'row',
   overflow: 'hidden',
+});
+
+const ImageSection = styled('div')({
+  flex: 1,
+  backgroundImage: 'url(/assets/images/l.jpg)',
+  backgroundSize: 'cover',
+  backgroundPosition: 'center',
+  height: '100vh',
+});
+
+const LoginSection = styled('div')({
+  flex: 1,
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
-});
-
-const WaveBackground = styled('div')({
-  position: 'absolute',
-  top: 0,
-  left: 0,
-  right: 0,
-  zIndex: 0,
-});
-
-const ContentWrapper = styled('div')({
-  position: 'relative',
-  zIndex: 1,
-  width: '100%',
+  backgroundColor: '#ffffff', // Changed from #407BFF to white
+  padding: '2rem',
 });
 
 const StyledPaper = styled(Paper)({
-  padding: '2rem',
+  padding: '3rem', // Increased padding for more internal space
   borderRadius: 'var(--border-radius)',
   boxShadow: 'var(--shadow-lg)',
   backgroundColor: 'white',
+  width: '100%',
+  maxWidth: '500px', // Increased from 400px to 500px to make the container larger
 });
 
 const StyledAvatar = styled(Avatar)({
@@ -193,270 +195,249 @@ const Login = () => {
 
   return (
     <MainSection>
-      <WaveBackground>
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 320" style={{ display: 'block' }}>
-          <defs>
-            <linearGradient id="wave-gradient" x1="0%" y1="0%" x2="100%" y2="0%">
-              <stop offset="0%" stopColor="var(--secondary-color)" />
-              <stop offset="100%" stopColor="var(--primary-color)" />
-            </linearGradient>
-          </defs>
-          <path
-            fill="url(#wave-gradient)"
-            fillOpacity="0.2"
-            d="M0,128L48,122.7C96,117,192,107,288,122.7C384,139,480,181,576,170.7C672,160,768,96,864,80C960,64,1056,96,1152,106.7C1248,117,1344,107,1392,101.3L1440,96L1440,0L1392,0C1344,0,1248,0,1152,0C1056,0,960,0,864,0C768,0,672,0,576,0C480,0,384,0,288,0C192,0,96,0,48,0L0,0Z"
-          />
-        </svg>
-      </WaveBackground>
+      <ImageSection />
+      <LoginSection>
+        <StyledPaper>
+          <StyledAvatar>
+            <img
+              src="/assets/images/profile.avif"
+              alt="Profile"
+              style={{ 
+                width: '100%',
+                height: '100%',
+                objectFit: 'cover',
+                borderRadius: '50%'
+              }}
+            />
+          </StyledAvatar>
 
-      <ContentWrapper>
-        <Container maxWidth="sm">
-          <Grid container justifyContent="center">
-            <Grid item xs={12}>
-              <StyledPaper>
-                <StyledAvatar>
-                  <img
-                    src="/assets/images/profile.avif"
-                    alt="Profile"
-                    style={{ 
-                      width: '100%',
-                      height: '100%',
-                      objectFit: 'cover',
-                      borderRadius: '50%'
+          <Typography
+            variant="h4"
+            align="center"
+            gutterBottom
+            sx={{ fontWeight: 600, color: 'var(--text-primary)' }}
+          >
+            {showResetPassword 
+              ? (resetStep === 'email' ? 'Request Password Reset' 
+                : resetStep === 'otp' ? 'Enter OTP' 
+                : 'Reset Password') 
+              : 'Login'}
+          </Typography>
+
+          {!showResetPassword ? (
+            <Box component="form" onSubmit={handleSubmit} noValidate sx={{ mt: 3 }}>
+              <TextField
+                margin="normal"
+                required
+                fullWidth
+                label="Email Address"
+                name="email"
+                autoComplete="email"
+                autoFocus
+                value={formData.email}
+                onChange={handleChange}
+                error={Boolean(error)}
+                helperText={error}
+                placeholder="Enter your email"
+              />
+              <TextField
+                margin="normal"
+                required
+                fullWidth
+                type="password"
+                label="Password"
+                name="password"
+                autoComplete="current-password"
+                value={formData.password}
+                onChange={handleChange}
+                error={Boolean(error)}
+              />
+              <Box sx={{ display: "flex", justifyContent: "center", mt: 1}}>
+                <Link
+                  component="button"
+                  variant="body2"
+                  onClick={handleForgotPasswordClick}
+                  sx={{ textDecoration: "underline", color: "var(--primary-color)" }}
+                >
+                  Forgot Password?
+                </Link>
+              </Box>
+              <Button
+                type="submit"
+                fullWidth
+                variant="contained"
+                sx={{
+                  mt: 3,
+                  bgcolor: 'var(--primary-color)',
+                  textTransform: 'none',
+                  fontSize: 'var(--font-size-base)',
+                  padding: '0.75rem',
+                  borderRadius: 'var(--border-radius)',
+                  '&:hover': { bgcolor: 'var(--primary-hover)' },
+                }}
+              >
+                Sign In
+              </Button>
+            </Box>
+          ) : (
+            <Box component="form" 
+              onSubmit={resetStep === 'email' ? handleRequestResetOtp : 
+                      resetStep === 'otp' ? handleVerifyOtp : handleResetPasswordSubmit} 
+              noValidate sx={{ mt: 3 }}
+            >
+              {resetStep === 'email' && (
+                <>
+                  <TextField
+                    margin="normal"
+                    required
+                    fullWidth
+                    label="Email Address"
+                    name="email"
+                    autoComplete="email"
+                    autoFocus
+                    value={resetData.email}
+                    onChange={handleResetChange}
+                    error={Boolean(resetError)}
+                    helperText={resetError}
+                    placeholder="Enter your email"
+                  />
+                  <Button
+                    type="submit"
+                    fullWidth
+                    variant="contained"
+                    sx={{
+                      mt: 3,
+                      bgcolor: 'var(--primary-color)',
+                      textTransform: 'none',
+                      fontSize: 'var(--font-size-base)',
+                      padding: '0.75rem',
+                      borderRadius: 'var(--border-radius)',
+                      '&:hover': { bgcolor: 'var(--primary-hover)' },
+                    }}
+                  >
+                    Send OTP
+                  </Button>
+                </>
+              )}
+              {resetStep === 'otp' && (
+                <>
+                  <TextField
+                    margin="normal"
+                    required
+                    fullWidth
+                    label="OTP"
+                    name="otp"
+                    value={resetData.otp}
+                    onChange={handleResetChange}
+                    error={Boolean(resetError)}
+                    helperText={resetError}
+                    placeholder="Enter the OTP sent to your email"
+                  />
+                  <Button
+                    type="submit"
+                    fullWidth
+                    variant="contained"
+                    sx={{
+                      mt: 3,
+                      bgcolor: 'var(--primary-color)',
+                      textTransform: 'none',
+                      fontSize: 'var(--font-size-base)',
+                      padding: '0.75rem',
+                      borderRadius: 'var(--border-radius)',
+                      '&:hover': { bgcolor: 'var(--primary-hover)' },
+                    }}
+                  >
+                    Verify OTP
+                  </Button>
+                </>
+              )}
+              {resetStep === 'password' && (
+                <>
+                  <TextField
+                    margin="normal"
+                    required
+                    fullWidth
+                    type={showNewPassword ? 'text' : 'password'}
+                    label="New Password"
+                    name="newPassword"
+                    value={resetData.newPassword}
+                    onChange={handleResetChange}
+                    error={Boolean(resetError)}
+                    helperText={resetError}
+                    placeholder="Enter new password"
+                    InputProps={{
+                      endAdornment: (
+                        <InputAdornment position="end">
+                          <IconButton
+                            onClick={() => setShowNewPassword(!showNewPassword)}
+                            edge="end"
+                          >
+                            {showNewPassword ? <VisibilityOff /> : <Visibility />}
+                          </IconButton>
+                        </InputAdornment>
+                      ),
                     }}
                   />
-                </StyledAvatar>
-
-                <Typography
-                  variant="h4"
-                  align="center"
-                  gutterBottom
-                  sx={{ fontWeight: 600, color: 'var(--text-primary)' }}
-                >
-                  {showResetPassword 
-                    ? (resetStep === 'email' ? 'Request Password Reset' 
-                      : resetStep === 'otp' ? 'Enter OTP' 
-                      : 'Reset Password') 
-                    : 'Login'}
-                </Typography>
-
-                {!showResetPassword ? (
-                  <Box component="form" onSubmit={handleSubmit} noValidate sx={{ mt: 3 }}>
-                    <TextField
-                      margin="normal"
-                      required
-                      fullWidth
-                      label="Email Address"
-                      name="email"
-                      autoComplete="email"
-                      autoFocus
-                      value={formData.email}
-                      onChange={handleChange}
-                      error={Boolean(error)}
-                      helperText={error}
-                      placeholder="Enter your email"
-                    />
-                    <TextField
-                      margin="normal"
-                      required
-                      fullWidth
-                      type="password"
-                      label="Password"
-                      name="password"
-                      autoComplete="current-password"
-                      value={formData.password}
-                      onChange={handleChange}
-                      error={Boolean(error)}
-                    />
-                    <Box sx={{ display: "flex", justifyContent: "center", mt: 1}}>
-                      <Link
-                        component="button"
-                        variant="body2"
-                        onClick={handleForgotPasswordClick}
-                        sx={{ textDecoration: "underline", color: "var(--primary-color)" }}
-                      >
-                        Forgot Password?
-                      </Link>
-                    </Box>
-                    <Button
-                      type="submit"
-                      fullWidth
-                      variant="contained"
-                      sx={{
-                        mt: 3,
-                        bgcolor: 'var(--primary-color)',
-                        textTransform: 'none',
-                        fontSize: 'var(--font-size-base)',
-                        padding: '0.75rem',
-                        borderRadius: 'var(--border-radius)',
-                        '&:hover': { bgcolor: 'var(--primary-hover)' },
-                      }}
-                    >
-                      Sign In
-                    </Button>
-                  </Box>
-                ) : (
-                  <Box component="form" 
-                    onSubmit={resetStep === 'email' ? handleRequestResetOtp : 
-                            resetStep === 'otp' ? handleVerifyOtp : handleResetPasswordSubmit} 
-                    noValidate sx={{ mt: 3 }}
+                  <TextField
+                    margin="normal"
+                    required
+                    fullWidth
+                    type={showConfirmPassword ? 'text' : 'password'}
+                    label="Confirm New Password"
+                    name="confirmPassword"
+                    value={resetData.confirmPassword}
+                    onChange={handleResetChange}
+                    error={Boolean(resetError)}
+                    placeholder="Confirm new password"
+                    InputProps={{
+                      endAdornment: (
+                        <InputAdornment position="end">
+                          <IconButton
+                            onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                            edge="end"
+                          >
+                            {showConfirmPassword ? <VisibilityOff /> : <Visibility />}
+                          </IconButton>
+                        </InputAdornment>
+                      ),
+                    }}
+                  />
+                  <Button
+                    type="submit"
+                    fullWidth
+                    variant="contained"
+                    sx={{
+                      mt: 3,
+                      bgcolor: 'var(--primary-color)',
+                      textTransform: 'none',
+                      fontSize: 'var(--font-size-base)',
+                      padding: '0.75rem',
+                      borderRadius: 'var(--border-radius)',
+                      '&:hover': { bgcolor: 'var(--primary-hover)' },
+                    }}
                   >
-                    {resetStep === 'email' && (
-                      <>
-                        <TextField
-                          margin="normal"
-                          required
-                          fullWidth
-                          label="Email Address"
-                          name="email"
-                          autoComplete="email"
-                          autoFocus
-                          value={resetData.email}
-                          onChange={handleResetChange}
-                          error={Boolean(resetError)}
-                          helperText={resetError}
-                          placeholder="Enter your email"
-                        />
-                        <Button
-                          type="submit"
-                          fullWidth
-                          variant="contained"
-                          sx={{
-                            mt: 3,
-                            bgcolor: 'var(--primary-color)',
-                            textTransform: 'none',
-                            fontSize: 'var(--font-size-base)',
-                            padding: '0.75rem',
-                            borderRadius: 'var(--border-radius)',
-                            '&:hover': { bgcolor: 'var(--primary-hover)' },
-                          }}
-                        >
-                          Send OTP
-                        </Button>
-                      </>
-                    )}
-                    {resetStep === 'otp' && (
-                      <>
-                        <TextField
-                          margin="normal"
-                          required
-                          fullWidth
-                          label="OTP"
-                          name="otp"
-                          value={resetData.otp}
-                          onChange={handleResetChange}
-                          error={Boolean(resetError)}
-                          helperText={resetError}
-                          placeholder="Enter the OTP sent to your email"
-                        />
-                        <Button
-                          type="submit"
-                          fullWidth
-                          variant="contained"
-                          sx={{
-                            mt: 3,
-                            bgcolor: 'var(--primary-color)',
-                            textTransform: 'none',
-                            fontSize: 'var(--font-size-base)',
-                            padding: '0.75rem',
-                            borderRadius: 'var(--border-radius)',
-                            '&:hover': { bgcolor: 'var(--primary-hover)' },
-                          }}
-                        >
-                          Verify OTP
-                        </Button>
-                      </>
-                    )}
-                    {resetStep === 'password' && (
-                      <>
-                        <TextField
-                          margin="normal"
-                          required
-                          fullWidth
-                          type={showNewPassword ? 'text' : 'password'}
-                          label="New Password"
-                          name="newPassword"
-                          value={resetData.newPassword}
-                          onChange={handleResetChange}
-                          error={Boolean(resetError)}
-                          helperText={resetError}
-                          placeholder="Enter new password"
-                          InputProps={{
-                            endAdornment: (
-                              <InputAdornment position="end">
-                                <IconButton
-                                  onClick={() => setShowNewPassword(!showNewPassword)}
-                                  edge="end"
-                                >
-                                  {showNewPassword ? <VisibilityOff /> : <Visibility />}
-                                </IconButton>
-                              </InputAdornment>
-                            ),
-                          }}
-                        />
-                        <TextField
-                          margin="normal"
-                          required
-                          fullWidth
-                          type={showConfirmPassword ? 'text' : 'password'}
-                          label="Confirm New Password"
-                          name="confirmPassword"
-                          value={resetData.confirmPassword}
-                          onChange={handleResetChange}
-                          error={Boolean(resetError)}
-                          placeholder="Confirm new password"
-                          InputProps={{
-                            endAdornment: (
-                              <InputAdornment position="end">
-                                <IconButton
-                                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                                  edge="end"
-                                >
-                                  {showConfirmPassword ? <VisibilityOff /> : <Visibility />}
-                                </IconButton>
-                              </InputAdornment>
-                            ),
-                          }}
-                        />
-                        <Button
-                          type="submit"
-                          fullWidth
-                          variant="contained"
-                          sx={{
-                            mt: 3,
-                            bgcolor: 'var(--primary-color)',
-                            textTransform: 'none',
-                            fontSize: 'var(--font-size-base)',
-                            padding: '0.75rem',
-                            borderRadius: 'var(--border-radius)',
-                            '&:hover': { bgcolor: 'var(--primary-hover)' },
-                          }}
-                        >
-                          Reset Password
-                        </Button>
-                      </>
-                    )}
-                    <Box sx={{ display: "flex", justifyContent: "center", mt: 2 }}>
-                      <Link
-                        component="button"
-                        variant="body2"
-                        onClick={() => {
-                          setShowResetPassword(false);
-                          setResetStep('email');
-                          setResetData({ email: '', otp: '', newPassword: '', confirmPassword: '' });
-                        }}
-                        sx={{ textDecoration: "underline", color: "var(--primary-color)" }}
-                      >
-                        Back to Login
-                      </Link>
-                    </Box>
-                  </Box>
-                )}
-              </StyledPaper>
-            </Grid>
-          </Grid>
-        </Container>
-      </ContentWrapper>
+                    Reset Password
+                  </Button>
+                </>
+              )}
+              <Box sx={{ display: "flex", justifyContent: "center", mt: 2 }}>
+                <Link
+                  component="button"
+                  variant="body2"
+                  onClick={() => {
+                    setShowResetPassword(false);
+                    setResetStep('email');
+                    setResetData({ email: '', otp: '', newPassword: '', confirmPassword: '' });
+                  }}
+                  sx={{ textDecoration: "underline", color: "var(--primary-color)" }}
+                >
+                  Back to Login
+                </Link>
+              </Box>
+            </Box>
+          )}
+        </StyledPaper>
+      </LoginSection>
 
       <Snackbar open={success} autoHideDuration={4000}>
         <Alert severity="success" sx={{ width: '100%' }}>
