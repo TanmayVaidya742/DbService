@@ -41,8 +41,10 @@ import {
     Bolt,
     Diamond,
     Star,
-    WorkspacePremium
+    WorkspacePremium,
+    Logout as LogoutIcon
 } from '@mui/icons-material';
+import axios from "axios";
 
 const drawerWidth = 240;
 
@@ -52,9 +54,40 @@ const PricingPlans = () => {
     const navigate = useNavigate();
     const location = useLocation();
     const { dbName } = location.state || {};
-    const [selectedPlan, setSelectedPlan] = useState(0); // Default to Current plan (index 0)
+    const [selectedPlan, setSelectedPlan] = useState(0);
     const [mobileOpen, setMobileOpen] = useState(false);
     const [animate, setAnimate] = useState(false);
+    const [currentUser, setCurrentUser] = useState(null);
+
+    useEffect(() => {
+        const fetchCurrentUser = async () => {
+          try {
+            const token = localStorage.getItem('token');
+            if (!token) {
+              navigate('/login');
+              return;
+            }
+
+            const response = await axios.get('http://localhost:5000/api/superadmin/me', {
+              headers: { Authorization: `Bearer ${token}` },
+            });
+
+            if (response.data?.email) {
+              setCurrentUser({
+                email: response.data.email,
+                id: response.data.id,
+                name: response.data.name,
+              });
+            } else {
+              console.error('Email missing in response:', response.data);
+            }
+          } catch (error) {
+            console.error('Failed to fetch user:', error);
+          }
+        };
+
+        fetchCurrentUser();
+    }, [navigate]);
 
     useEffect(() => {
         setAnimate(true);
@@ -76,7 +109,7 @@ const PricingPlans = () => {
             cta: 'Current Plan',
             recommended: false,
             icon: <Star fontSize="large" />,
-            color: '#1E88E5', // Darker blue color for Current plan
+            color: '#1E88E5',
             ribbon: 'Current Plan',
             buttonText : 'Free'
         },
@@ -96,8 +129,7 @@ const PricingPlans = () => {
             cta: 'Contact Sales',
             recommended: true,
             icon: <Bolt fontSize="large" />,
-            color: '#4CAF50', // Darker green for Pro plan
-            // ribbon: 'Most Popular'
+            color: '#4CAF50',
             buttonText : 'Contact Sales'
         },
         {
@@ -118,7 +150,6 @@ const PricingPlans = () => {
             icon: <Diamond fontSize="large" />,
             color: theme.palette.secondary.main,
             buttonText : 'Contact Sales'
-            //ribbon: 'Premium'
         }
     ];
 
@@ -134,6 +165,12 @@ const PricingPlans = () => {
 
     const handleDrawerToggle = () => {
         setMobileOpen(!mobileOpen);
+    };
+
+    const handleLogout = () => {
+        localStorage.removeItem("token");
+        setCurrentUser(null);
+        navigate("/login");
     };
 
     const drawer = (
@@ -194,12 +231,38 @@ const PricingPlans = () => {
                     >
                         <MenuIcon />
                     </IconButton>
-                    <Typography variant="h6" noWrap component="div">
+                    <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1 }}>
                         Pricing Plans
                     </Typography>
-                    <IconButton color="inherit" sx={{ ml: 'auto' }}>
-                        <SettingsIcon />
-                    </IconButton>
+                    <Typography
+                      variant="body1"
+                      sx={{ color: "var(--primary-text)", mr: 2 }}
+                    >
+                      {currentUser?.email || "Loading..."}
+                    </Typography>
+                    <Button
+                        variant="outlined"
+                        startIcon={<LogoutIcon />}
+                        onClick={handleLogout}
+                        sx={{
+                            color: "var(--primary-text)",
+                            borderColor: "var(--primary-text)",
+                            borderRadius: "12px",
+                            px: 3,
+                            py: 1,
+                            fontWeight: "bold",
+                            textTransform: "none",
+                            backgroundColor: "rgba(255, 255, 255, 0.1)",
+                            "&:hover": {
+                                backgroundColor: "rgba(255, 255, 255, 0.2)",
+                                borderColor: "var(--primary-text)",
+                                boxShadow: "0 2px 8px rgba(0, 0, 0, 0.2)",
+                            },
+                            transition: "all 0.3s ease",
+                        }}
+                    >
+                        Log Out
+                    </Button>
                 </Toolbar>
             </AppBar>
 
@@ -253,7 +316,7 @@ const PricingPlans = () => {
                     '@keyframes cardGlow': {
                         '0%': { boxShadow: '0 5px 15px rgba(0,0,0,0.05)' },
                         '50%': { boxShadow: '0 5px 25px rgba(104, 109, 224, 0.5)' },
-                        '100%': { boxShadow: '0 5px 15px rgba(0,0,0,0.05)' },
+                        '100%': { boxShadow: '0 5px 15px rgba(0,0,0,0.05)' }
                     },
                     '.card-pulse': {
                         animation: 'pulse 0.5s ease-in-out'
@@ -476,187 +539,10 @@ const PricingPlans = () => {
                     </Grid>
 
                     <Divider sx={{ my: 8, borderColor: 'divider' }} />
-
-                    {/* <Typography variant="h4" sx={{
-                        mb: 4,
-                        textAlign: 'center',
-                        color: 'text.primary',
-                        fontWeight: 'bold'
-                    }}>
-                        Detailed Feature Comparison
-                    </Typography>
-
-                    <TableContainer
-                        component={Paper}
-                        sx={{
-                            borderRadius: '16px',
-                            border: '1px solid rgba(0, 0, 0, 0.08)',
-                            overflow: 'hidden',
-                            mb: 8,
-                            boxShadow: '0 5px 15px rgba(0,0,0,0.05)'
-                        }}
-                    >
-                        <Table>
-                            <TableHead>
-                                <TableRow sx={{
-                                    bgcolor: 'background.default',
-                                    '& th': {
-                                        fontWeight: 'bold',
-                                        fontSize: '0.95rem',
-                                        py: 2,
-                                        borderBottom: '2px solid rgba(0, 0, 0, 0.12)'
-                                    }
-                                }}>
-                                    <TableCell>Feature</TableCell>
-                                    <TableCell align="center" sx={{
-                                        bgcolor: selectedPlan === 0 ? `${plans[0].color}10` : 'inherit',
-                                        position: 'relative',
-                                        '&::after': {
-                                            content: selectedPlan === 0 ? '""' : 'none',
-                                            position: 'absolute',
-                                            top: 0,
-                                            left: 0,
-                                            right: 0,
-                                            height: '4px',
-                                            bgcolor: plans[0].color
-                                        }
-                                    }}>
-                                        Free
-                                    </TableCell>
-                                    <TableCell align="center" sx={{
-                                        bgcolor: selectedPlan === 1 ? `${plans[1].color}10` : 'inherit',
-                                        position: 'relative',
-                                        '&::after': {
-                                            content: selectedPlan === 1 ? '""' : 'none',
-                                            position: 'absolute',
-                                            top: 0,
-                                            left: 0,
-                                            right: 0,
-                                            height: '4px',
-                                            bgcolor: plans[1].color
-                                        }
-                                    }}>
-                                        Professional
-                                    </TableCell>
-                                    <TableCell align="center" sx={{
-                                        bgcolor: selectedPlan === 2 ? `${plans[2].color}10` : 'inherit',
-                                        position: 'relative',
-                                        '&::after': {
-                                            content: selectedPlan === 2 ? '""' : 'none',
-                                            position: 'absolute',
-                                            top: 0,
-                                            left: 0,
-                                            right: 0,
-                                            height: '4px',
-                                            bgcolor: plans[2].color
-                                        }
-                                    }}>
-                                        Enterprise
-                                    </TableCell>
-                                </TableRow>
-                            </TableHead>
-                            <TableBody>
-                                {featuresComparison.map((row) => (
-                                    <TableRow
-                                        key={row.feature}
-                                        sx={{
-                                            '&:nth-of-type(odd)': {
-                                                bgcolor: 'action.hover'
-                                            },
-                                            '&:hover': {
-                                                bgcolor: 'action.selected'
-                                            }
-                                        }}
-                                    >
-                                        <TableCell component="th" scope="row" sx={{
-                                            fontWeight: 'medium',
-                                            py: 2
-                                        }}>
-                                            {row.feature}
-                                        </TableCell>
-                                        <TableCell align="center" sx={{
-                                            py: 2,
-                                            bgcolor: selectedPlan === 0 ? `${plans[0].color}05` : 'inherit'
-                                        }}>
-                                            <Chip
-                                                label={row.starter}
-                                                variant="outlined"
-                                                sx={{
-                                                    borderColor: row.starter === '✖' ? 'text.disabled' : plans[0].color,
-                                                    color: row.starter === '✖' ? 'text.disabled' : plans[0].color
-                                                }}
-                                            />
-                                        </TableCell>
-                                        <TableCell align="center" sx={{
-                                            py: 2,
-                                            bgcolor: selectedPlan === 1 ? `${plans[1].color}05` : 'inherit'
-                                        }}>
-                                            <Chip
-                                                label={row.pro}
-                                                variant={row.pro === '✔' ? 'filled' : 'outlined'}
-                                                sx={{
-                                                    bgcolor: row.pro === '✔' ? plans[1].color : 'transparent',
-                                                    color: row.pro === '✔' ? 'white' : plans[1].color,
-                                                    borderColor: plans[1].color
-                                                }}
-                                            />
-                                        </TableCell>
-                                        <TableCell align="center" sx={{
-                                            py: 2,
-                                            bgcolor: selectedPlan === 2 ? `${plans[2].color}05` : 'inherit'
-                                        }}>
-                                            <Chip
-                                                label={row.enterprise}
-                                                variant={row.enterprise === '✔' ? 'filled' : 'outlined'}
-                                                sx={{
-                                                    bgcolor: row.enterprise === '✔' ? plans[2].color : 'transparent',
-                                                    color: row.enterprise === '✔' ? 'white' : plans[2].color,
-                                                    borderColor: plans[2].color
-                                                }}
-                                            />
-                                        </TableCell>
-                                    </TableRow>
-                                ))}
-                            </TableBody>
-                        </Table>
-                    </TableContainer> */}
-
-                    {/* <Box sx={{
-                        mt: 6,
-                        p: 4,
-                        borderRadius: '16px',
-                        bgcolor: 'background.paper',
-                        border: '1px solid rgba(0, 0, 0, 0.08)',
-                        textAlign: 'center',
-                        boxShadow: '0 5px 15px rgba(0,0,0,0.05)'
-                    }}>
-                        <Typography variant="h5" sx={{ mb: 2, fontWeight: 'bold' }}>
-                            Need help choosing a plan?
-                        </Typography>
-                        <Typography variant="body1" sx={{ mb: 3, maxWidth: '600px', mx: 'auto' }}>
-                            Contact our sales team to discuss your specific needs and find the perfect solution for your business.
-                        </Typography>
-                        <Button
-                            variant="contained"
-                            size="large"
-                            sx={{
-                                px: 4,
-                                py: 1.5,
-                                borderRadius: '12px',
-                                fontWeight: 'bold',
-                                fontSize: '1rem',
-                                background: `linear-gradient(45deg, ${theme.palette.primary.main} 30%, ${theme.palette.secondary.main} 90%)`,
-                                '&:hover': {
-                                    boxShadow: `0 4px 20px ${theme.palette.primary.main}33`
-                                }
-                            }}
-                        >
-                            Contact Sales
-                        </Button>
-                    </Box> */}
                 </Container>
             </Box>
         </Box>
     );
 };
+
 export default PricingPlans;

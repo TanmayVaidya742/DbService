@@ -54,6 +54,7 @@ import {
   Delete as DeleteIcon,
   Close as CloseIcon,
   Visibility as VisibilityIcon,
+  Logout as LogoutIcon
 } from "@mui/icons-material";
 import EditTableDialog from "./EditTableDialog";
 import AddIcon from "@mui/icons-material/Add";
@@ -102,6 +103,52 @@ const DatabaseDetails = () => {
   const [columnsAnchorEl, setColumnsAnchorEl] = useState(null);
   const [expandedTable, setExpandedTable] = useState(null);
   const [upgradeDialogOpen, setUpgradeDialogOpen] = useState(false);
+  const [currentUser, setCurrentUser] = useState(null);
+
+  useEffect(() => {
+    const fetchCurrentUser = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        if (!token) {
+          setSnackbar({
+            open: true,
+            message: 'Not authenticated. Please log in.',
+            severity: 'error',
+          });
+          navigate('/login');
+          return;
+        }
+
+        const response = await axios.get('http://localhost:5000/api/superadmin/me', {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+
+        if (response.data?.email) {
+          setCurrentUser({
+            email: response.data.email,
+            id: response.data.id,
+            name: response.data.name,
+          });
+        } else {
+          console.error('Email missing in response:', response.data);
+          setSnackbar({
+            open: true,
+            message: 'User data incomplete',
+            severity: 'warning',
+          });
+        }
+      } catch (error) {
+        console.error('Failed to fetch user:', error);
+        setSnackbar({
+          open: true,
+          message: error.response?.data?.error || 'Failed to load user data',
+          severity: 'error',
+        });
+      }
+    };
+
+    fetchCurrentUser();
+  }, [navigate]);
 
   const handleShowMoreColumns = (event, table) => {
     setColumnsAnchorEl(event.currentTarget);
@@ -266,6 +313,12 @@ const DatabaseDetails = () => {
   const handleMenuClose = () => {
     setAnchorEl(null);
     setCurrentTable(null);
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    setCurrentUser(null);
+    navigate("/login");
   };
 
   const generateandCopyUrlByActionType = (dbName, tableName, action) => {
@@ -502,6 +555,36 @@ const DatabaseDetails = () => {
             <Typography variant="h6" noWrap component="div">
               Database Details
             </Typography>
+            <Box sx={{ flexGrow: 1 }} />
+            <Typography
+              variant="body1"
+              sx={{ color: "var(--primary-text)", mr: 2 }}
+            >
+              {currentUser?.email || "Loading..."}
+            </Typography>
+            <Button
+              variant="outlined"
+              startIcon={<LogoutIcon />}
+              onClick={handleLogout}
+              sx={{
+                color: "var(--primary-text)",
+                borderColor: "var(--primary-text)",
+                borderRadius: "12px",
+                px: 3,
+                py: 1,
+                fontWeight: "bold",
+                textTransform: "none",
+                backgroundColor: "rgba(255, 255, 255, 0.1)",
+                "&:hover": {
+                  backgroundColor: "rgba(255, 255, 255, 0.2)",
+                  borderColor: "var(--primary-text)",
+                  boxShadow: "0 2px 8px rgba(0, 0, 0, 0.2)",
+                },
+                transition: "all 0.3s ease",
+              }}
+            >
+              Log Out
+            </Button>
           </Toolbar>
         </AppBar>
         <Box
@@ -580,6 +663,36 @@ const DatabaseDetails = () => {
             <Typography variant="h6" noWrap component="div">
               Database Details
             </Typography>
+            <Box sx={{ flexGrow: 1 }} />
+            <Typography
+              variant="body1"
+              sx={{ color: "var(--primary-text)", mr: 2 }}
+            >
+              {currentUser?.email || "Loading..."}
+            </Typography>
+            <Button
+              variant="outlined"
+              startIcon={<LogoutIcon />}
+              onClick={handleLogout}
+              sx={{
+                color: "var(--primary-text)",
+                borderColor: "var(--primary-text)",
+                borderRadius: "12px",
+                px: 3,
+                py: 1,
+                fontWeight: "bold",
+                textTransform: "none",
+                backgroundColor: "rgba(255, 255, 255, 0.1)",
+                "&:hover": {
+                  backgroundColor: "rgba(255, 255, 255, 0.2)",
+                  borderColor: "var(--primary-text)",
+                  boxShadow: "0 2px 8px rgba(0, 0, 0, 0.2)",
+                },
+                transition: "all 0.3s ease",
+              }}
+            >
+              Log Out
+            </Button>
           </Toolbar>
         </AppBar>
         <Box
@@ -658,7 +771,37 @@ const DatabaseDetails = () => {
             <FaDatabase color="primary" size={24} />
             <Typography variant="h5" sx={{ ml: 2, color: "var(--primary-text)" }}> Database: {database.dbname}</Typography>
           </Box>
-          <IconButton color="inherit" sx={{ ml: "auto" }}>
+          <Box sx={{ flexGrow: 1 }} />
+          <Typography
+            variant="body1"
+            sx={{ color: "var(--primary-text)", mr: 2 }}
+          >
+            {currentUser?.email || "Loading..."}
+          </Typography>
+          <Button
+            variant="outlined"
+            startIcon={<LogoutIcon />}
+            onClick={handleLogout}
+            sx={{
+              color: "var(--primary-text)",
+              borderColor: "var(--primary-text)",
+              borderRadius: "12px",
+              px: 3,
+              py: 1,
+              fontWeight: "bold",
+              textTransform: "none",
+              backgroundColor: "rgba(255, 255, 255, 0.1)",
+              "&:hover": {
+                backgroundColor: "rgba(255, 255, 255, 0.2)",
+                borderColor: "var(--primary-text)",
+                boxShadow: "0 2px 8px rgba(0, 0, 0, 0.2)",
+              },
+              transition: "all 0.3s ease",
+            }}
+          >
+            Log Out
+          </Button>
+          <IconButton color="inherit">
             <SettingsIcon />
           </IconButton>
         </Toolbar>
