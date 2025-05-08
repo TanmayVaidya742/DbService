@@ -37,6 +37,7 @@ import {
   Delete as DeleteIcon,
   Visibility as VisibilityIcon,
   ContentCopy as ContentCopyIcon,
+  Logout as LogoutIcon
 } from "@mui/icons-material";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
@@ -44,9 +45,7 @@ import AddDatabaseDialog from "./AddDatabaseDialog";
 import { styled } from "@mui/material/styles";
 import { Person as PersonIcon } from "@mui/icons-material";
 import { FaDatabase } from "react-icons/fa";
-
 import { CiViewTable } from "react-icons/ci";
-
 
 const drawerWidth = 240;
 
@@ -58,9 +57,8 @@ const StyledPaper = styled(Paper)(({ theme }) => ({
   marginTop: "var(--spacing-unit) * 3",
 }));
 
-// Custom styled TableCell for equal width
 const EqualWidthTableCell = styled(TableCell)({
-  width: '20%', // 5 columns = 20% each
+  width: '20%',
   textAlign: 'center',
 });
 
@@ -90,6 +88,52 @@ const UserDashboard = () => {
     name: "",
     dbName: "",
   });
+  const [currentUser, setCurrentUser] = useState(null);
+
+  useEffect(() => {
+    const fetchCurrentUser = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        if (!token) {
+          setSnackbar({
+            open: true,
+            message: 'Not authenticated. Please log in.',
+            severity: 'error',
+          });
+          navigate('/login');
+          return;
+        }
+
+        const response = await axios.get('http://localhost:5000/api/superadmin/me', {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+
+        if (response.data?.email) {
+          setCurrentUser({
+            email: response.data.email,
+            id: response.data.id,
+            name: response.data.name,
+          });
+        } else {
+          console.error('Email missing in response:', response.data);
+          setSnackbar({
+            open: true,
+            message: 'User data incomplete',
+            severity: 'warning',
+          });
+        }
+      } catch (error) {
+        console.error('Failed to fetch user:', error);
+        setSnackbar({
+          open: true,
+          message: error.response?.data?.error || 'Failed to load user data',
+          severity: 'error',
+        });
+      }
+    };
+
+    fetchCurrentUser();
+  }, [navigate]);
 
   useEffect(() => {
     fetchDatabases();
@@ -271,11 +315,17 @@ const UserDashboard = () => {
     navigate(`/database/${encodeURIComponent(dbName)}`);
   };
 
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    setCurrentUser(null);
+    navigate("/login");
+  };
+
   const drawer = (
     <div style={{ backgroundColor: "var(--bg-paper)" }}>
       <Toolbar>
         <Typography variant="h6" style={{ color: "var(--text-primary)" }}>
-          1SPOC
+          1SPOC DAAS
         </Typography>
       </Toolbar>
       <Divider style={{ backgroundColor: "var(--border-color)" }} />
@@ -327,10 +377,35 @@ const UserDashboard = () => {
           >
             Databases
           </Typography>
-
-          <IconButton color="inherit">
-            <SettingsIcon />
-          </IconButton>
+          <Typography
+            variant="body1"
+            sx={{ color: "var(--primary-text)", mr: 2 }}
+          >
+            {currentUser?.email || "Loading..."}
+          </Typography>
+          <Button
+            variant="outlined"
+            startIcon={<LogoutIcon />}
+            onClick={handleLogout}
+            sx={{
+              color: "var(--primary-text)",
+              borderColor: "var(--primary-text)",
+              borderRadius: "12px",
+              px: 3,
+              py: 1,
+              fontWeight: "bold",
+              textTransform: "none",
+              backgroundColor: "rgba(255, 255, 255, 0.1)",
+              "&:hover": {
+                backgroundColor: "rgba(255, 255, 255, 0.2)",
+                borderColor: "var(--primary-text)",
+                boxShadow: "0 2px 8px rgba(0, 0, 0, 0.2)",
+              },
+              transition: "all 0.3s ease",
+            }}
+          >
+            Log Out
+          </Button>
         </Toolbar>
       </AppBar>
 

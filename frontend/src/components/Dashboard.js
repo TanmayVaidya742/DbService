@@ -33,13 +33,13 @@ import {
 import {
   Menu as MenuIcon,
   Add as AddIcon,
-  Settings as SettingsIcon,
   Dashboard as DashboardIcon,
   Search as SearchIcon,
   Groups as GroupsIcon,
   Delete as DeleteIcon,
   Visibility as VisibilityIcon,
   VisibilityOff as VisibilityOffIcon,
+  Logout as LogoutIcon, // Added LogoutIcon
 } from "@mui/icons-material";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
@@ -91,7 +91,7 @@ const Dashboard = () => {
             message: 'Not authenticated. Please log in.',
             severity: 'error',
           });
-          navigate('/login'); // Redirect to login if no token
+          navigate('/login');
           return;
         }
   
@@ -128,8 +128,6 @@ const Dashboard = () => {
   
     fetchCurrentUser();
   }, [navigate]);
-
-
 
   useEffect(() => {
     fetchUsers();
@@ -177,7 +175,6 @@ const Dashboard = () => {
   };
 
   const handleSubmit = async () => {
-    // Validate all fields are filled
     if (
       !formData.organizationName ||
       !formData.domainName ||
@@ -193,7 +190,6 @@ const Dashboard = () => {
       return;
     }
 
-    // Validate domain format
     const domainRegex = /^[a-zA-Z0-9-]+(\.[a-zA-Z0-9-]+)*\.[a-zA-Z]{2,}$/;
     if (!domainRegex.test(formData.domainName)) {
       setSnackbar({
@@ -204,7 +200,6 @@ const Dashboard = () => {
       return;
     }
 
-    // Validate email matches domain
     const emailDomain = formData.ownerEmail.split("@")[1];
     if (emailDomain !== formData.domainName) {
       setSnackbar({
@@ -296,6 +291,17 @@ const Dashboard = () => {
     setSnackbar({ ...snackbar, open: false });
   };
 
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    setCurrentUser(null);
+    setSnackbar({
+      open: true,
+      message: "Logged out successfully",
+      severity: "success",
+    });
+    navigate("/login");
+  };
+
   const filteredUsers = users.filter((user) =>
     (user.username?.toLowerCase() || "").includes(searchTerm.toLowerCase())
   );
@@ -313,12 +319,6 @@ const Dashboard = () => {
           </ListItemIcon>
           <ListItemText primary="Dashboard" />
         </ListItem>
-        {/* <ListItem button onClick={() => navigate("/organizations")}>
-          <ListItemIcon>
-            <GroupsIcon />
-          </ListItemIcon>
-          <ListItemText primary="Organizations" />
-        </ListItem> */}
       </List>
     </div>
   );
@@ -355,25 +355,36 @@ const Dashboard = () => {
           >
             Dashboard - Super Admin
           </Typography>
-          <Typography variant="body1" sx={{ color: "var(--primary-text)", mr: 2 }}> {currentUser?.email || "Loading..."}</Typography>
-
+          <Typography
+            variant="body1"
+            sx={{ color: "var(--primary-text)", mr: 2 }}
+          >
+            {currentUser?.email || "Loading..."}
+          </Typography>
           <Button
-                type="submit"
-                
-                variant="outlined"               
-                sx={{
-
-
-                  
-                  bgcolor: '#ffffff',
-                 
-                }}
-              >
-                Log out
-              </Button>
+            variant="outlined"
+            startIcon={<LogoutIcon />}
+            onClick={handleLogout}
+            sx={{
+              color: "var(--primary-text)",
+              borderColor: "var(--primary-text)",
+              borderRadius: "12px",
+              px: 3,
+              py: 1,
+              fontWeight: "bold",
+              textTransform: "none",
+              backgroundColor: "rgba(255, 255, 255, 0.1)",
+              "&:hover": {
+                backgroundColor: "rgba(255, 255, 255, 0.2)",
+                borderColor: "var(--primary-text)",
+                boxShadow: "0 2px 8px rgba(0, 0, 0, 0.2)",
+              },
+              transition: "all 0.3s ease",
+            }}
+          >
+            Log Out
+          </Button>
         </Toolbar>
-
-
       </AppBar>
 
       <Box
@@ -494,11 +505,9 @@ const Dashboard = () => {
                     </TableRow>
                   ) : (
                     filteredUsers.map((user) => (
-                      
                       <TableRow key={user.user_id}>
                         <TableCell>{user.organization_name || ""}</TableCell>
                         <TableCell>{user.domain_name || ""}</TableCell>
-
                         <TableCell>
                           <Box
                             sx={{
@@ -507,47 +516,32 @@ const Dashboard = () => {
                               gap: 1,
                             }}
                           >
-                            {/* <Box
-                              sx={{
-                                width: 32,
-                                height: 32,
-                                borderRadius: "50%",
-                                backgroundColor: "var(--primary-color)",
-                                color: "var(--primary-text)",
-                                display: "flex",
-                                alignItems: "center",
-                                justifyContent: "center",
-                              }}
-                            >
-                              {user.full_name?.[0]?.toUpperCase()}
-                            </Box> */}
                             {user.full_name || ""}
                           </Box>
                         </TableCell>
                         <TableCell>{user.owner_email || ""}</TableCell>
-                        
                         <TableCell>
                           {user.created_at
                             ? (() => {
-                              const date = new Date(user.created_at);
-                              const day = String(date.getDate()).padStart(
-                                2,
-                                "0"
-                              );
-                              const month = String(
-                                date.getMonth() + 1
-                              ).padStart(2, "0"); // months are 0-indexed
-                              const year = String(date.getFullYear()).slice(
-                                -2
-                              ); // last 2 digits of year
-                              const time = date.toLocaleTimeString([], {
-                                hour: "2-digit",
-                                minute: "2-digit",
-                              }); // HH:MM format
-                              return `${day}/${month}/${year} ${time}`;
-                            })()
+                                const date = new Date(user.created_at);
+                                const day = String(date.getDate()).padStart(
+                                  2,
+                                  "0"
+                                );
+                                const month = String(
+                                  date.getMonth() + 1
+                                ).padStart(2, "0");
+                                const year = String(date.getFullYear()).slice(
+                                  -2
+                                );
+                                const time = date.toLocaleTimeString([], {
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                                });
+                                return `${day}/${month}/${year} ${time}`;
+                              })()
                             : ""}
-                        </TableCell>{" "}
+                        </TableCell>
                         <TableCell>
                           <IconButton
                             onClick={() => handleOpenDeleteDialog(user.user_id)}
@@ -565,7 +559,6 @@ const Dashboard = () => {
             </TableContainer>
           </StyledPaper>
 
-          {/* Organization Creation Dialog */}
           <Dialog
             open={openDialog}
             onClose={handleCloseDialog}
@@ -647,7 +640,6 @@ const Dashboard = () => {
             </DialogActions>
           </Dialog>
 
-          {/* Delete Confirmation Dialog */}
           <Dialog
             open={deleteDialogOpen}
             onClose={handleCloseDeleteDialog}
@@ -674,7 +666,6 @@ const Dashboard = () => {
             >
               Confirm Deletion
             </DialogTitle>
-
             <DialogContent sx={{ pt: 3 }}>
               <DialogContentText
                 sx={{
@@ -687,7 +678,6 @@ const Dashboard = () => {
                 cannot be undone.
               </DialogContentText>
             </DialogContent>
-
             <DialogActions
               sx={{
                 padding: 2,
@@ -708,7 +698,6 @@ const Dashboard = () => {
               >
                 Cancel
               </Button>
-
               <Button
                 onClick={handleDeleteUser}
                 variant="contained"
