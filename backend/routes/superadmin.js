@@ -315,7 +315,7 @@ router.get('/me', async (req, res) => {
 
     const queryText = isSuperadmin
       ? 'SELECT id, email, name, organization FROM superadmins WHERE id = $1'
-      : 'SELECT user_id AS id, owner_email AS email, full_name AS name FROM users WHERE user_id = $1';
+      : 'SELECT user_id AS id, owner_email AS email, full_name  AS name, organization_name AS organization FROM users WHERE user_id = $1';
     
     const result = await mainPool.query(queryText, [userId]);
 

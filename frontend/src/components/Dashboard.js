@@ -41,9 +41,10 @@ import {
   VisibilityOff as VisibilityOffIcon,
   Logout as LogoutIcon, // Added LogoutIcon
 } from "@mui/icons-material";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import axios from "axios";
 import { styled } from "@mui/material/styles";
+import DashboardCustomizeRoundedIcon from '@mui/icons-material/DashboardCustomizeRounded';
 
 const drawerWidth = 240;
 
@@ -94,13 +95,13 @@ const Dashboard = () => {
           navigate('/login');
           return;
         }
-  
+
         const response = await axios.get('http://localhost:5000/api/superadmin/me', {
           headers: { Authorization: `Bearer ${token}` },
         });
-  
+
         console.log('User data response:', response.data);
-  
+
         if (response.data?.email) {
           setCurrentUser({
             email: response.data.email,
@@ -125,7 +126,7 @@ const Dashboard = () => {
         });
       }
     };
-  
+
     fetchCurrentUser();
   }, [navigate]);
 
@@ -306,6 +307,9 @@ const Dashboard = () => {
     (user.username?.toLowerCase() || "").includes(searchTerm.toLowerCase())
   );
 
+  const location = useLocation();
+
+
   const drawer = (
     <div>
       <Toolbar>
@@ -313,11 +317,34 @@ const Dashboard = () => {
       </Toolbar>
       <Divider />
       <List>
-        <ListItem button onClick={() => navigate("/superadmin-dashboard")}>
+        <ListItem
+          button
+          onClick={() => navigate("/superadmin-dashboard")}
+          selected={location.pathname === '/superadmin-dashboard'}
+          style={{
+            color:
+              location.pathname === '/superadmin-dashboard'
+                ? "var(--primary-color)"
+                : "var(--text-primary)",
+            backgroundColor:
+              location.pathname === '/superadmin-dashboard'
+                ? "var(--primary-light)"
+                : "transparent",
+
+            cursor: "pointer"
+          }}
+        >
           <ListItemIcon>
-            <DashboardIcon />
+            <DashboardIcon
+              style={{
+                color:
+                  location.pathname === '/superadmin-dashboard'
+                    ? "var(--primary-color)"
+                    : "var(--text-secondary)",
+              }}
+            />
           </ListItemIcon>
-          <ListItemText primary="Dashboard" />
+          <ListItemText primary="Dashborad" />
         </ListItem>
       </List>
     </div>
@@ -341,6 +368,7 @@ const Dashboard = () => {
         }}
       >
         <Toolbar>
+          
           <IconButton
             color="inherit"
             edge="start"
@@ -363,27 +391,28 @@ const Dashboard = () => {
           </Typography>
           <Button
             variant="outlined"
-            startIcon={<LogoutIcon />}
             onClick={handleLogout}
             sx={{
               color: "var(--primary-text)",
               borderColor: "var(--primary-text)",
-              borderRadius: "12px",
-              px: 3,
-              py: 1,
-              fontWeight: "bold",
-              textTransform: "none",
+              borderRadius: "20%", // Circular shape for icon button
+              minWidth: 40, // Fixed width for circular button
+              width: 40, // Fixed width for circular button
+              height: 40, // Fixed height for circular button
+              p: 0, // Remove padding
               backgroundColor: "rgba(255, 255, 255, 0.1)",
               "&:hover": {
                 backgroundColor: "rgba(255, 255, 255, 0.2)",
                 borderColor: "var(--primary-text)",
                 boxShadow: "0 2px 8px rgba(0, 0, 0, 0.2)",
+                transform: "scale(1.05)", // Slight scale effect on hover
               },
               transition: "all 0.3s ease",
             }}
           >
-            Log Out
+            <LogoutIcon fontSize="small" /> {/* Adjusted icon size */}
           </Button>
+
         </Toolbar>
       </AppBar>
 
@@ -424,27 +453,59 @@ const Dashboard = () => {
         }}
       >
         <Toolbar />
+        
         <Grid>
+          
           <StyledPaper>
-            <Box sx={{ display: "flex", justifyContent: "flex-end", mb: 3 }}>
-              <Button
-                variant="contained"
-                startIcon={<AddIcon />}
-                onClick={handleOpenDialog}
-                sx={{
-                  backgroundColor: "var(--primary-color)",
-                  borderRadius: "12px",
-                  px: 4,
-                  py: 1.5,
-                  fontSize: "1rem",
-                  "&:hover": {
-                    backgroundColor: "var(--primary-hover)",
-                  },
-                }}
-              >
-                Add organization
-              </Button>
-            </Box>
+          <Box sx={{ 
+      display: "flex", 
+      justifyContent: "space-between", 
+      alignItems: "center",
+      mb: 3 
+    }}>
+      <Box>
+        <Typography 
+          variant="h6"
+          sx={{ 
+            color: 'var(--text-primary)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 1
+          }}
+        >
+          Welcome, {currentUser?.name || 'Admin'}
+        </Typography>
+        <Typography 
+          variant="subtitle1"
+          sx={{ 
+            color: 'var(--text-secondary)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 1
+          }}
+        >
+          Organization: {currentUser?.organization || 'Not specified'}
+        </Typography>
+      </Box>
+      
+      <Button
+        variant="contained"
+        startIcon={<AddIcon />}
+        onClick={handleOpenDialog}
+        sx={{
+          backgroundColor: "var(--primary-color)",
+          borderRadius: "12px",
+          px: 4,
+          py: 1.5,
+          fontSize: "1rem",
+          "&:hover": {
+            backgroundColor: "var(--primary-hover)",
+          },
+        }}
+      >
+        Add organization
+      </Button>
+    </Box>
 
             <Box sx={{ display: "flex", gap: 2, mb: 2 }}>
               <TextField
@@ -479,6 +540,7 @@ const Dashboard = () => {
             </Box>
 
             <TableContainer>
+              
               <Table>
                 <TableHead>
                   <TableRow>
@@ -523,23 +585,23 @@ const Dashboard = () => {
                         <TableCell>
                           {user.created_at
                             ? (() => {
-                                const date = new Date(user.created_at);
-                                const day = String(date.getDate()).padStart(
-                                  2,
-                                  "0"
-                                );
-                                const month = String(
-                                  date.getMonth() + 1
-                                ).padStart(2, "0");
-                                const year = String(date.getFullYear()).slice(
-                                  -2
-                                );
-                                const time = date.toLocaleTimeString([], {
-                                  hour: "2-digit",
-                                  minute: "2-digit",
-                                });
-                                return `${day}/${month}/${year} ${time}`;
-                              })()
+                              const date = new Date(user.created_at);
+                              const day = String(date.getDate()).padStart(
+                                2,
+                                "0"
+                              );
+                              const month = String(
+                                date.getMonth() + 1
+                              ).padStart(2, "0");
+                              const year = String(date.getFullYear()).slice(
+                                -2
+                              );
+                              const time = date.toLocaleTimeString([], {
+                                hour: "2-digit",
+                                minute: "2-digit",
+                              });
+                              return `${day}/${month}/${year} ${time}`;
+                            })()
                             : ""}
                         </TableCell>
                         <TableCell>

@@ -1,8 +1,8 @@
-import React, { useState, useEffect, useCallback } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import React, { useState, useEffect } from "react";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import axios from "axios";
-import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
-import LinkIcon from '@mui/icons-material/Link';
+import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
+import LinkIcon from "@mui/icons-material/Link";
 import {
   Box,
   Typography,
@@ -34,13 +34,10 @@ import {
   DialogContent,
   DialogContentText,
   DialogActions,
-  Modal,
-  Backdrop,
-  Fade,
   TextField,
   InputAdornment,
   TablePagination,
-  Popover
+  Popover,
 } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
 import {
@@ -48,28 +45,29 @@ import {
   Storage as StorageIcon,
   Menu as MenuIcon,
   Settings as SettingsIcon,
-  Person as PersonIcon,
-  MoreVert as MoreVertIcon,
   Edit as EditIcon,
   Delete as DeleteIcon,
   Close as CloseIcon,
   Visibility as VisibilityIcon,
-  Logout as LogoutIcon
+  Logout as LogoutIcon,
+  Person as PersonIcon,
 } from "@mui/icons-material";
 import EditTableDialog from "./EditTableDialog";
-import AddIcon from "@mui/icons-material/Add";
 import CreateTableDialog from "./CreateTableDialog";
 import { FaDatabase } from "react-icons/fa";
 import { CiViewTable } from "react-icons/ci";
-import ContentCopyIcon from '@mui/icons-material/ContentCopy';
-import UpgradeDialog from './UpgradeDialog';
-import StoreIcon from '@mui/icons-material/Store';
+import ContentCopyIcon from "@mui/icons-material/ContentCopy";
+import UpgradeDialog from "./UpgradeDialog";
+import StoreIcon from "@mui/icons-material/Store";
+import DashboardIcon from '@mui/icons-material/Dashboard';
+import StorageRoundedIcon from '@mui/icons-material/StorageRounded';
 
 const drawerWidth = 240;
 
 const DatabaseDetails = () => {
   const { dbName } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [database, setDatabase] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -98,7 +96,7 @@ const DatabaseDetails = () => {
     columns: [],
     searchTerm: "",
     page: 0,
-    rowsPerPage: 10
+    rowsPerPage: 10,
   });
   const [columnsAnchorEl, setColumnsAnchorEl] = useState(null);
   const [expandedTable, setExpandedTable] = useState(null);
@@ -108,20 +106,23 @@ const DatabaseDetails = () => {
   useEffect(() => {
     const fetchCurrentUser = async () => {
       try {
-        const token = localStorage.getItem('token');
+        const token = localStorage.getItem("token");
         if (!token) {
           setSnackbar({
             open: true,
-            message: 'Not authenticated. Please log in.',
-            severity: 'error',
+            message: "Not authenticated. Please log in.",
+            severity: "error",
           });
-          navigate('/login');
+          navigate("/login");
           return;
         }
 
-        const response = await axios.get('http://localhost:5000/api/superadmin/me', {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        const response = await axios.get(
+          "http://localhost:5000/api/superadmin/me",
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
 
         if (response.data?.email) {
           setCurrentUser({
@@ -130,19 +131,19 @@ const DatabaseDetails = () => {
             name: response.data.name,
           });
         } else {
-          console.error('Email missing in response:', response.data);
+          console.error("Email missing in response:", response.data);
           setSnackbar({
             open: true,
-            message: 'User data incomplete',
-            severity: 'warning',
+            message: "User data incomplete",
+            severity: "warning",
           });
         }
       } catch (error) {
-        console.error('Failed to fetch user:', error);
+        console.error("Failed to fetch user:", error);
         setSnackbar({
           open: true,
-          message: error.response?.data?.error || 'Failed to load user data',
-          severity: 'error',
+          message: error.response?.data?.error || "Failed to load user data",
+          severity: "error",
         });
       }
     };
@@ -239,7 +240,7 @@ const DatabaseDetails = () => {
       );
       const updatedDatabase = JSON.parse(JSON.stringify(database));
       const tableIndex = updatedDatabase.tables.findIndex(
-        table => table.tablename === tableName
+        (table) => table.tablename === tableName
       );
       if (tableIndex !== -1) {
         updatedDatabase.tables[tableIndex].schema = response.data.schema;
@@ -275,9 +276,9 @@ const DatabaseDetails = () => {
       const data = response.data;
       data.tables = data.tables || [];
       if (data.tables) {
-        data.tables = data.tables.map(table => ({
+        data.tables = data.tables.map((table) => ({
           ...table,
-          schema: table.schema || {}
+          schema: table.schema || {},
         }));
       }
       setDatabase(data);
@@ -285,7 +286,8 @@ const DatabaseDetails = () => {
       console.error("Error fetching database details:", error);
       setSnackbar({
         open: true,
-        message: error.response?.data?.error || "Failed to fetch database details",
+        message:
+          error.response?.data?.error || "Failed to fetch database details",
         severity: "error",
       });
     } finally {
@@ -323,9 +325,10 @@ const DatabaseDetails = () => {
 
   const generateandCopyUrlByActionType = (dbName, tableName, action) => {
     const baseUrl = process.env.REACT_APP_SERVER_BASE_URL;
-    const queryRoute = process.env.REACT_APP_QUERY_ROUTE_ODATA || "/api/query";
+    const queryRoute =
+      process.env.REACT_APP_QUERY_ROUTE_ODATA || "/api/query";
     let url = "";
-  
+
     switch (action) {
       case "read":
         url = `${baseUrl}${queryRoute}/${dbName}/${tableName}?$filter=name eq 'John'&$select=id,name&$orderby=created_at desc&$top=10&$skip=0&$count=true`;
@@ -343,7 +346,7 @@ const DatabaseDetails = () => {
         console.error("Invalid action!");
         return;
     }
-  
+
     navigator.clipboard
       .writeText(url)
       .then(() => {
@@ -351,15 +354,18 @@ const DatabaseDetails = () => {
           open: true,
           message: (
             <div>
-              <div>{`${action.charAt(0).toUpperCase() + action.slice(1)} URL copied to clipboard!`}</div>
-              <div style={{
-                fontFamily: 'monospace',
-                padding: '8px',
-                borderRadius: '4px',
-                marginTop: '8px',
-                wordBreak: 'break-all',
-                fontSize: '0.9em'
-              }}>
+              <div>{`${action.charAt(0).toUpperCase() + action.slice(1)
+                } URL copied to clipboard!`}</div>
+              <div
+                style={{
+                  fontFamily: "monospace",
+                  padding: "8px",
+                  borderRadius: "4px",
+                  marginTop: "8px",
+                  wordBreak: "break-all",
+                  fontSize: "0.9em",
+                }}
+              >
                 {url}
               </div>
             </div>
@@ -375,7 +381,7 @@ const DatabaseDetails = () => {
           severity: "error",
         });
       });
-  
+
     return url;
   };
 
@@ -409,7 +415,7 @@ const DatabaseDetails = () => {
         columns: columnsResponse.data,
         searchTerm: "",
         page: 0,
-        rowsPerPage: 10
+        rowsPerPage: 10,
       });
     } catch (error) {
       console.error("Error fetching table data:", error);
@@ -422,25 +428,25 @@ const DatabaseDetails = () => {
   };
 
   const handleSearchChange = (event) => {
-    setViewDataDialog(prev => ({
+    setViewDataDialog((prev) => ({
       ...prev,
       searchTerm: event.target.value,
-      page: 0
+      page: 0,
     }));
   };
 
   const handleChangePage = (event, newPage) => {
-    setViewDataDialog(prev => ({
+    setViewDataDialog((prev) => ({
       ...prev,
-      page: newPage
+      page: newPage,
     }));
   };
 
   const handleChangeRowsPerPage = (event) => {
-    setViewDataDialog(prev => ({
+    setViewDataDialog((prev) => ({
       ...prev,
       rowsPerPage: parseInt(event.target.value, 10),
-      page: 0
+      page: 0,
     }));
   };
 
@@ -452,7 +458,7 @@ const DatabaseDetails = () => {
       columns: [],
       searchTerm: "",
       page: 0,
-      rowsPerPage: 10
+      rowsPerPage: 10,
     });
   };
 
@@ -483,10 +489,12 @@ const DatabaseDetails = () => {
     }
   };
 
-  const filteredData = viewDataDialog.data.filter(row => {
+  const filteredData = viewDataDialog.data.filter((row) => {
     if (!viewDataDialog.searchTerm) return true;
-    return Object.values(row).some(value =>
-      String(value).toLowerCase().includes(viewDataDialog.searchTerm.toLowerCase())
+    return Object.values(row).some((value) =>
+      String(value)
+        .toLowerCase()
+        .includes(viewDataDialog.searchTerm.toLowerCase())
     );
   });
 
@@ -498,32 +506,101 @@ const DatabaseDetails = () => {
   const handleDeleteClick = (table) => {
     setDeleteDialog({
       open: true,
-      tableName: table.tablename
+      tableName: table.tablename,
     });
   };
 
   const drawer = (
-    <div>
+    <div style={{ backgroundColor: "var(--bg-paper)" }}>
       <Toolbar>
-        <Typography variant="h6">1SPOC DAAS</Typography>
+        <Typography variant="h6" style={{ color: "var(--text-primary)" }}>
+          1SPOC DAAS
+        </Typography>
       </Toolbar>
-      <Divider />
-      <List>
-        <ListItem button onClick={() => navigate("/databases")}>
-          <ListItemIcon>
-            <PersonIcon />
-          </ListItemIcon>
-          <ListItemText primary="Databases" />
-        </ListItem>
-      </List>
+      <Divider style={{ backgroundColor: "var(--border-color)" }} />
       <List>
         <ListItem
           button
-          onClick={() => navigate("/pricing", { state: { dbName: dbName } })}
-          style={{ color: "var(--text-primary)" }}
+          onClick={() => navigate(`/database/${dbName}`)}
+          selected={location.pathname === `/database/${dbName}`}
+          style={{
+            color:
+              location.pathname === `/database/${dbName}`
+                ? "var(--primary-color)"
+                : "var(--text-primary)",
+            backgroundColor:
+              location.pathname === `/database/${dbName}`
+                ? "var(--primary-light)"
+                : "transparent",
+
+            cursor: "pointer"
+          }}
         >
           <ListItemIcon>
-            <StoreIcon />
+            <DashboardIcon
+              style={{
+                color:
+                  location.pathname === `/database/${dbName}`
+                    ? "var(--primary-color)"
+                    : "var(--text-secondary)",
+              }}
+            />
+          </ListItemIcon>
+          <ListItemText primary="Database Details" />
+        </ListItem>
+        <ListItem
+          button
+          onClick={() => navigate("/databases")}
+          selected={location.pathname === "/databases"}
+          style={{
+            color:
+              location.pathname === "/databases"
+                ? "var(--primary-color)"
+                : "var(--text-primary)",
+            backgroundColor:
+              location.pathname === "/databases"
+                ? "var(--primary-light)"
+                : "transparent",
+            cursor: "pointer"
+          }}
+        >
+          <ListItemIcon>
+            <StorageRoundedIcon
+              style={{
+                color:
+                  location.pathname === "/databases"
+                    ? "var(--primary-color)"
+                    : "var(--text-secondary)",
+              }}
+            />
+          </ListItemIcon>
+          <ListItemText primary="Databases" />
+        </ListItem>
+        <ListItem
+          button
+          onClick={() => navigate("/pricing", { state: { dbName } })}
+          selected={location.pathname === "/pricing"}
+          style={{
+            color:
+              location.pathname === "/pricing"
+                ? "var(--primary-color)"
+                : "var(--text-primary)",
+            backgroundColor:
+              location.pathname === "/pricing"
+                ? "var(--primary-light)"
+                : "transparent",
+            cursor: "pointer"
+          }}
+        >
+          <ListItemIcon>
+            <StoreIcon
+              style={{
+                color:
+                  location.pathname === "/pricing"
+                    ? "var(--primary-color)"
+                    : "var(--text-secondary)",
+              }}
+            />
           </ListItemIcon>
           <ListItemText primary="Pricing Plans" />
         </ListItem>
@@ -564,26 +641,26 @@ const DatabaseDetails = () => {
             </Typography>
             <Button
               variant="outlined"
-              startIcon={<LogoutIcon />}
               onClick={handleLogout}
               sx={{
                 color: "var(--primary-text)",
                 borderColor: "var(--primary-text)",
-                borderRadius: "12px",
-                px: 3,
-                py: 1,
-                fontWeight: "bold",
-                textTransform: "none",
+                borderRadius: "20%", // Circular shape for icon button
+                minWidth: 40, // Fixed width for circular button
+                width: 40, // Fixed width for circular button
+                height: 40, // Fixed height for circular button
+                p: 0, // Remove padding
                 backgroundColor: "rgba(255, 255, 255, 0.1)",
                 "&:hover": {
                   backgroundColor: "rgba(255, 255, 255, 0.2)",
                   borderColor: "var(--primary-text)",
                   boxShadow: "0 2px 8px rgba(0, 0, 0, 0.2)",
+                  transform: "scale(1.05)", // Slight scale effect on hover
                 },
                 transition: "all 0.3s ease",
               }}
             >
-              Log Out
+              <LogoutIcon fontSize="small" /> {/* Adjusted icon size */}
             </Button>
           </Toolbar>
         </AppBar>
@@ -672,26 +749,26 @@ const DatabaseDetails = () => {
             </Typography>
             <Button
               variant="outlined"
-              startIcon={<LogoutIcon />}
               onClick={handleLogout}
               sx={{
                 color: "var(--primary-text)",
                 borderColor: "var(--primary-text)",
-                borderRadius: "12px",
-                px: 3,
-                py: 1,
-                fontWeight: "bold",
-                textTransform: "none",
+                borderRadius: "20%", // Circular shape for icon button
+                minWidth: 40, // Fixed width for circular button
+                width: 40, // Fixed width for circular button
+                height: 40, // Fixed height for circular button
+                p: 0, // Remove padding
                 backgroundColor: "rgba(255, 255, 255, 0.1)",
                 "&:hover": {
                   backgroundColor: "rgba(255, 255, 255, 0.2)",
                   borderColor: "var(--primary-text)",
                   boxShadow: "0 2px 8px rgba(0, 0, 0, 0.2)",
+                  transform: "scale(1.05)", // Slight scale effect on hover
                 },
                 transition: "all 0.3s ease",
               }}
             >
-              Log Out
+              <LogoutIcon fontSize="small" /> {/* Adjusted icon size */}
             </Button>
           </Toolbar>
         </AppBar>
@@ -768,8 +845,13 @@ const DatabaseDetails = () => {
             <MenuIcon />
           </IconButton>
           <Box sx={{ display: "flex", alignItems: "center", mb: 1, ml: 2 }}>
-            <FaDatabase color="primary" size={24} />
-            <Typography variant="h5" sx={{ ml: 2, color: "var(--primary-text)" }}> Database: {database.dbname}</Typography>
+            <FaDatabase size={24} />
+            <Typography
+              variant="h5"
+              sx={{ ml: 2, color: "var(--primary-text)" }}
+            >
+              Database: {database.dbname}
+            </Typography>
           </Box>
           <Box sx={{ flexGrow: 1 }} />
           <Typography
@@ -780,26 +862,26 @@ const DatabaseDetails = () => {
           </Typography>
           <Button
             variant="outlined"
-            startIcon={<LogoutIcon />}
             onClick={handleLogout}
             sx={{
               color: "var(--primary-text)",
               borderColor: "var(--primary-text)",
-              borderRadius: "12px",
-              px: 3,
-              py: 1,
-              fontWeight: "bold",
-              textTransform: "none",
+              borderRadius: "20%", // Circular shape for icon button
+              minWidth: 40, // Fixed width for circular button
+              width: 40, // Fixed width for circular button
+              height: 40, // Fixed height for circular button
+              p: 0, // Remove padding
               backgroundColor: "rgba(255, 255, 255, 0.1)",
               "&:hover": {
                 backgroundColor: "rgba(255, 255, 255, 0.2)",
                 borderColor: "var(--primary-text)",
                 boxShadow: "0 2px 8px rgba(0, 0, 0, 0.2)",
+                transform: "scale(1.05)", // Slight scale effect on hover
               },
               transition: "all 0.3s ease",
             }}
           >
-            Log Out
+            <LogoutIcon fontSize="small" /> {/* Adjusted icon size */}
           </Button>
           <IconButton color="inherit">
             <SettingsIcon />
@@ -887,34 +969,87 @@ const DatabaseDetails = () => {
                 Create Table
               </Button>
             </Box>
-            <Paper elevation={3} sx={{
-              p: 3,
-              mb: 3,
-              backgroundColor: 'var(--bg-paper)',
-              borderRadius: 'var(--border-radius)',
-              boxShadow: 'var(--shadow-lg)'
-            }}>
+            <Paper
+              elevation={3}
+              sx={{
+                p: 3,
+                mb: 3,
+                backgroundColor: "var(--bg-paper)",
+                borderRadius: "var(--border-radius)",
+                boxShadow: "var(--shadow-lg)",
+              }}
+            >
               <Box sx={{ display: "flex", alignItems: "center", mb: 1, ml: 2 }}>
-                <FaDatabase color="primary" size={24} />
-                <Typography variant="h4" sx={{ ml: 2 }}>{database.dbname}</Typography>
+                <FaDatabase size={24} />
+                <Typography variant="h4" sx={{ ml: 2 }}>
+                  {database.dbname}
+                </Typography>
               </Box>
               <Divider sx={{ my: 2 }} />
               <TableContainer
                 sx={{
-                  maxHeight: 'calc(100vh - 300px)',
-                  width: '100%',
-                  overflow: 'auto',
+                  maxHeight: "calc(100vh - 300px)",
+                  width: "100%",
+                  overflow: "auto",
                 }}
               >
                 <Table stickyHeader>
                   <TableHead>
                     <TableRow>
-                      <TableCell align="left" sx={{ backgroundColor: "var(--primary-light)", fontWeight: "bold" }}>Table Name</TableCell>
-                      <TableCell align="left" sx={{ backgroundColor: "var(--primary-light)", fontWeight: "bold" }}>Columns</TableCell>
-                      <TableCell align="center" sx={{ backgroundColor: "var(--primary-light)", fontWeight: "bold" }}>URL</TableCell>
-                      <TableCell align="center" sx={{ backgroundColor: "var(--primary-light)", fontWeight: "bold" }}>Edit Table</TableCell>
-                      <TableCell align="center" sx={{ backgroundColor: "var(--primary-light)", fontWeight: "bold" }}>Delete Table</TableCell>
-                      <TableCell align="center" sx={{ backgroundColor: "var(--primary-light)", fontWeight: "bold" }}>Select</TableCell>
+                      <TableCell
+                        align="left"
+                        sx={{
+                          backgroundColor: "var(--primary-light)",
+                          fontWeight: "bold",
+                        }}
+                      >
+                        Table Name
+                      </TableCell>
+                      <TableCell
+                        align="left"
+                        sx={{
+                          backgroundColor: "var(--primary-light)",
+                          fontWeight: "bold",
+                        }}
+                      >
+                        Columns
+                      </TableCell>
+                      <TableCell
+                        align="center"
+                        sx={{
+                          backgroundColor: "var(--primary-light)",
+                          fontWeight: "bold",
+                        }}
+                      >
+                        URL
+                      </TableCell>
+                      <TableCell
+                        align="center"
+                        sx={{
+                          backgroundColor: "var(--primary-light)",
+                          fontWeight: "bold",
+                        }}
+                      >
+                        Edit Table
+                      </TableCell>
+                      <TableCell
+                        align="center"
+                        sx={{
+                          backgroundColor: "var(--primary-light)",
+                          fontWeight: "bold",
+                        }}
+                      >
+                        Delete Table
+                      </TableCell>
+                      <TableCell
+                        align="center"
+                        sx={{
+                          backgroundColor: "var(--primary-light)",
+                          fontWeight: "bold",
+                        }}
+                      >
+                        Select
+                      </TableCell>
                     </TableRow>
                   </TableHead>
                   <TableBody>
@@ -923,18 +1058,25 @@ const DatabaseDetails = () => {
                         <TableRow key={table.tablename}>
                           <TableCell align="left">{table.tablename}</TableCell>
                           <TableCell align="left">
-                            {Object.entries(table.schema).slice(0, 2).map(([colName, colType]) => (
-                              <Chip
-                                key={colName}
-                                label={`${colName}: ${colType}`}
-                                sx={{ mr: 1, mb: 1, backgroundColor: "var(--primary-light)" }}
-                                variant="outlined"
-                              />
-                            ))}
-                            {Object.keys(table.schema).length > 3 && (
+                            {Object.entries(table.schema)
+                              .slice(0, 2)
+                              .map(([colName, colType]) => (
+                                <Chip
+                                  key={colName}
+                                  label={`${colName}: ${colType}`}
+                                  sx={{
+                                    mr: 1,
+                                    mb: 1,
+                                    backgroundColor: "var(--primary-light)",
+                                  }}
+                                  variant="outlined"
+                                />
+                              ))}
+                            {Object.keys(table.schema).length > 2 && (
                               <>
                                 <Chip
-                                  label={`+${Object.keys(table.schema).length - 2} more`}
+                                  label={`+${Object.keys(table.schema).length - 2
+                                    } more`}
                                   onClick={(e) => handleShowMoreColumns(e, table)}
                                   sx={{
                                     mr: 1,
@@ -942,8 +1084,8 @@ const DatabaseDetails = () => {
                                     backgroundColor: "var(--primary-light)",
                                     cursor: "pointer",
                                     "&:hover": {
-                                      backgroundColor: "var(--primary-hover)"
-                                    }
+                                      backgroundColor: "var(--primary-hover)",
+                                    },
                                   }}
                                   variant="outlined"
                                 />
@@ -952,32 +1094,52 @@ const DatabaseDetails = () => {
                                   anchorEl={columnsAnchorEl}
                                   onClose={handleCloseColumnsPopup}
                                   anchorOrigin={{
-                                    vertical: 'bottom',
-                                    horizontal: 'center',
+                                    vertical: "bottom",
+                                    horizontal: "center",
                                   }}
                                   transformOrigin={{
-                                    vertical: 'top',
-                                    horizontal: 'center',
+                                    vertical: "top",
+                                    horizontal: "center",
                                   }}
                                 >
-                                  <Box sx={{ p: 2, maxWidth: 400, backgroundColor: 'var(--bg-paper)' }}>
-                                    <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 'bold' }}>
+                                  <Box
+                                    sx={{
+                                      p: 2,
+                                      maxWidth: 400,
+                                      backgroundColor: "var(--bg-paper)",
+                                    }}
+                                  >
+                                    <Typography
+                                      variant="subtitle2"
+                                      sx={{ mb: 1, fontWeight: "bold" }}
+                                    >
                                       All columns in {expandedTable?.tablename}
                                     </Typography>
-                                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-                                      {expandedTable && Object.entries(expandedTable.schema).map(([colName, colType]) => (
-                                        <Chip
-                                          key={colName}
-                                          label={`${colName}: ${colType}`}
-                                          sx={{
-                                            backgroundColor: "var(--primary-light)",
-                                            "&:hover": {
-                                              backgroundColor: "var(--primary-hover)"
-                                            }
-                                          }}
-                                          variant="outlined"
-                                        />
-                                      ))}
+                                    <Box
+                                      sx={{
+                                        display: "flex",
+                                        flexWrap: "wrap",
+                                        gap: 1,
+                                      }}
+                                    >
+                                      {expandedTable &&
+                                        Object.entries(expandedTable.schema).map(
+                                          ([colName, colType]) => (
+                                            <Chip
+                                              key={colName}
+                                              label={`${colName}: ${colType}`}
+                                              sx={{
+                                                backgroundColor:
+                                                  "var(--primary-light)",
+                                                "&:hover": {
+                                                  backgroundColor:
+                                                    "var(--primary-hover)",
+                                                },
+                                              }}
+                                              variant="outlined"
+                                            />
+                                          )
+                                        )}
                                     </Box>
                                   </Box>
                                 </Popover>
@@ -986,7 +1148,14 @@ const DatabaseDetails = () => {
                           </TableCell>
                           <TableCell align="center">
                             {table.tablename && (
-                              <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 1 }}>
+                              <Box
+                                sx={{
+                                  display: "flex",
+                                  justifyContent: "center",
+                                  alignItems: "center",
+                                  gap: 1,
+                                }}
+                              >
                                 <Button
                                   variant="outlined"
                                   aria-controls={`table-menu-${table.tablename}`}
@@ -1002,34 +1171,42 @@ const DatabaseDetails = () => {
                                     gap: 1,
                                     "&:hover": {
                                       borderColor: "var(--primary-hover)",
-                                      backgroundColor: "rgba(var(--primary-rgb), 0.08)",
+                                      backgroundColor:
+                                        "rgba(var(--primary-rgb), 0.08)",
                                       transform: "translateY(-1px)",
                                     },
                                     "&:active": {
                                       transform: "translateY(0)",
-                                      backgroundColor: "rgba(var(--primary-rgb), 0.12)",
+                                      backgroundColor:
+                                        "rgba(var(--primary-rgb), 0.12)",
                                     },
                                     "& .MuiSvgIcon-root": {
                                       fontSize: "1.2rem",
                                       marginLeft: "4px",
-                                    }
+                                    },
                                   }}
                                 >
-                                  <LinkIcon sx={{ fontSize: "1.1rem", opacity: 0.9 }} />
+                                  <LinkIcon
+                                    sx={{ fontSize: "1.1rem", opacity: 0.9 }}
+                                  />
                                   URLs
-                                  <KeyboardArrowDownIcon sx={{ fontSize: "1.2rem" }} />
+                                  <KeyboardArrowDownIcon
+                                    sx={{ fontSize: "1.2rem" }}
+                                  />
                                 </Button>
                               </Box>
                             )}
                           </TableCell>
                           <TableCell align="center">
                             {table.tablename && (
-                              <Box sx={{
-                                display: 'flex',
-                                justifyContent: 'center',
-                                alignItems: 'center',
-                                gap: 1
-                              }}>
+                              <Box
+                                sx={{
+                                  display: "flex",
+                                  justifyContent: "center",
+                                  alignItems: "center",
+                                  gap: 1,
+                                }}
+                              >
                                 <IconButton
                                   onClick={(e) => {
                                     e.stopPropagation();
@@ -1046,12 +1223,14 @@ const DatabaseDetails = () => {
                           </TableCell>
                           <TableCell align="center">
                             {table.tablename && (
-                              <Box sx={{
-                                display: 'flex',
-                                justifyContent: 'center',
-                                alignItems: 'center',
-                                gap: 1
-                              }}>
+                              <Box
+                                sx={{
+                                  display: "flex",
+                                  justifyContent: "center",
+                                  alignItems: "center",
+                                  gap: 1,
+                                }}
+                              >
                                 <IconButton
                                   size="small"
                                   onClick={(e) => {
@@ -1059,7 +1238,7 @@ const DatabaseDetails = () => {
                                     handleDeleteClick(table);
                                   }}
                                   sx={{
-                                    color: 'var(--error-color)',
+                                    color: "var(--error-color)",
                                   }}
                                 >
                                   <DeleteIcon fontSize="small" />
@@ -1096,23 +1275,29 @@ const DatabaseDetails = () => {
           </Box>
           <EditTableDialog
             open={editDialog.open}
-            onClose={() => setEditDialog({
-              open: false,
-              dbName: "",
-              tableName: "",
-              columns: []
-            })}
+            onClose={() =>
+              setEditDialog({
+                open: false,
+                dbName: "",
+                tableName: "",
+                columns: [],
+              })
+            }
             dbName={editDialog.dbName}
             tableName={editDialog.tableName}
             columns={editDialog.columns}
             onSave={async (dbName, tableName, columns) => {
-              const success = await handleSaveTableChanges(dbName, tableName, columns);
+              const success = await handleSaveTableChanges(
+                dbName,
+                tableName,
+                columns
+              );
               if (success) {
                 setEditDialog({
                   open: false,
                   dbName: "",
                   tableName: "",
-                  columns: []
+                  columns: [],
                 });
               }
               return success;
@@ -1126,64 +1311,79 @@ const DatabaseDetails = () => {
             onClose={handleMenuClose}
             PaperProps={{
               sx: {
-                borderRadius: '8px',
-                boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
-                minWidth: '220px',
-                marginTop: '8px',
-              }
+                borderRadius: "8px",
+                boxShadow: "0 4px 12px rgba(0, 0, 0, 0.15)",
+                minWidth: "220px",
+                marginTop: "8px",
+              },
             }}
           >
             <Box sx={{ px: 2, py: 1 }}>
-              <Typography variant="subtitle2" sx={{
-                fontWeight: 600,
-                color: "var(--text-primary)",
-                fontSize: '0.875rem'
-              }}>
+              <Typography
+                variant="subtitle2"
+                sx={{
+                  fontWeight: 600,
+                  color: "var(--text-primary)",
+                  fontSize: "0.875rem",
+                }}
+              >
                 API Endpoints
               </Typography>
-              <Typography variant="caption" sx={{
-                color: "var(--text-secondary)",
-                lineHeight: 1.2
-              }}>
+              <Typography
+                variant="caption"
+                sx={{
+                  color: "var(--text-secondary)",
+                  lineHeight: 1.2,
+                }}
+              >
                 Click to copy URLs
               </Typography>
             </Box>
             <Divider sx={{ my: 1 }} />
-            {['read', 'insert', 'update', 'delete'].map((action) => (
+            {["read", "insert", "update", "delete"].map((action) => (
               <MenuItem
                 key={action}
                 onClick={() => handleMenuAction(action)}
                 sx={{
                   py: 1.5,
                   px: 2,
-                  '&:hover': {
-                    backgroundColor: 'var(--primary-light-hover)',
+                  "&:hover": {
+                    backgroundColor: "var(--primary-light-hover)",
                   },
-                  transition: 'background-color 0.2s ease',
+                  transition: "background-color 0.2s ease",
                 }}
               >
-                <ContentCopyIcon fontSize="small" sx={{
-                  color: "var(--primary-color)",
-                  mr: 1.5,
-                  fontSize: '18px'
-                }} />
+                <ContentCopyIcon
+                  fontSize="small"
+                  sx={{
+                    color: "var(--primary-color)",
+                    mr: 1.5,
+                    fontSize: "18px",
+                  }}
+                />
                 <Box>
-                  <Typography variant="body2" sx={{
-                    fontWeight: 500,
-                    color: "var(--text-primary)",
-                    textTransform: 'capitalize'
-                  }}>
+                  <Typography
+                    variant="body2"
+                    sx={{
+                      fontWeight: 500,
+                      color: "var(--text-primary)",
+                      textTransform: "capitalize",
+                    }}
+                  >
                     {action} Data Url
                   </Typography>
-                  <Typography variant="caption" sx={{
-                    color: "var(--text-secondary)",
-                    display: 'block',
-                    fontSize: '0.75rem'
-                  }}>
-                    {action === 'read' && 'GET query'}
-                    {action === 'insert' && 'POST query'}
-                    {action === 'update' && 'PATCH query'}
-                    {action === 'delete' && 'DELETE query'}
+                  <Typography
+                    variant="caption"
+                    sx={{
+                      color: "var(--text-secondary)",
+                      display: "block",
+                      fontSize: "0.75rem",
+                    }}
+                  >
+                    {action === "read" && "GET query"}
+                    {action === "insert" && "POST query"}
+                    {action === "update" && "PATCH query"}
+                    {action === "delete" && "DELETE query"}
                   </Typography>
                 </Box>
               </MenuItem>
@@ -1203,18 +1403,20 @@ const DatabaseDetails = () => {
             slotProps={{
               paper: {
                 sx: {
-                  backgroundColor: 'var(--bg-paper)',
-                  borderRadius: 'var(--border-radius)',
-                  padding: 2
-                }
-              }
+                  backgroundColor: "var(--bg-paper)",
+                  borderRadius: "var(--border-radius)",
+                  padding: 2,
+                },
+              },
             }}
           >
-            <DialogTitle sx={{ color: 'var(--text-primary)', fontWeight: 'bold' }}>
+            <DialogTitle
+              sx={{ color: "var(--text-primary)", fontWeight: "bold" }}
+            >
               Delete Table
             </DialogTitle>
             <DialogContent>
-              <DialogContentText sx={{ color: 'var(--text-secondary)', mb: 2 }}>
+              <DialogContentText sx={{ color: "var(--text-secondary)", mb: 2 }}>
                 Are you sure you want to delete table "{deleteDialog.tableName}"?
                 This action cannot be undone.
               </DialogContentText>
@@ -1223,10 +1425,10 @@ const DatabaseDetails = () => {
               <Button
                 onClick={() => setDeleteDialog({ ...deleteDialog, open: false })}
                 sx={{
-                  color: 'var(--text-primary)',
-                  '&:hover': {
-                    backgroundColor: 'var(--primary-light-hover)'
-                  }
+                  color: "var(--text-primary)",
+                  "&:hover": {
+                    backgroundColor: "var(--primary-light-hover)",
+                  },
                 }}
               >
                 Cancel
@@ -1234,9 +1436,9 @@ const DatabaseDetails = () => {
               <Button
                 onClick={handleDeleteTable}
                 sx={{
-                  backgroundColor: 'var(--error-color)',
-                  '&:hover': {
-                    backgroundColor: '#d32f2f',
+                  backgroundColor: "var(--error-color)",
+                  "&:hover": {
+                    backgroundColor: "#d32f2f",
                   },
                 }}
                 variant="contained"
@@ -1252,37 +1454,38 @@ const DatabaseDetails = () => {
             maxWidth="lg"
             fullWidth
             scroll="paper"
-            TransitionComponent={Fade}
             PaperProps={{
               sx: {
-                backgroundColor: 'var(--bg-paper)',
-                borderRadius: 'var(--border-radius)',
-                maxHeight: '80vh',
-                display: 'flex',
-                flexDirection: 'column'
-              }
+                backgroundColor: "var(--bg-paper)",
+                borderRadius: "var(--border-radius)",
+                maxHeight: "80vh",
+                display: "flex",
+                flexDirection: "column",
+              },
             }}
           >
-            <DialogTitle sx={{
-              backgroundColor: 'var(--primary-light)',
-              color: 'var(--text-primary)',
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              padding: '16px 24px'
-            }}>
-              <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
+            <DialogTitle
+              sx={{
+                backgroundColor: "var(--primary-light)",
+                color: "var(--text-primary)",
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                padding: "16px 24px",
+              }}
+            >
+              <Typography variant="h6" sx={{ fontWeight: "bold" }}>
                 Data from {viewDataDialog.tableName}
               </Typography>
               <IconButton
                 onClick={handleCloseViewData}
-                sx={{ color: 'var(--text-primary)' }}
+                sx={{ color: "var(--text-primary)" }}
               >
                 <CloseIcon />
               </IconButton>
             </DialogTitle>
             <DialogContent dividers sx={{ flex: 1, padding: 0 }}>
-              <Box sx={{ padding: '16px 24px' }}>
+              <Box sx={{ padding: "16px 24px" }}>
                 <TextField
                   fullWidth
                   variant="outlined"
@@ -1299,17 +1502,17 @@ const DatabaseDetails = () => {
                   }}
                 />
               </Box>
-              <TableContainer sx={{ flex: 1, maxHeight: '100%' }}>
+              <TableContainer sx={{ flex: 1, maxHeight: "100%" }}>
                 <Table stickyHeader size="small">
                   <TableHead>
                     <TableRow>
-                      {viewDataDialog.columns.map(column => (
+                      {viewDataDialog.columns.map((column) => (
                         <TableCell
                           key={column.column_name}
                           sx={{
-                            backgroundColor: 'var(--primary-light)',
-                            fontWeight: 'bold',
-                            padding: '8px 16px'
+                            backgroundColor: "var(--primary-light)",
+                            fontWeight: "bold",
+                            padding: "8px 16px",
                           }}
                         >
                           {column.column_name}
@@ -1321,10 +1524,10 @@ const DatabaseDetails = () => {
                     {paginatedData.length > 0 ? (
                       paginatedData.map((row, rowIndex) => (
                         <TableRow key={rowIndex}>
-                          {viewDataDialog.columns.map(column => (
+                          {viewDataDialog.columns.map((column) => (
                             <TableCell
                               key={`${rowIndex}-${column.column_name}`}
-                              sx={{ padding: '8px 16px' }}
+                              sx={{ padding: "8px 16px" }}
                             >
                               {String(row[column.column_name])}
                             </TableCell>
@@ -1336,10 +1539,12 @@ const DatabaseDetails = () => {
                         <TableCell
                           colSpan={viewDataDialog.columns.length}
                           align="center"
-                          sx={{ padding: '16px' }}
+                          sx={{ padding: "16px" }}
                         >
                           <Typography variant="body1">
-                            {viewDataDialog.searchTerm ? 'No matching data found' : 'No data available'}
+                            {viewDataDialog.searchTerm
+                              ? "No matching data found"
+                              : "No data available"}
                           </Typography>
                         </TableCell>
                       </TableRow>
@@ -1357,8 +1562,8 @@ const DatabaseDetails = () => {
               onPageChange={handleChangePage}
               onRowsPerPageChange={handleChangeRowsPerPage}
               sx={{
-                backgroundColor: 'var(--primary-light)',
-                borderTop: '1px solid var(--divider-color)'
+                backgroundColor: "var(--primary-light)",
+                borderTop: "1px solid var(--divider-color)",
               }}
             />
           </Dialog>

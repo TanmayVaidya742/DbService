@@ -37,15 +37,18 @@ import {
   Delete as DeleteIcon,
   Visibility as VisibilityIcon,
   ContentCopy as ContentCopyIcon,
-  Logout as LogoutIcon
+  Logout as LogoutIcon,
+  Store as StoreIcon,
 } from "@mui/icons-material";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import axios from "axios";
 import AddDatabaseDialog from "./AddDatabaseDialog";
 import { styled } from "@mui/material/styles";
 import { Person as PersonIcon } from "@mui/icons-material";
 import { FaDatabase } from "react-icons/fa";
 import { CiViewTable } from "react-icons/ci";
+import DashboardCustomizeRoundedIcon from '@mui/icons-material/DashboardCustomizeRounded';
+
 
 const drawerWidth = 240;
 
@@ -88,8 +91,12 @@ const UserDashboard = () => {
     name: "",
     dbName: "",
   });
-  const [currentUser, setCurrentUser] = useState(null);
-
+  const [currentUser, setCurrentUser] = useState({
+    email: '',
+    id: '',
+    name: '',
+    organization: ''
+  });
   useEffect(() => {
     const fetchCurrentUser = async () => {
       try {
@@ -113,6 +120,7 @@ const UserDashboard = () => {
             email: response.data.email,
             id: response.data.id,
             name: response.data.name,
+            organization: response.data.organization
           });
         } else {
           console.error('Email missing in response:', response.data);
@@ -320,6 +328,7 @@ const UserDashboard = () => {
     setCurrentUser(null);
     navigate("/login");
   };
+  const location = useLocation();
 
   const drawer = (
     <div style={{ backgroundColor: "var(--bg-paper)" }}>
@@ -332,14 +341,28 @@ const UserDashboard = () => {
       <List>
         <ListItem
           button
-          onClick={() => navigate("/dashboard")}
-          style={{ color: "var(--text-primary)" }}
+          onClick={() => navigate("/databases")}
+          selected={location.pathname === "/databases"}
+          style={{
+            color: location.pathname === "/databases"
+              ? "var(--primary-color)"
+              : "var(--text-primary)",
+            backgroundColor: location.pathname === "/databases"
+              ? "var(--primary-light)"
+              : "transparent"
+          }}
         >
           <ListItemIcon>
-            <PersonIcon style={{ color: "var(--primary-color)" }} />
+            <DashboardCustomizeRoundedIcon style={{
+              color: location.pathname === "/databases"
+                ? "var(--primary-color)"
+                : "var(--text-secondary)"
+            }} />
           </ListItemIcon>
           <ListItemText primary="Databases" />
         </ListItem>
+
+
       </List>
     </div>
   );
@@ -385,26 +408,26 @@ const UserDashboard = () => {
           </Typography>
           <Button
             variant="outlined"
-            startIcon={<LogoutIcon />}
             onClick={handleLogout}
             sx={{
               color: "var(--primary-text)",
               borderColor: "var(--primary-text)",
-              borderRadius: "12px",
-              px: 3,
-              py: 1,
-              fontWeight: "bold",
-              textTransform: "none",
+              borderRadius: "20%", // Circular shape for icon button
+              minWidth: 40, // Fixed width for circular button
+              width: 40, // Fixed width for circular button
+              height: 40, // Fixed height for circular button
+              p: 0, // Remove padding
               backgroundColor: "rgba(255, 255, 255, 0.1)",
               "&:hover": {
                 backgroundColor: "rgba(255, 255, 255, 0.2)",
                 borderColor: "var(--primary-text)",
                 boxShadow: "0 2px 8px rgba(0, 0, 0, 0.2)",
+                transform: "scale(1.05)", // Slight scale effect on hover
               },
               transition: "all 0.3s ease",
             }}
           >
-            Log Out
+            <LogoutIcon fontSize="small" /> {/* Adjusted icon size */}
           </Button>
         </Toolbar>
       </AppBar>
@@ -454,7 +477,40 @@ const UserDashboard = () => {
       >
         <Toolbar />
         <Grid>
-          <Box sx={{ display: "flex", justifyContent: "flex-end", mb: 3 }}>
+
+
+
+          <Box sx={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            mb: 3,
+            flexDirection: { xs: 'column', sm: 'row' },
+            gap: 2
+          }}>
+            <Box>
+              <Typography
+                variant="h5"
+                sx={{
+                  color: "var(--text-primary)",
+                  fontWeight: "bold",
+                }}
+              >
+                Welcome, {currentUser?.name || 'User'}
+              </Typography>
+              <Typography
+                variant="subtitle1"
+                sx={{
+                  color: "var(--text-secondary)",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 1
+                }}
+              >
+                Organization: {currentUser?.organization || 'Not specified'}
+              </Typography>
+            </Box>
+
             <Button
               variant="contained"
               startIcon={<FaDatabase />}
@@ -532,7 +588,7 @@ const UserDashboard = () => {
                     >
                       Tables Count
                     </EqualWidthTableCell>
-                    
+
                     <EqualWidthTableCell
                       style={{
                         color: "var(--text-primary)",
@@ -542,7 +598,7 @@ const UserDashboard = () => {
                     >
                       API Key
                     </EqualWidthTableCell>
-                    
+
                     <EqualWidthTableCell
                       style={{
                         color: "var(--text-primary)",
@@ -576,7 +632,7 @@ const UserDashboard = () => {
                           variant="outlined"
                           startIcon={<CiViewTable />}
                           sx={{
-                            fontWeight:"medium",
+                            fontWeight: "medium",
                             textTransform: "none",
                             borderColor: "var(--primary-color)",
                             color: "var(--primary-color)",
@@ -614,7 +670,7 @@ const UserDashboard = () => {
                           {db.tables.length}
                         </Box>
                       </EqualWidthTableCell>
-                      
+
                       <EqualWidthTableCell>
                         {db.apiKey && (
                           <Button
@@ -637,7 +693,7 @@ const UserDashboard = () => {
                           </Button>
                         )}
                       </EqualWidthTableCell>
-                      
+
                       <EqualWidthTableCell>
                         <Box
                           sx={{
@@ -799,10 +855,10 @@ const UserDashboard = () => {
                 snackbar.severity === "error"
                   ? "var(--error-color)"
                   : snackbar.severity === "success"
-                  ? "var(--success-color)"
-                  : snackbar.severity === "warning"
-                  ? "var(--warning-color)"
-                  : "var(--info-color)",
+                    ? "var(--success-color)"
+                    : snackbar.severity === "warning"
+                      ? "var(--warning-color)"
+                      : "var(--info-color)",
               color: "white",
             }}
           >

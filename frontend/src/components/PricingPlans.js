@@ -46,6 +46,9 @@ import {
 } from '@mui/icons-material';
 import axios from "axios";
 
+import DashboardIcon from '@mui/icons-material/Dashboard';
+
+
 const drawerWidth = 240;
 
 const PricingPlans = () => {
@@ -61,29 +64,29 @@ const PricingPlans = () => {
 
     useEffect(() => {
         const fetchCurrentUser = async () => {
-          try {
-            const token = localStorage.getItem('token');
-            if (!token) {
-              navigate('/login');
-              return;
-            }
+            try {
+                const token = localStorage.getItem('token');
+                if (!token) {
+                    navigate('/login');
+                    return;
+                }
 
-            const response = await axios.get('http://localhost:5000/api/superadmin/me', {
-              headers: { Authorization: `Bearer ${token}` },
-            });
+                const response = await axios.get('http://localhost:5000/api/superadmin/me', {
+                    headers: { Authorization: `Bearer ${token}` },
+                });
 
-            if (response.data?.email) {
-              setCurrentUser({
-                email: response.data.email,
-                id: response.data.id,
-                name: response.data.name,
-              });
-            } else {
-              console.error('Email missing in response:', response.data);
+                if (response.data?.email) {
+                    setCurrentUser({
+                        email: response.data.email,
+                        id: response.data.id,
+                        name: response.data.name,
+                    });
+                } else {
+                    console.error('Email missing in response:', response.data);
+                }
+            } catch (error) {
+                console.error('Failed to fetch user:', error);
             }
-          } catch (error) {
-            console.error('Failed to fetch user:', error);
-          }
         };
 
         fetchCurrentUser();
@@ -99,7 +102,7 @@ const PricingPlans = () => {
             price: '$0',
             period: '',
             features: ['3 Databases',
-                '3 Tables per Database', 
+                '3 Tables per Database',
                 '5 GB Storage per Table',
                 'Analytics',
                 'API Access',
@@ -111,7 +114,7 @@ const PricingPlans = () => {
             icon: <Star fontSize="large" />,
             color: '#1E88E5',
             ribbon: 'Current Plan',
-            buttonText : 'Free'
+            buttonText: 'Free'
         },
         {
             title: 'Pro',
@@ -130,7 +133,7 @@ const PricingPlans = () => {
             recommended: true,
             icon: <Bolt fontSize="large" />,
             color: '#4CAF50',
-            buttonText : 'Contact Sales'
+            buttonText: 'Contact Sales'
         },
         {
             title: 'Enterprise',
@@ -149,7 +152,7 @@ const PricingPlans = () => {
             recommended: false,
             icon: <Diamond fontSize="large" />,
             color: theme.palette.secondary.main,
-            buttonText : 'Contact Sales'
+            buttonText: 'Contact Sales'
         }
     ];
 
@@ -180,22 +183,73 @@ const PricingPlans = () => {
             </Toolbar>
             <Divider />
             <List>
+                <ListItem
+                    button
+                    onClick={() => navigate("/pricing")}
+                    selected={location.pathname === "/pricing"}
+                    style={{
+                        color:
+                            location.pathname === "/pricing"
+                                ? "var(--primary-color)"
+                                : "var(--text-primary)",
+                        backgroundColor:
+                            location.pathname === "/pricing"
+                                ? "var(--primary-light)"
+                                : "transparent",
+                        cursor: "pointer"
+                    }}
+                >
+                    <ListItemIcon>
+                        <StoreIcon
+                            style={{
+                                color:
+                                    location.pathname === "/pricing"
+                                        ? "var(--primary-color)"
+                                        : "var(--text-secondary)",
+                            }}
+                        />
+                    </ListItemIcon>
+                    <ListItemText primary="Pricing Plans" />
+                </ListItem>
+
                 <ListItem button onClick={() => navigate("/databases")}>
                     <ListItemIcon>
                         <PersonIcon />
                     </ListItemIcon>
                     <ListItemText primary="Databases" />
                 </ListItem>
-                <ListItem
-                    button
-                    selected
-                    sx={{ backgroundColor: 'var(--primary-light)' }}
-                >
-                    <ListItemIcon>
-                        <StoreIcon />
-                    </ListItemIcon>
-                    <ListItemText primary="Pricing Plans" />
-                </ListItem>
+
+                 <ListItem
+                          button
+                          onClick={() => navigate(`/database/${dbName}`)}
+                          selected={location.pathname === `/database/${dbName}`}
+                          style={{
+                            color:
+                              location.pathname === `/database/${dbName}`
+                                ? "var(--primary-color)"
+                                : "var(--text-primary)",
+                            backgroundColor:
+                              location.pathname === `/database/${dbName}`
+                                ? "var(--primary-light)"
+                                : "transparent",
+                
+                            cursor: "pointer"
+                          }}
+                        >
+                          <ListItemIcon>
+                            <DashboardIcon
+                              style={{
+                                color:
+                                  location.pathname === `/database/${dbName}`
+                                    ? "var(--primary-color)"
+                                    : "var(--text-secondary)",
+                              }}
+                            />
+                          </ListItemIcon>
+                          <ListItemText primary="Database Details" />
+                        </ListItem>
+
+
             </List>
         </div>
     );
@@ -235,33 +289,33 @@ const PricingPlans = () => {
                         Pricing Plans
                     </Typography>
                     <Typography
-                      variant="body1"
-                      sx={{ color: "var(--primary-text)", mr: 2 }}
+                        variant="body1"
+                        sx={{ color: "var(--primary-text)", mr: 2 }}
                     >
-                      {currentUser?.email || "Loading..."}
+                        {currentUser?.email || "Loading..."}
                     </Typography>
                     <Button
                         variant="outlined"
-                        startIcon={<LogoutIcon />}
                         onClick={handleLogout}
                         sx={{
                             color: "var(--primary-text)",
                             borderColor: "var(--primary-text)",
-                            borderRadius: "12px",
-                            px: 3,
-                            py: 1,
-                            fontWeight: "bold",
-                            textTransform: "none",
+                            borderRadius: "20%", // Circular shape for icon button
+                            minWidth: 40, // Fixed width for circular button
+                            width: 40, // Fixed width for circular button
+                            height: 40, // Fixed height for circular button
+                            p: 0, // Remove padding
                             backgroundColor: "rgba(255, 255, 255, 0.1)",
                             "&:hover": {
                                 backgroundColor: "rgba(255, 255, 255, 0.2)",
                                 borderColor: "var(--primary-text)",
                                 boxShadow: "0 2px 8px rgba(0, 0, 0, 0.2)",
+                                transform: "scale(1.05)", // Slight scale effect on hover
                             },
                             transition: "all 0.3s ease",
                         }}
                     >
-                        Log Out
+                        <LogoutIcon fontSize="small" /> {/* Adjusted icon size */}
                     </Button>
                 </Toolbar>
             </AppBar>
