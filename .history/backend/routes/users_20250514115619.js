@@ -28,7 +28,7 @@ router.post('/', verifyToken, async (req, res) => {
     domainName, 
     ownerEmail, 
     firstName, 
-    lastName,
+    lastName
     password
   } = req.body;
   
@@ -50,7 +50,7 @@ router.post('/', verifyToken, async (req, res) => {
 
   try {
     // Validate required fields
-    if (!organizationName || !domainName || !ownerEmail || !firstName || !lastName || !password) {
+    if (!organizationName || !domainName || !ownerEmail || !fullName || !password) {
       return res.status(400).json({ error: 'All fields are required' });
     }
 

@@ -665,7 +665,7 @@ const Dashboard = () => {
                 />
                 <TextField
                   label="First Name"
-                  name="firstName"
+                  name="fullName"
                   value={formData.firstName}
                   onChange={handleChange}
                   fullWidth
@@ -674,7 +674,7 @@ const Dashboard = () => {
 
                 <TextField
                   label="Last Name"
-                  name="lastName"
+                  name="fullName"
                   value={formData.lastName}
                   onChange={handleChange}
                   fullWidth

@@ -123,8 +123,23 @@ const initializeDatabase = async () => {
     `);
 
     await mainPool.query(`
+      CREATE TABLE IF NOT EXISTS users (
+        user_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+        first_name VARCHAR(255) NOT NULL,
+        last_name VARCHAR(255) NOT NULL,
+        password VARCHAR(255) NOT NULL,
+        organization_name VARCHAR(255),
+        domain_name VARCHAR(255),
+        owner_email VARCHAR(255),
+        org_id UUID NOT NULL REFERENCES organizations (org_id)
+        isPyramidDocument BOOLEAN,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+
+    await mainPool.query(`
       CREATE TABLE IF NOT EXISTS organizations (
-        org_id UUID PRIMARY KEY,
+        org_id SERIAL PRIMARY KEY,
         organization_name VARCHAR(255) NOT NULL UNIQUE,
         domain VARCHAR(255) NOT NULL,
         registryId UUID NOT NULL,
@@ -132,23 +147,6 @@ const initializeDatabase = async () => {
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
     `);
-
-    await mainPool.query(`
-      CREATE TABLE IF NOT EXISTS users (
-        user_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-        first_name VARCHAR(255) NOT NULL,
-        last_name VARCHAR(255) NOT NULL,
-        password VARCHAR(255),
-        organization_name VARCHAR(255),
-        domain_name VARCHAR(255),
-        owner_email VARCHAR(255),
-        org_id UUID NOT NULL REFERENCES organizations (org_id),
-        isPyramidDocument BOOLEAN,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      );
-    `);
-
-    
 
     await mainPool.query(`
       CREATE TABLE IF NOT EXISTS db_collection (

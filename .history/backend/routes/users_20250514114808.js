@@ -27,8 +27,7 @@ router.post('/', verifyToken, async (req, res) => {
     organizationName, 
     domainName, 
     ownerEmail, 
-    firstName, 
-    lastName,
+    fullName, 
     password
   } = req.body;
   
@@ -50,7 +49,7 @@ router.post('/', verifyToken, async (req, res) => {
 
   try {
     // Validate required fields
-    if (!organizationName || !domainName || !ownerEmail || !firstName || !lastName || !password) {
+    if (!organizationName || !domainName || !ownerEmail || !fullName || !password) {
       return res.status(400).json({ error: 'All fields are required' });
     }
 
@@ -98,18 +97,18 @@ router.post('/', verifyToken, async (req, res) => {
 
     // Store organization information in users table
     const userResult = await client.query(
-  `INSERT INTO users (
-    user_id,
-    first_name, 
-    last_name,
-    password, 
-    organization_name, 
-    domain_name,
-    owner_email
-  ) VALUES (uuid_generate_v4(), $1, $2, $3, $4, $5, $6)
-  RETURNING user_id`,
-  [firstName, lastName, passwordHash, organizationName, domainName, ownerEmail]
-);
+      `INSERT INTO users (
+        user_id,
+        first_name, 
+        last_name,
+        password, 
+        organization_name, 
+        domain_name,
+        owner_email
+      ) VALUES (uuid_generate_v4(), $1, $2, $3, $4, $5)
+      RETURNING user_id`,
+      [firstName,lastName, passwordHash, organizationName, domainName, ownerEmail]
+    );
 
     const newUserId = userResult.rows[0].user_id;
 

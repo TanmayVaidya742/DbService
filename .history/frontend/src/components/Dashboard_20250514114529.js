@@ -164,7 +164,7 @@ const Dashboard = () => {
       domainName: "",
       ownerEmail: "",
       firstName: "",
-      lastName:"",
+      la
       password: "",
     });
   };
@@ -182,8 +182,7 @@ const Dashboard = () => {
       !formData.organizationName ||
       !formData.domainName ||
       !formData.ownerEmail ||
-      !formData.firstName ||
-      !formData.lastName ||
+      !formData.fullName ||
       !formData.password
     ) {
       setSnackbar({
@@ -221,8 +220,7 @@ const Dashboard = () => {
           organizationName: formData.organizationName,
           domainName: formData.domainName,
           ownerEmail: formData.ownerEmail,
-          firstName: formData.firstName,
-          lastName: formData.lastName,
+          fullName: formData.fullName,
           password: formData.password,
         },
         {
@@ -665,7 +663,7 @@ const Dashboard = () => {
                 />
                 <TextField
                   label="First Name"
-                  name="firstName"
+                  name="fullName"
                   value={formData.firstName}
                   onChange={handleChange}
                   fullWidth
@@ -674,7 +672,7 @@ const Dashboard = () => {
 
                 <TextField
                   label="Last Name"
-                  name="lastName"
+                  name="fullName"
                   value={formData.lastName}
                   onChange={handleChange}
                   fullWidth

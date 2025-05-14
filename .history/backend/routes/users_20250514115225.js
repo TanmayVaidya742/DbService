@@ -23,20 +23,19 @@ router.get('/', verifyToken, async (req, res) => {
 
 // POST route to create a new organization
 router.post('/', verifyToken, async (req, res) => {
-  const { 
-    organizationName, 
-    domainName, 
-    ownerEmail, 
-    firstName, 
-    lastName,
+  const {
+    organizationName,
+    domainName,
+    ownerEmail,
+    fullName,
     password
   } = req.body;
-  
+
   let userId;
   try {
     // If the user_id is already a valid UUID, this will work
-    if (req.user.user_id && typeof req.user.user_id === 'string' && 
-        req.user.user_id.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i)) {
+    if (req.user.user_id && typeof req.user.user_id === 'string' &&
+      req.user.user_id.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i)) {
       userId = req.user.user_id;
     } else {
       userId = uuidv4();
@@ -45,12 +44,12 @@ router.post('/', verifyToken, async (req, res) => {
     console.error('Error with user ID:', error);
     userId = uuidv4(); // Generate UUID as fallback
   }
-  
+
   let client = null;
 
   try {
     // Validate required fields
-    if (!organizationName || !domainName || !ownerEmail || !firstName || !lastName || !password) {
+    if (!organizationName || !domainName || !ownerEmail || !fullName || !password) {
       return res.status(400).json({ error: 'All fields are required' });
     }
 
@@ -98,7 +97,7 @@ router.post('/', verifyToken, async (req, res) => {
 
     // Store organization information in users table
     const userResult = await client.query(
-  `INSERT INTO users (
+      `INSERT INTO users (
     user_id,
     first_name, 
     last_name,
@@ -108,8 +107,8 @@ router.post('/', verifyToken, async (req, res) => {
     owner_email
   ) VALUES (uuid_generate_v4(), $1, $2, $3, $4, $5, $6)
   RETURNING user_id`,
-  [firstName, lastName, passwordHash, organizationName, domainName, ownerEmail]
-);
+      [firstName, lastName, passwordHash, organizationName, domainName, ownerEmail]
+    );
 
     const newUserId = userResult.rows[0].user_id;
 
@@ -143,7 +142,7 @@ router.post('/', verifyToken, async (req, res) => {
 
   } catch (error) {
     console.error('Error creating organization:', error);
-    
+
     if (client) {
       try {
         await client.query('ROLLBACK');
@@ -151,7 +150,7 @@ router.post('/', verifyToken, async (req, res) => {
         console.error('Error rolling back transaction:', rollbackError);
       }
     }
-    
+
     res.status(500).json({ error: error.message });
   } finally {
     if (client) client.release();
@@ -195,7 +194,7 @@ router.delete('/:organizationId', verifyToken, async (req, res) => {
   } catch (error) {
     await client.query('ROLLBACK');
     console.error('Error deleting organization:', error);
-    res.status(500).json({ 
+    res.status(500).json({
       message: 'Error deleting organization',
       error: error.message
     });

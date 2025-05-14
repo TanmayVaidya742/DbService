@@ -883,9 +883,9 @@ const DatabaseDetails = () => {
           >
             <LogoutIcon fontSize="small" /> {/* Adjusted icon size */}
           </Button>
-          <IconButton color="inherit">
+          {/* <IconButton color="inherit">
             <SettingsIcon />
-          </IconButton>
+          </IconButton> */}
         </Toolbar>
       </AppBar>
       <Box

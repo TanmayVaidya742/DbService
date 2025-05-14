@@ -2141,12 +2141,14 @@ router.patch('/:dbname/:tablename', validateApiKey, async (req, res) => {
   }
   
   try {
-    // Parse the update values
+    // Parse the update values with trimming
     const data = {};
     updateValues.split(',').forEach(pair => {
       const [key, value] = pair.split('=');
       if (key && value) {
-        data[key] = value;
+        data[key] = typeof value === 'string' 
+          ? value.trim().replace(/\s+/g, ' ')
+          : value;
       }
     });
     
@@ -2194,6 +2196,9 @@ router.patch('/:dbname/:tablename', validateApiKey, async (req, res) => {
     res.status(500).json({ error: 'Internal server error', details: err.message });
   }
 });
+
+
+
 
 // Helper function to convert OData $filter to SQL (simplified example)
 function convertODataFilterToSQL(filter) {
@@ -2541,11 +2546,14 @@ router.post('/:dbname/:tablename/insert',
   async (req, res) => {
     const { dbname, tablename } = req.params;
     
-    // Extract data from query parameters
+    // Extract and trim data from query parameters
     const data = {};
     for (const [key, value] of Object.entries(req.query)) {
-      if (!key.startsWith('$')) {
-        data[key] = value;
+      if (!key.startsWith('$')) { 
+        // Trim string values and replace multiple spaces with single space
+        data[key] = typeof value === 'string' 
+          ? value.trim().replace(/\s+/g, ' ') 
+          : value;
       }
     }
 
@@ -2561,27 +2569,32 @@ router.post('/:dbname/:tablename/insert',
 
       const query = `INSERT INTO ${tablename} (${columns.join(', ')}) VALUES (${placeholders}) RETURNING *`;
       
-      // Print the exact query with values to console
-      console.log('Executing SQL Query:');
-      console.log('Query:', query);
-      console.log('Values:', values);
+      // Debug logging
+      // console.log('Executing SQL Query:');
+      // console.log('Query:', query);
+      // console.log('Values:', values);
+      // console.log('Values after trimming:', values.map(v => typeof v === 'string' ? `"${v}"` : v));
       
       const result = await pool.query(query, values);
 
+      // Verify the inserted data
+      const verifyQuery = `SELECT * FROM ${tablename} WHERE id = $1`;
+      const verification = await pool.query(verifyQuery, [result.rows[0].id]);
+      
       res.status(201).json({
         message: 'Row inserted successfully',
-        data: result.rows[0],
+        data: verification.rows[0],
       });
     } catch (err) {
       console.error('❌ Error inserting row:', err);
       res.status(500).json({ 
         error: 'Internal server error', 
-        details: err.message 
+        details: err.message,
+        query: err.query  // Include the failed query in response for debugging
       });
     }
   }
 );
-
 
 
 async function processSelectOperation(client, operation, columnNames, index) {

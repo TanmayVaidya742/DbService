@@ -124,7 +124,7 @@ const initializeDatabase = async () => {
 
     await mainPool.query(`
       CREATE TABLE IF NOT EXISTS organizations (
-        org_id UUID PRIMARY KEY,
+        org_id SERIAL PRIMARY KEY,
         organization_name VARCHAR(255) NOT NULL UNIQUE,
         domain VARCHAR(255) NOT NULL,
         registryId UUID NOT NULL,
