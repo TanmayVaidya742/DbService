@@ -19,6 +19,7 @@ import { styled } from '@mui/material/styles';
 import axios from 'axios';
 import Visibility from '@mui/icons-material/Visibility';
 import VisibilityOff from '@mui/icons-material/VisibilityOff';
+import axiosInstance from '../utils/axiosInstance';
 
 const MainSection = styled('section')({
   minHeight: '100vh',
@@ -100,17 +101,18 @@ const Login = () => {
     }
   
     try {
-      const res = await axios.post('http://localhost:5000/api/auth/login', {
+      debugger;
+      const res = await axiosInstance.post('/login', {
         email: formData.email,
         password: formData.password
       });
   
       localStorage.setItem('token', res.data.token);
-      localStorage.setItem('user', JSON.stringify(res.data.user));
+      localStorage.setItem('user', JSON.stringify(res.data.data));
       setSuccess(true);
   
       setTimeout(() => {
-        const userType = res.data.user.user_type;
+        const userType = res.data.data.userType;
         if (userType === 'superadmin') {
           navigate('/superadmin-dashboard');
         } else {

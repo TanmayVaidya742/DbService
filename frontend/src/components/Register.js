@@ -53,7 +53,7 @@ const Register = () => {
     organization: '',
     password: '',
     confirmPassword: '',
-    user_type: 'superadmin'
+    usertype: 'superadmin'
   });
 
   const [errors, setErrors] = useState({});
