@@ -136,26 +136,43 @@ const Dashboard = () => {
     fetchUsers();
   }, []);
 
+  // const fetchUsers = async () => {
+  //   setLoading(true);
+  //   try {
+  //     const res = await axiosInstance.get("/api/users", {
+  //       headers: {
+  //         Authorization: `Bearer ${localStorage.getItem("token")}`,
+  //       },
+  //     });
+  //     setUsers(res.data);
+  //   } catch (err) {
+  //     console.error("Error fetching users:", err);
+  //     setSnackbar({
+  //       open: true,
+  //       message: "Error fetching users",
+  //       severity: "error",
+  //     });
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
+
   const fetchUsers = async () => {
-    setLoading(true);
-    try {
-      const res = await axiosInstance.get("/api/users", {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
-      });
-      setUsers(res.data);
-    } catch (err) {
-      console.error("Error fetching users:", err);
-      setSnackbar({
-        open: true,
-        message: "Error fetching users",
-        severity: "error",
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
+  setLoading(true);
+  try {
+    const res = await axiosInstance.get("/orgs");
+    setUsers(res.data);
+  } catch (err) {
+    console.error("Error fetching organizations:", err);
+    setSnackbar({
+      open: true,
+      message: "Error fetching organizations",
+      severity: "error",
+    });
+  } finally {
+    setLoading(false);
+  }
+};
 
   const handleOpenDialog = () => setOpenDialog(true);
   const handleCloseDialog = () => {
@@ -251,45 +268,109 @@ const Dashboard = () => {
   //   }
   // };
 
-  const handleSubmit = async () => {
-    // Keep your existing validation
+  // const handleSubmit = async () => {
+  //   // Keep your existing validation
 
-    try {
-      const response = await axios.post(
-        "http://localhost:5000/api/users",
-        {
-          organizationName: formData.organizationName.trim(),
-          domainName: formData.domainName.trim().toLowerCase(),
-          ownerEmail: formData.ownerEmail.trim().toLowerCase(),
-          firstName: formData.firstName.trim(),
-          lastName: formData.lastName.trim(),
-          password: formData.password,
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-            'Content-Type': 'application/json'
-          },
-        }
-      );
+  //   try {
+  //     const response = await axiosInstance.post(
+  //       "http://localhost:5000/api/users",
+  //       {
+  //         organizationName: formData.organizationName.trim(),
+  //         domainName: formData.domainName.trim().toLowerCase(),
+  //         ownerEmail: formData.ownerEmail.trim().toLowerCase(),
+  //         firstName: formData.firstName.trim(),
+  //         lastName: formData.lastName.trim(),
+  //         password: formData.password,
+  //       },
+  //       {
+  //         headers: {
+  //           Authorization: `Bearer ${localStorage.getItem("token")}`,
+  //           'Content-Type': 'application/json'
+  //         },
+  //       }
+  //     );
 
-      setSnackbar({
-        open: true,
-        message: "Organization and user created successfully",
-        severity: "success",
-      });
+  //     setSnackbar({
+  //       open: true,
+  //       message: "Organization and user created successfully",
+  //       severity: "success",
+  //     });
 
-      await fetchUsers();
-      handleCloseDialog();
-    } catch (error) {
-      console.error("Error adding organization:", error);
-      setSnackbar({
-        open: true,
-        message: error.response?.data?.error || "Error creating organization",
-        severity: "error",
-      });
-    }
-  };
+  //     await fetchUsers();
+  //     handleCloseDialog();
+  //   } catch (error) {
+  //     console.error("Error adding organization:", error);
+  //     setSnackbar({
+  //       open: true,
+  //       message: error.response?.data?.error || "Error creating organization",
+  //       severity: "error",
+  //     });
+  //   }
+  // };
+
+const handleSubmit = async () => {
+        debugger;
+
+  if (
+    !formData.organizationName ||
+    !formData.domainName ||
+    !formData.ownerEmail ||
+    !formData.firstName ||
+    !formData.lastName ||
+    !formData.password
+  ) {
+    setSnackbar({
+      open: true,
+      message: "Please fill in all fields",
+      severity: "error",
+    });
+    return;
+  }
+
+  try {
+    // First create the organization
+    const orgResponse = await axiosInstance.post("/orgs/add-org", {
+      orgName: formData.organizationName.trim(),
+      domain: formData.domainName.trim().toLowerCase(),
+    });
+
+
+    console.log("Full organization response:", orgResponse);
+    console.log("Response data:", orgResponse.data);
+    console.log("Organization ID:", orgResponse.data?.data?.orgId);
+
+
+    // Then create the user (owner) for that organization
+    const userResponse = await axiosInstance.post("/users/add-user", {
+      firstName: formData.firstName.trim(),
+      lastName: formData.lastName.trim(),
+      email: formData.ownerEmail.trim().toLowerCase(),
+      password: formData.password,
+      organizationId: orgResponse.data.data.orgId, // assuming backend returns this
+      unitId:"f257cb1a-1a69-4oc9-90cb-58641ae799e7",
+      status:"active",
+      userType:"superadmin",
+      userId:"ccf23654-43aa-437e-9e1c-2j6e69cf837e"
+    });
+
+
+    setSnackbar({
+      open: true,
+      message: "Organization and owner created successfully",
+      severity: "success",
+    });
+
+    await fetchUsers();
+    handleCloseDialog();
+  } catch (error) {
+    console.error("Error adding organization:", error);
+    setSnackbar({
+      open: true,
+      message: error.response?.data?.message || "Error creating organization",
+      severity: "error",
+    });
+  }
+};
 
   const handleOpenDeleteDialog = (userId) => {
     setUserToDelete(userId);
@@ -301,37 +382,65 @@ const Dashboard = () => {
     setUserToDelete(null);
   };
 
+  // const handleDeleteUser = async () => {
+  //   try {
+  //     const response = await axios.delete(
+  //       `http://localhost:5000/api/users/${userToDelete}`,
+  //       {
+  //         headers: {
+  //           Authorization: `Bearer ${localStorage.getItem("token")}`,
+  //         },
+  //       }
+  //     );
+
+  //     setSnackbar({
+  //       open: true,
+  //       message: "User deleted successfully",
+  //       severity: "success",
+  //     });
+
+  //     setUsers((prevUsers) =>
+  //       prevUsers.filter((user) => user.user_id !== userToDelete)
+  //     );
+  //     handleCloseDeleteDialog();
+  //   } catch (error) {
+  //     console.error("Error deleting user:", error);
+  //     setSnackbar({
+  //       open: true,
+  //       message: error.response?.data?.message || "Error deleting user",
+  //       severity: "error",
+  //     });
+  //     handleCloseDeleteDialog();
+  //   }
+  // };
+
   const handleDeleteUser = async () => {
-    try {
-      const response = await axios.delete(
-        `http://localhost:5000/api/users/${userToDelete}`,
-        {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-          },
-        }
-      );
+  try {
+    const response = await axiosInstance.delete(
+      `/orgs/delete-org`,
+      { 
+        data: { orgName: userToDelete.orgName } // assuming you want to delete by orgName
+      }
+    );
 
-      setSnackbar({
-        open: true,
-        message: "User deleted successfully",
-        severity: "success",
-      });
+    setSnackbar({
+      open: true,
+      message: "Organization deleted successfully",
+      severity: "success",
+    });
 
-      setUsers((prevUsers) =>
-        prevUsers.filter((user) => user.user_id !== userToDelete)
-      );
-      handleCloseDeleteDialog();
-    } catch (error) {
-      console.error("Error deleting user:", error);
-      setSnackbar({
-        open: true,
-        message: error.response?.data?.message || "Error deleting user",
-        severity: "error",
-      });
-      handleCloseDeleteDialog();
-    }
-  };
+    setUsers(prevUsers => prevUsers.filter(user => user.orgName !== userToDelete.orgName));
+    handleCloseDeleteDialog();
+  } catch (error) {
+    console.error("Error deleting organization:", error);
+    setSnackbar({
+      open: true,
+      message: error.response?.data?.message || "Error deleting organization",
+      severity: "error",
+    });
+    handleCloseDeleteDialog();
+  }
+};
 
   const handleCloseSnackbar = () => {
     setSnackbar({ ...snackbar, open: false });
