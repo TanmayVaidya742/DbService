@@ -48,6 +48,7 @@ import { Person as PersonIcon } from "@mui/icons-material";
 import { FaDatabase } from "react-icons/fa";
 import { CiViewTable } from "react-icons/ci";
 import DashboardCustomizeRoundedIcon from '@mui/icons-material/DashboardCustomizeRounded';
+import axiosInstance from "../utils/axiosInstance";
 
 
 const drawerWidth = 240;
@@ -111,7 +112,7 @@ const UserDashboard = () => {
           return;
         }
 
-        const response = await axios.get('http://localhost:5000/api/superadmin/me', {
+        const response = await axiosInstance.get('api/superadmin/me', {
           headers: { Authorization: `Bearer ${token}` },
         });
 
@@ -253,8 +254,8 @@ const UserDashboard = () => {
         autoHideDuration: null,
       });
 
-      const response = await axios.post(
-        "http://localhost:5000/api/databases",
+      const response = await axiosInstance.post(
+        "/database",
         {
           databaseName: formData.databaseName,
         },

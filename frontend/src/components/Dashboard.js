@@ -136,32 +136,32 @@ const Dashboard = () => {
     fetchUsers();
   }, []);
 
-  // const fetchUsers = async () => {
-  //   setLoading(true);
-  //   try {
-  //     const res = await axiosInstance.get("/api/users", {
-  //       headers: {
-  //         Authorization: `Bearer ${localStorage.getItem("token")}`,
-  //       },
-  //     });
-  //     setUsers(res.data);
-  //   } catch (err) {
-  //     console.error("Error fetching users:", err);
-  //     setSnackbar({
-  //       open: true,
-  //       message: "Error fetching users",
-  //       severity: "error",
-  //     });
-  //   } finally {
-  //     setLoading(false);
-  //   }
-  // };
 
-  const fetchUsers = async () => {
+
+//   const fetchUsers = async () => {
+//   setLoading(true);
+//   try {
+//     const res = await axiosInstance.get("/orgs");
+//     setUsers(res.data);
+//   } catch (err) {
+//     console.error("Error fetching organizations:", err);
+//     setSnackbar({
+//       open: true,
+//       message: "Error fetching organizations",
+//       severity: "error",
+//     });
+//   } finally {
+//     setLoading(false);
+//   }
+// };
+
+const fetchUsers = async () => {
   setLoading(true);
   try {
     const res = await axiosInstance.get("/orgs");
-    setUsers(res.data);
+    // Make sure we're getting an array from the response
+    const orgsData = res.data.data || res.data || [];
+    setUsers(Array.isArray(orgsData) ? orgsData : []);
   } catch (err) {
     console.error("Error fetching organizations:", err);
     setSnackbar({
@@ -169,6 +169,7 @@ const Dashboard = () => {
       message: "Error fetching organizations",
       severity: "error",
     });
+    setUsers([]); // Reset to empty array on error
   } finally {
     setLoading(false);
   }
@@ -309,7 +310,6 @@ const Dashboard = () => {
   // };
 
 const handleSubmit = async () => {
-        debugger;
 
   if (
     !formData.organizationName ||
@@ -332,6 +332,15 @@ const handleSubmit = async () => {
     const orgResponse = await axiosInstance.post("/orgs/add-org", {
       orgName: formData.organizationName.trim(),
       domain: formData.domainName.trim().toLowerCase(),
+      firstName: formData.firstName.trim(),
+      lastName: formData.lastName.trim(),
+      email: formData.ownerEmail.trim().toLowerCase(),
+      password: formData.password,
+      // organizationId: orgResponse.data.data.orgId, // assuming backend returns this
+      //unitId:"iksnfks",
+      // status:"active",
+      // userType:"superadmin",
+      // userId: null
     });
 
 
@@ -341,17 +350,17 @@ const handleSubmit = async () => {
 
 
     // Then create the user (owner) for that organization
-    const userResponse = await axiosInstance.post("/users/add-user", {
-      firstName: formData.firstName.trim(),
-      lastName: formData.lastName.trim(),
-      email: formData.ownerEmail.trim().toLowerCase(),
-      password: formData.password,
-      organizationId: orgResponse.data.data.orgId, // assuming backend returns this
-      unitId:"f257cb1a-1a69-4oc9-90cb-58641ae799e7",
-      status:"active",
-      userType:"superadmin",
-      userId:"ccf23654-43aa-437e-9e1c-2j6e69cf837e"
-    });
+    // const userResponse = await axiosInstance.post("/users/add-user", {
+    //   firstName: formData.firstName.trim(),
+    //   lastName: formData.lastName.trim(),
+    //   email: formData.ownerEmail.trim().toLowerCase(),
+    //   password: formData.password,
+    //   organizationId: orgResponse.data.data.orgId, // assuming backend returns this
+    //   unitId:null,
+    //   status:"active",
+    //   userType:"superadmin",
+    //   userId: null
+    // });
 
 
     setSnackbar({
@@ -382,44 +391,40 @@ const handleSubmit = async () => {
     setUserToDelete(null);
   };
 
-  // const handleDeleteUser = async () => {
-  //   try {
-  //     const response = await axios.delete(
-  //       `http://localhost:5000/api/users/${userToDelete}`,
-  //       {
-  //         headers: {
-  //           Authorization: `Bearer ${localStorage.getItem("token")}`,
-  //         },
-  //       }
-  //     );
+//   const handleDeleteUser = async () => {
+//   try {
+//     const response = await axiosInstance.delete(
+//       `/orgs/delete-org`,
+//       { 
+//         data: { orgName: userToDelete.orgName } // assuming you want to delete by orgName
+//       }
+//     );
 
-  //     setSnackbar({
-  //       open: true,
-  //       message: "User deleted successfully",
-  //       severity: "success",
-  //     });
+//     setSnackbar({
+//       open: true,
+//       message: "Organization deleted successfully",
+//       severity: "success",
+//     });
 
-  //     setUsers((prevUsers) =>
-  //       prevUsers.filter((user) => user.user_id !== userToDelete)
-  //     );
-  //     handleCloseDeleteDialog();
-  //   } catch (error) {
-  //     console.error("Error deleting user:", error);
-  //     setSnackbar({
-  //       open: true,
-  //       message: error.response?.data?.message || "Error deleting user",
-  //       severity: "error",
-  //     });
-  //     handleCloseDeleteDialog();
-  //   }
-  // };
+//     setUsers(prevUsers => prevUsers.filter(user => user.orgName !== userToDelete.orgName));
+//     handleCloseDeleteDialog();
+//   } catch (error) {
+//     console.error("Error deleting organization:", error);
+//     setSnackbar({
+//       open: true,
+//       message: error.response?.data?.message || "Error deleting organization",
+//       severity: "error",
+//     });
+//     handleCloseDeleteDialog();
+//   }
+// };
 
-  const handleDeleteUser = async () => {
+const handleDeleteUser = async () => {
   try {
     const response = await axiosInstance.delete(
       `/orgs/delete-org`,
       { 
-        data: { orgName: userToDelete.orgName } // assuming you want to delete by orgName
+        data: { orgName: userToDelete.orgName } 
       }
     );
 
@@ -429,7 +434,7 @@ const handleSubmit = async () => {
       severity: "success",
     });
 
-    setUsers(prevUsers => prevUsers.filter(user => user.orgName !== userToDelete.orgName));
+    setUsers(prevUsers => prevUsers.filter(org => org.orgId !== userToDelete.orgId));
     handleCloseDeleteDialog();
   } catch (error) {
     console.error("Error deleting organization:", error);
@@ -457,9 +462,13 @@ const handleSubmit = async () => {
     navigate("/login");
   };
 
-  const filteredUsers = users.filter((user) =>
-    (user.username?.toLowerCase() || "").includes(searchTerm.toLowerCase())
-  );
+  // const filteredUsers = users.filter((user) =>
+  //   (user.username?.toLowerCase() || "").includes(searchTerm.toLowerCase())
+  // );
+  const filteredUsers = users.filter((org) =>
+  (org.orgName?.toLowerCase() || "").includes(searchTerm.toLowerCase()) ||
+  (org.domain?.toLowerCase() || "").includes(searchTerm.toLowerCase())
+);
 
   const location = useLocation();
 
@@ -696,7 +705,7 @@ const handleSubmit = async () => {
             <TableContainer>
 
               <Table>
-                <TableHead>
+                {/* <TableHead>
                   <TableRow>
                     <TableCell>Organization</TableCell>
                     <TableCell>Domain Name</TableCell>
@@ -763,7 +772,51 @@ const handleSubmit = async () => {
                       </TableRow>
                     ))
                   )}
-                </TableBody>
+                </TableBody> */}
+                <TableHead>
+  <TableRow>
+    <TableCell>Organization ID</TableCell>
+    <TableCell>Organization Name</TableCell>
+    <TableCell>Domain</TableCell>
+    <TableCell>Created At</TableCell>
+    <TableCell>Actions</TableCell>
+  </TableRow>
+</TableHead>
+<TableBody>
+  {loading ? (
+    <TableRow>
+      <TableCell colSpan={5} align="center">
+        Loading organizations...
+      </TableCell>
+    </TableRow>
+  ) : filteredUsers.length === 0 ? (
+    <TableRow>
+      <TableCell colSpan={5} align="center">
+        No organizations found
+      </TableCell>
+    </TableRow>
+  ) : (
+    filteredUsers.map((org) => (
+      <TableRow key={org.orgId}>
+        <TableCell>{org.orgId}</TableCell>
+        <TableCell>{org.orgName}</TableCell>
+        <TableCell>{org.domain}</TableCell>
+        <TableCell>
+          {org.createdAt ? new Date(org.createdAt).toLocaleString() : ''}
+        </TableCell>
+        <TableCell>
+          <IconButton
+            onClick={() => handleOpenDeleteDialog(org)}
+            color="error"
+            aria-label="delete organization"
+          >
+            <DeleteIcon />
+          </IconButton>
+        </TableCell>
+      </TableRow>
+    ))
+  )}
+</TableBody>
               </Table>
             </TableContainer>
           </StyledPaper>
