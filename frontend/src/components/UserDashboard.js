@@ -98,71 +98,64 @@ const UserDashboard = () => {
     name: '',
     organization: ''
   });
-  useEffect(() => {
-    const fetchCurrentUser = async () => {
-      try {
-        const token = localStorage.getItem('token');
-        if (!token) {
-          setSnackbar({
-            open: true,
-            message: 'Not authenticated. Please log in.',
-            severity: 'error',
-          });
-          navigate('/login');
-          return;
-        }
 
-        const response = await axiosInstance.get('api/superadmin/me', {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-
-        if (response.data?.email) {
-          setCurrentUser({
-            email: response.data.email,
-            id: response.data.id,
-            name: response.data.name,
-            organization: response.data.organization
-          });
-        } else {
-          console.error('Email missing in response:', response.data);
-          setSnackbar({
-            open: true,
-            message: 'User data incomplete',
-            severity: 'warning',
-          });
-        }
-      } catch (error) {
-        console.error('Failed to fetch user:', error);
+  const fetchCurrentUser = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
         setSnackbar({
           open: true,
-          message: error.response?.data?.error || 'Failed to load user data',
+          message: 'Not authenticated. Please log in.',
           severity: 'error',
         });
+        navigate('/login');
+        return;
       }
-    };
-
-    fetchCurrentUser();
-  }, [navigate]);
-
-  useEffect(() => {
-    fetchDatabases();
-  }, []);
+      const response = await axiosInstance.get('/users/get-user', {params:{orgId: "4b11ed8a-3ef2-41a4-8f23-342d47022f25"}},{
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (response.data && response.data.data) {
+        const user = response.data.data;
+        setCurrentUser({
+          email: user.email,
+          id: user.userId,
+          name: `${user.firstName} ${user.lastName}`,
+          organization: user.orgId
+        });
+      } else {
+        console.error('User data missing in response:', response.data);
+        setSnackbar({
+          open: true,
+          message: 'User data incomplete',
+          severity: 'warning',
+        });
+      }      
+    } catch (error) {
+      console.error('Failed to fetch user:', error);
+      setSnackbar({
+        open: true,
+        message: error.response?.data?.error || 'Failed to load user data',
+        severity: 'error',
+      });
+    }
+  };
 
   const fetchDatabases = async () => {
     try {
-      const response = await axios.get("http://localhost:5000/api/databases", {
+      const response = await axiosInstance.get("/database/get-databases-by-user-id", {
+        params: { userId: currentUser.id },
         headers: {
           Authorization: `Bearer ${localStorage.getItem("token")}`,
         },
       });
-
+  
       const transformedData = response.data.map((db) => ({
         name: db.dbname,
         tables: db.tables.filter((t) => t.tablename).map((t) => t.tablename),
         apiKey: db.apikey,
         dbid: db.dbid,
       }));
-
+      console.log(transformedData);
       setDatabases(transformedData);
     } catch (error) {
       console.error("Error fetching databases:", error);
@@ -174,11 +167,24 @@ const UserDashboard = () => {
       setDatabases([]);
     }
   };
+  
+
+  
+  useEffect(() => {
+    fetchCurrentUser();
+  }, [navigate]);
+  
+  useEffect(() => {
+    if (currentUser?.id) {
+      fetchDatabases();
+    }
+  }, [currentUser.id]);
+  
 
   const handleDeleteDatabase = async () => {
     try {
       await axios.delete(
-        `http://localhost:5000/api/databases/${deleteDialog.name}`,
+        `/database/${deleteDialog.name}`,
         {
           headers: {
             Authorization: `Bearer ${localStorage.getItem("token")}`,
