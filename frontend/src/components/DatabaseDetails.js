@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
-import axios from "axios";
+import axiosInstance from "../utils/axiosInstance";
 import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
 import LinkIcon from "@mui/icons-material/Link";
 import {
@@ -61,7 +61,6 @@ import UpgradeDialog from "./UpgradeDialog";
 import StoreIcon from "@mui/icons-material/Store";
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import StorageRoundedIcon from '@mui/icons-material/StorageRounded';
-import axiosInstance from "../utils/axiosInstance";
 
 const drawerWidth = 240;
 
@@ -104,51 +103,49 @@ const DatabaseDetails = () => {
   const [upgradeDialogOpen, setUpgradeDialogOpen] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
 
-  useEffect(() => {
-    const fetchCurrentUser = async () => {
-      try {
-        const token = localStorage.getItem("token");
-        if (!token) {
-          setSnackbar({
-            open: true,
-            message: "Not authenticated. Please log in.",
-            severity: "error",
-          });
-          navigate("/login");
-          return;
-        }
-
-        const response = await axios.get(
-          "http://localhost:5000/api/superadmin/me",
-          {
-            headers: { Authorization: `Bearer ${token}` },
-          }
-        );
-
-        if (response.data?.email) {
-          setCurrentUser({
-            email: response.data.email,
-            id: response.data.id,
-            name: response.data.name,
-          });
-        } else {
-          console.error("Email missing in response:", response.data);
-          setSnackbar({
-            open: true,
-            message: "User data incomplete",
-            severity: "warning",
-          });
-        }
-      } catch (error) {
-        console.error("Failed to fetch user:", error);
+  const fetchCurrentUser = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const user = JSON.parse(localStorage.getItem("user"));
+      if (!token) {
         setSnackbar({
           open: true,
-          message: error.response?.data?.error || "Failed to load user data",
-          severity: "error",
+          message: 'Not authenticated. Please log in.',
+          severity: 'error',
+        });
+        navigate('/login');
+        return;
+      }
+      const response = await axiosInstance.get('/users/get-user', {
+        params: { orgId: user.orgId },
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (response.data && response.data.data) {
+        const userData = response.data.data[0];
+        setCurrentUser({
+          email: userData.email,
+          id: userData.userId,
+          name: `${userData.firstName} ${userData.lastName}`,
+        });
+      } else {
+        console.error('User data missing in response:', response.data);
+        setSnackbar({
+          open: true,
+          message: 'User data incomplete',
+          severity: 'warning',
         });
       }
-    };
+    } catch (error) {
+      console.error('Failed to fetch user:', error);
+      setSnackbar({
+        open: true,
+        message: error.response?.data?.error || 'Failed to load user data',
+        severity: 'error',
+      });
+    }
+  };
 
+  useEffect(() => {
     fetchCurrentUser();
   }, [navigate]);
 
@@ -171,8 +168,8 @@ const DatabaseDetails = () => {
         severity: "info",
         autoHideDuration: null,
       });
-      const response = await axios.post(
-        `http://localhost:5000/api/databases/${dbName}/create-table`,
+      const response = await axiosInstance.post(
+        `/database/${dbName}/create-table`,
         formData,
         {
           headers: {
@@ -204,9 +201,9 @@ const DatabaseDetails = () => {
   };
 
   const handleEditTable = (dbName, tableName) => {
-    axios
+    axiosInstance
       .get(
-        `http://localhost:5000/api/databases/${dbName}/tables/${tableName}/columns`,
+        `/database/${dbName}/tables/${tableName}/columns`,
         {
           headers: {
             Authorization: `Bearer ${localStorage.getItem("token")}`,
@@ -234,8 +231,8 @@ const DatabaseDetails = () => {
 
   const handleSaveTableChanges = async (dbName, tableName, columns) => {
     try {
-      const response = await axios.put(
-        `http://localhost:5000/api/databases/${dbName}/${tableName}`,
+      const response = await axiosInstance.put(
+        `/database/${dbName}/${tableName}`,
         { columns },
         { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } }
       );
@@ -269,9 +266,7 @@ const DatabaseDetails = () => {
       const response = await axiosInstance.get(
         `/database/get-by-dbid`,
         {
-          params:{
-            dbId, dbName
-          },
+          params: { dbId, dbName },
           headers: {
             Authorization: `Bearer ${localStorage.getItem("token")}`,
           },
@@ -396,16 +391,16 @@ const DatabaseDetails = () => {
 
   const handleViewData = async (table) => {
     try {
-      const columnsResponse = await axios.get(
-        `http://localhost:5000/api/databases/${dbName}/tables/${table.tablename}/columns`,
+      const columnsResponse = await axiosInstance.get(
+        `/database/${dbName}/tables/${table.tablename}/columns`,
         {
           headers: {
             Authorization: `Bearer ${localStorage.getItem("token")}`,
           },
         }
       );
-      const dataResponse = await axios.get(
-        `http://localhost:5000/api/databases/${dbName}/tables/${table.tablename}/data`,
+      const dataResponse = await axiosInstance.get(
+        `/database/${dbName}/tables/${table.tablename}/data`,
         {
           headers: {
             Authorization: `Bearer ${localStorage.getItem("token")}`,
@@ -468,8 +463,8 @@ const DatabaseDetails = () => {
 
   const handleDeleteTable = async () => {
     try {
-      await axios.delete(
-        `http://localhost:5000/api/databases/${dbName}/tables/${deleteDialog.tableName}`,
+      await axiosInstance.delete(
+        `/database/${dbName}/tables/${deleteDialog.tableName}`,
         {
           headers: {
             Authorization: `Bearer ${localStorage.getItem("token")}`,
@@ -536,7 +531,6 @@ const DatabaseDetails = () => {
               location.pathname === `/database/${dbName}`
                 ? "var(--primary-light)"
                 : "transparent",
-
             cursor: "pointer"
           }}
         >
@@ -887,9 +881,6 @@ const DatabaseDetails = () => {
           >
             <LogoutIcon fontSize="small" /> {/* Adjusted icon size */}
           </Button>
-          {/* <IconButton color="inherit">
-            <SettingsIcon />
-          </IconButton> */}
         </Toolbar>
       </AppBar>
       <Box

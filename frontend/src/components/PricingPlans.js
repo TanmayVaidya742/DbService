@@ -44,10 +44,8 @@ import {
     WorkspacePremium,
     Logout as LogoutIcon
 } from '@mui/icons-material';
-import axios from "axios";
-
+import axiosInstance from "../utils/axiosInstance"; // Updated to use axiosInstance
 import DashboardIcon from '@mui/icons-material/Dashboard';
-
 
 const drawerWidth = 240;
 
@@ -66,23 +64,26 @@ const PricingPlans = () => {
         const fetchCurrentUser = async () => {
             try {
                 const token = localStorage.getItem('token');
+                const user = JSON.parse(localStorage.getItem("user"));
                 if (!token) {
                     navigate('/login');
                     return;
                 }
 
-                const response = await axios.get('http://localhost:5000/api/superadmin/me', {
+                const response = await axiosInstance.get('/users/get-user', {
+                    params: { orgId: user.orgId },
                     headers: { Authorization: `Bearer ${token}` },
                 });
 
-                if (response.data?.email) {
+                if (response.data && response.data.data) {
+                    const userData = response.data.data[0];
                     setCurrentUser({
-                        email: response.data.email,
-                        id: response.data.id,
-                        name: response.data.name,
+                        email: userData.email,
+                        id: userData.userId,
+                        name: `${userData.firstName} ${userData.lastName}`,
                     });
                 } else {
-                    console.error('Email missing in response:', response.data);
+                    console.error('User data missing in response:', response.data);
                 }
             } catch (error) {
                 console.error('Failed to fetch user:', error);
@@ -219,37 +220,34 @@ const PricingPlans = () => {
                     <ListItemText primary="Databases" />
                 </ListItem>
 
-                 <ListItem
-                          button
-                          onClick={() => navigate(`/database/${dbName}`)}
-                          selected={location.pathname === `/database/${dbName}`}
-                          style={{
-                            color:
-                              location.pathname === `/database/${dbName}`
+                <ListItem
+                    button
+                    onClick={() => navigate(`/database/${dbName}`)}
+                    selected={location.pathname === `/database/${dbName}`}
+                    style={{
+                        color:
+                            location.pathname === `/database/${dbName}`
                                 ? "var(--primary-color)"
                                 : "var(--text-primary)",
-                            backgroundColor:
-                              location.pathname === `/database/${dbName}`
+                        backgroundColor:
+                            location.pathname === `/database/${dbName}`
                                 ? "var(--primary-light)"
                                 : "transparent",
-                
-                            cursor: "pointer"
-                          }}
-                        >
-                          <ListItemIcon>
-                            <DashboardIcon
-                              style={{
+                        cursor: "pointer"
+                    }}
+                >
+                    <ListItemIcon>
+                        <DashboardIcon
+                            style={{
                                 color:
-                                  location.pathname === `/database/${dbName}`
-                                    ? "var(--primary-color)"
-                                    : "var(--text-secondary)",
-                              }}
-                            />
-                          </ListItemIcon>
-                          <ListItemText primary="Database Details" />
-                        </ListItem>
-
-
+                                    location.pathname === `/database/${dbName}`
+                                        ? "var(--primary-color)"
+                                        : "var(--text-secondary)",
+                            }}
+                        />
+                    </ListItemIcon>
+                    <ListItemText primary="Database Details" />
+                </ListItem>
             </List>
         </div>
     );
