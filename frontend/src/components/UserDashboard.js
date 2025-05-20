@@ -103,6 +103,7 @@ const UserDashboard = () => {
   const fetchCurrentUser = async () => {
     try {
       const token = localStorage.getItem('token');
+      const user = JSON.parse(localStorage.getItem("user"))
       if (!token) {
         setSnackbar({
           open: true,
@@ -112,11 +113,11 @@ const UserDashboard = () => {
         navigate('/login');
         return;
       }
-      const response = await axiosInstance.get('/users/get-user', {params:{orgId: "4b11ed8a-3ef2-41a4-8f23-342d47022f25"}},{
+      const response = await axiosInstance.get('/users/get-user', {params:{orgId: user.orgId}},{
         headers: { Authorization: `Bearer ${token}` },
       });
       if (response.data && response.data.data) {
-        const user = response.data.data;
+        const user = response.data.data[0];
         setCurrentUser({
           email: user.email,
           id: user.userId,
@@ -141,34 +142,36 @@ const UserDashboard = () => {
     }
   };
 
-  const fetchDatabases = async () => {
-    try {
-      const response = await axiosInstance.get("/database/get-databases-by-user-id", {
-        params: { userId: currentUser.id },
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
-      });
-  
-      const transformedData = response.data.map((db) => ({
-        name: db.dbname,
-        tables: db.tables.filter((t) => t.tablename).map((t) => t.tablename),
-        apiKey: db.apikey,
-        dbid: db.dbid,
-      }));
-      console.log(transformedData);
-      setDatabases(transformedData);
-    } catch (error) {
-      console.error("Error fetching databases:", error);
-      setSnackbar({
-        open: true,
-        message: error.response?.data?.error || "Failed to fetch databases",
-        severity: "error",
-      });
+const fetchDatabases = async () => {
+  try {
+    debugger;
+    const response = await axiosInstance.get("/database", {
+      params: { userId: currentUser.id },
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem("token")}`,
+      },
+    });
+
+    if (response.data && response.data.success) {
+      // Handle case where data might be undefined
+      const dbData = response.data.data || [];
+      
+      
+      setDatabases(dbData);
+    } else {
       setDatabases([]);
     }
-  };
-  
+  } catch (error) {
+    console.error("Error fetching databases:", error);
+    setSnackbar({
+      open: true,
+      message: error.response?.data?.message || "Failed to fetch databases",
+      severity: "error",
+    });
+    setDatabases([]);
+  }
+};
+
 
   
   useEffect(() => {
