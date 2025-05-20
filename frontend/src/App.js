@@ -76,7 +76,7 @@ function App() {
           />
           <Route path="/databases" element={<UserDashboard />} />
           <Route path="/organizations" element={<Organizations />} />
-          <Route path="/database/:dbName" element={<DatabaseDetails />} />
+          <Route path="/database/:dbName/:dbId" element={<DatabaseDetails />} />
           <Route path="/pricing" element={<PricingPlans />} />
 
 

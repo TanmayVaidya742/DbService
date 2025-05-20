@@ -61,11 +61,12 @@ import UpgradeDialog from "./UpgradeDialog";
 import StoreIcon from "@mui/icons-material/Store";
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import StorageRoundedIcon from '@mui/icons-material/StorageRounded';
+import axiosInstance from "../utils/axiosInstance";
 
 const drawerWidth = 240;
 
 const DatabaseDetails = () => {
-  const { dbName } = useParams();
+  const { dbName, dbId } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -265,9 +266,12 @@ const DatabaseDetails = () => {
 
   const fetchDatabaseDetails = async () => {
     try {
-      const response = await axios.get(
-        `http://localhost:5000/api/databases/${decodeURIComponent(dbName)}`,
+      const response = await axiosInstance.get(
+        `/database/get-by-dbid`,
         {
+          params:{
+            dbId, dbName
+          },
           headers: {
             Authorization: `Bearer ${localStorage.getItem("token")}`,
           },

@@ -72,6 +72,7 @@ const UserDashboard = () => {
   const [openDialog, setOpenDialog] = useState(false);
   const [openTableDialog, setOpenTableDialog] = useState(false);
   const [currentDbForTable, setCurrentDbForTable] = useState('');
+  const [loading , setLoading] = useState(true)
   const [tableFormData, setTableFormData] = useState({
     tableName: '',
   });
@@ -243,69 +244,70 @@ const UserDashboard = () => {
   };
 
   const handleDatabaseSubmit = async (formData) => {
-    try {
-      if (!formData.databaseName) {
-        setSnackbar({
-          open: true,
-          message: "Database name is required",
-          severity: "error",
-        });
-        return;
-      }
+  // Client-side validation
+  if (!formData.databaseName) {
+    setSnackbar({
+      open: true,
+      message: "Database name is required",
+      severity: "error",
+    });
+    return;
+  }
 
-      setSnackbar({
-        open: true,
-        message: "Creating database...",
-        severity: "info",
-        autoHideDuration: null,
-      });
+  if (!/^[a-zA-Z0-9_-]+$/.test(formData.databaseName)) {
+    setSnackbar({
+      open: true,
+      message: "Database name can only contain letters, numbers, underscores, and hyphens",
+      severity: "error",
+    });
+    return;
+  }
 
-      const response = await axiosInstance.post(
-        "/database",
-        {
-          databaseName: formData.databaseName,
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-          },
-          timeout: 30000,
-        }
-      );
+  if (formData.databaseName.length > 63) {
+    setSnackbar({
+      open: true,
+      message: "Database name must be 63 characters or less",
+      severity: "error",
+    });
+    return;
+  }
 
-      setSnackbar({
-        open: true,
-        message: "Database created successfully!",
-        severity: "success",
-      });
+  try {
+    setSnackbar({
+      open: true,
+      message: "Creating database...",
+      severity: "info",
+      autoHideDuration: null,
+    });
 
-      await fetchDatabases();
-      handleCloseDialog();
+    const response = await axiosInstance.post(
+      "/database",
+      { databaseName: formData.databaseName },
+      { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } }
+    );
 
-      if (response.data.apiKey) {
-        setCurrentApiKey(response.data.apiKey);
-        setOpenApiKeyDialog(false);
-      }
-    } catch (error) {
-      console.error("Error creating database:", error);
+    setSnackbar({
+      open: true,
+      message: "Database created successfully!",
+      severity: "success",
+    });
 
-      let errorMessage = "Error creating database";
-      if (error.response) {
-        errorMessage =
-          error.response.data.error ||
-          error.response.data.message ||
-          errorMessage;
-      } else if (error.message) {
-        errorMessage = error.message;
-      }
+    await fetchDatabases();
+    handleCloseDialog();
 
-      setSnackbar({
-        open: true,
-        message: errorMessage,
-        severity: "error",
-      });
+    if (response.data.apiKey) {
+      setCurrentApiKey(response.data.apiKey);
+      setOpenApiKeyDialog(true);
     }
-  };
+  } catch (error) {
+    console.error("Error creating database:", error);
+    setSnackbar({
+      open: true,
+      message: error.response?.data?.message || error.message || "Failed to create database",
+      severity: "error",
+    });
+  }
+};
 
   const handleShowApiKey = (apiKey) => {
     setCurrentApiKey(apiKey);
@@ -326,8 +328,8 @@ const UserDashboard = () => {
     setSnackbar({ ...snackbar, open: false });
   };
 
-  const handleRowClick = (dbName) => {
-    navigate(`/database/${encodeURIComponent(dbName)}`);
+  const handleRowClick = (dbName, dbId) => {
+    navigate(`/database/${encodeURIComponent(dbName)}/${encodeURIComponent(dbId)}`);
   };
 
   const handleLogout = () => {
@@ -374,6 +376,7 @@ const UserDashboard = () => {
     </div>
   );
 
+  console.log(databases , "databasesdatabasesdatabases")
   return (
     <Box
       sx={{
@@ -631,7 +634,7 @@ const UserDashboard = () => {
                       <EqualWidthTableCell
                         style={{ color: "var(--text-primary)" }}
                       >
-                        {db.name}
+                        {db.dbName}
                       </EqualWidthTableCell>
 
                       <EqualWidthTableCell>
@@ -649,7 +652,7 @@ const UserDashboard = () => {
                           }}
                           onClick={(e) => {
                             e.stopPropagation();
-                            handleRowClick(db.name);
+                            handleRowClick(db.dbName , db.dbId);
                           }}
                         >
                           Tables
@@ -674,7 +677,7 @@ const UserDashboard = () => {
                             margin: "0 auto",
                           }}
                         >
-                          {db.tables.length}
+                          {/* {db.tables.length} */}
                         </Box>
                       </EqualWidthTableCell>
 

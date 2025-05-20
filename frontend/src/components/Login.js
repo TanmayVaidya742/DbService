@@ -101,17 +101,18 @@ const Login = () => {
     }
   
     try {
+      debugger;
       const res = await axiosInstance.post('/login', {
         email: formData.email,
         password: formData.password
       });
   
-      localStorage.setItem('token', res.data.token);
-      localStorage.setItem('user', JSON.stringify(res.data.data));
+      localStorage.setItem('token', res.data.data.token);
+      localStorage.setItem('user', JSON.stringify(res.data.data.findUser));
       setSuccess(true);
   
       setTimeout(() => {
-        const userType = res.data.data.userType;
+        const userType = res.data.data.findUser.userType;
         if (userType === 'superadmin') {
           navigate('/superadmin-dashboard');
         } else {
