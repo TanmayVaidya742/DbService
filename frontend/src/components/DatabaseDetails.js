@@ -149,6 +149,47 @@ const DatabaseDetails = () => {
     fetchCurrentUser();
   }, [navigate]);
 
+  const fetchDatabaseDetails = async () => {
+    try {
+      const response = await axiosInstance.get(
+        `/database/get-by-dbid`,
+        {
+          params: { dbId, dbName },
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+        }
+      );
+      const data = response.data;
+      if (!data || !data.dbname) {
+        throw new Error("Database name missing in response");
+      }
+      data.tables = data.tables || [];
+      if (data.tables) {
+        data.tables = data.tables.map((table) => ({
+          ...table,
+          schema: table.schema || {},
+        }));
+      }
+      setDatabase(data);
+    } catch (error) {
+      console.error("Error fetching database details:", error);
+      setSnackbar({
+        open: true,
+        message:
+          error.response?.data?.error || "Failed to fetch database details",
+        severity: "error",
+      });
+      setDatabase({ dbname: dbName }); // Fallback to URL param dbName
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchDatabaseDetails();
+  }, [dbName, dbId]);
+
   const handleShowMoreColumns = (event, table) => {
     setColumnsAnchorEl(event.currentTarget);
     setExpandedTable(table);
@@ -260,43 +301,6 @@ const DatabaseDetails = () => {
       return false;
     }
   };
-
-  const fetchDatabaseDetails = async () => {
-    try {
-      const response = await axiosInstance.get(
-        `/database/get-by-dbid`,
-        {
-          params: { dbId, dbName },
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-          },
-        }
-      );
-      const data = response.data;
-      data.tables = data.tables || [];
-      if (data.tables) {
-        data.tables = data.tables.map((table) => ({
-          ...table,
-          schema: table.schema || {},
-        }));
-      }
-      setDatabase(data);
-    } catch (error) {
-      console.error("Error fetching database details:", error);
-      setSnackbar({
-        open: true,
-        message:
-          error.response?.data?.error || "Failed to fetch database details",
-        severity: "error",
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchDatabaseDetails();
-  }, [dbName]);
 
   const handleDrawerToggle = () => {
     setMobileOpen(!mobileOpen);
@@ -520,15 +524,15 @@ const DatabaseDetails = () => {
       <List>
         <ListItem
           button
-          onClick={() => navigate(`/database/${dbName}`)}
-          selected={location.pathname === `/database/${dbName}`}
+          onClick={() => navigate(`/database/${dbName}/${dbId}`)}
+          selected={location.pathname === `/database/${dbName}/${dbId}`}
           style={{
             color:
-              location.pathname === `/database/${dbName}`
+              location.pathname === `/database/${dbName}/${dbId}`
                 ? "var(--primary-color)"
                 : "var(--text-primary)",
             backgroundColor:
-              location.pathname === `/database/${dbName}`
+              location.pathname === `/database/${dbName}/${dbId}`
                 ? "var(--primary-light)"
                 : "transparent",
             cursor: "pointer"
@@ -538,7 +542,7 @@ const DatabaseDetails = () => {
             <DashboardIcon
               style={{
                 color:
-                  location.pathname === `/database/${dbName}`
+                  location.pathname === `/database/${dbName}/${dbId}`
                     ? "var(--primary-color)"
                     : "var(--text-secondary)",
               }}
@@ -643,22 +647,22 @@ const DatabaseDetails = () => {
               sx={{
                 color: "var(--primary-text)",
                 borderColor: "var(--primary-text)",
-                borderRadius: "20%", // Circular shape for icon button
-                minWidth: 40, // Fixed width for circular button
-                width: 40, // Fixed width for circular button
-                height: 40, // Fixed height for circular button
-                p: 0, // Remove padding
+                borderRadius: "20%",
+                minWidth: 40,
+                width: 40,
+                height: 40,
+                p: 0,
                 backgroundColor: "rgba(255, 255, 255, 0.1)",
                 "&:hover": {
                   backgroundColor: "rgba(255, 255, 255, 0.2)",
                   borderColor: "var(--primary-text)",
                   boxShadow: "0 2px 8px rgba(0, 0, 0, 0.2)",
-                  transform: "scale(1.05)", // Slight scale effect on hover
+                  transform: "scale(1.05)",
                 },
                 transition: "all 0.3s ease",
               }}
             >
-              <LogoutIcon fontSize="small" /> {/* Adjusted icon size */}
+              <LogoutIcon fontSize="small" />
             </Button>
           </Toolbar>
         </AppBar>
@@ -714,114 +718,6 @@ const DatabaseDetails = () => {
     );
   }
 
-  if (!database) {
-    return (
-      <Box sx={{ display: "flex" }}>
-        <AppBar
-          position="fixed"
-          sx={{
-            zIndex: (theme) => theme.zIndex.drawer + 1,
-            backgroundColor: "var(--primary-color)",
-            width: { sm: `calc(100% - ${drawerWidth}px)` },
-            ml: { sm: `${drawerWidth}px` },
-          }}
-        >
-          <Toolbar>
-            <IconButton
-              color="inherit"
-              edge="start"
-              onClick={handleDrawerToggle}
-              sx={{ mr: 2, display: { sm: "none" } }}
-            >
-              <MenuIcon />
-            </IconButton>
-            <Typography variant="h6" noWrap component="div">
-              Database Details
-            </Typography>
-            <Box sx={{ flexGrow: 1 }} />
-            <Typography
-              variant="body1"
-              sx={{ color: "var(--primary-text)", mr: 2 }}
-            >
-              {currentUser?.email || "Loading..."}
-            </Typography>
-            <Button
-              variant="outlined"
-              onClick={handleLogout}
-              sx={{
-                color: "var(--primary-text)",
-                borderColor: "var(--primary-text)",
-                borderRadius: "20%", // Circular shape for icon button
-                minWidth: 40, // Fixed width for circular button
-                width: 40, // Fixed width for circular button
-                height: 40, // Fixed height for circular button
-                p: 0, // Remove padding
-                backgroundColor: "rgba(255, 255, 255, 0.1)",
-                "&:hover": {
-                  backgroundColor: "rgba(255, 255, 255, 0.2)",
-                  borderColor: "var(--primary-text)",
-                  boxShadow: "0 2px 8px rgba(0, 0, 0, 0.2)",
-                  transform: "scale(1.05)", // Slight scale effect on hover
-                },
-                transition: "all 0.3s ease",
-              }}
-            >
-              <LogoutIcon fontSize="small" /> {/* Adjusted icon size */}
-            </Button>
-          </Toolbar>
-        </AppBar>
-        <Box
-          component="nav"
-          sx={{ width: { sm: drawerWidth }, flexShrink: { sm: 0 } }}
-        >
-          <Drawer
-            variant="temporary"
-            open={mobileOpen}
-            onClose={handleDrawerToggle}
-            ModalProps={{
-              keepMounted: true,
-            }}
-            sx={{
-              display: { xs: "block", sm: "none" },
-              "& .MuiDrawer-paper": {
-                boxSizing: "border-box",
-                width: drawerWidth,
-              },
-            }}
-          >
-            {drawer}
-          </Drawer>
-          <Drawer
-            variant="permanent"
-            sx={{
-              display: { xs: "none", sm: "block" },
-              "& .MuiDrawer-paper": {
-                boxSizing: "border-box",
-                width: drawerWidth,
-              },
-            }}
-            open
-          >
-            {drawer}
-          </Drawer>
-        </Box>
-        <Box
-          component="main"
-          sx={{
-            flexGrow: 1,
-            p: 3,
-            width: { sm: `calc(100% - ${drawerWidth}px)` },
-          }}
-        >
-          <Toolbar />
-          <Container maxWidth="lg">
-            <Typography variant="h6">Database not found</Typography>
-          </Container>
-        </Box>
-      </Box>
-    );
-  }
-
   return (
     <Box sx={{ display: "flex" }}>
       <AppBar
@@ -848,7 +744,7 @@ const DatabaseDetails = () => {
               variant="h5"
               sx={{ ml: 2, color: "var(--primary-text)" }}
             >
-              Database: {database.dbname}
+              Database: {database.dbname || dbName || "Unnamed Database"}
             </Typography>
           </Box>
           <Box sx={{ flexGrow: 1 }} />
@@ -864,22 +760,22 @@ const DatabaseDetails = () => {
             sx={{
               color: "var(--primary-text)",
               borderColor: "var(--primary-text)",
-              borderRadius: "20%", // Circular shape for icon button
-              minWidth: 40, // Fixed width for circular button
-              width: 40, // Fixed width for circular button
-              height: 40, // Fixed height for circular button
-              p: 0, // Remove padding
+              borderRadius: "20%",
+              minWidth: 40,
+              width: 40,
+              height: 40,
+              p: 0,
               backgroundColor: "rgba(255, 255, 255, 0.1)",
               "&:hover": {
                 backgroundColor: "rgba(255, 255, 255, 0.2)",
                 borderColor: "var(--primary-text)",
                 boxShadow: "0 2px 8px rgba(0, 0, 0, 0.2)",
-                transform: "scale(1.05)", // Slight scale effect on hover
+                transform: "scale(1.05)",
               },
               transition: "all 0.3s ease",
             }}
           >
-            <LogoutIcon fontSize="small" /> {/* Adjusted icon size */}
+            <LogoutIcon fontSize="small" />
           </Button>
         </Toolbar>
       </AppBar>
@@ -977,7 +873,7 @@ const DatabaseDetails = () => {
               <Box sx={{ display: "flex", alignItems: "center", mb: 1, ml: 2 }}>
                 <FaDatabase size={24} />
                 <Typography variant="h4" sx={{ ml: 2 }}>
-                  {database.dbname}
+                  {database.dbname || dbName || "Unnamed Database"}
                 </Typography>
               </Box>
               <Divider sx={{ my: 2 }} />
