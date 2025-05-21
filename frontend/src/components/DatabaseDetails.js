@@ -38,6 +38,7 @@ import {
   InputAdornment,
   TablePagination,
   Popover,
+  CircularProgress,
 } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
 import {
@@ -72,9 +73,8 @@ const DatabaseDetails = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [database, setDatabase] = useState(null);
   const [tableData, setTableData] = useState([]);
-
   const [loading, setLoading] = useState(true);
-
+  const [deleteLoading, setDeleteLoading] = useState(false);
   const [snackbar, setSnackbar] = useState({
     open: false,
     message: "",
@@ -106,8 +106,6 @@ const DatabaseDetails = () => {
   const [expandedTable, setExpandedTable] = useState(null);
   const [upgradeDialogOpen, setUpgradeDialogOpen] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
-
-
 
   const fetchCurrentUser = async () => {
     try {
@@ -155,11 +153,72 @@ const DatabaseDetails = () => {
     fetchCurrentUser();
   }, [navigate]);
 
-  
+  const fetchDatabaseDetails = async () => {
+    try {
+      const response = await axiosInstance.get(
+        `/database/get-by-dbid`,
+        {
+          params: { dbId, dbName },
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+        }
+      );
+      const data = response.data;
+      data.tables = data.tables || [];
+      if (data.tables) {
+        data.tables = data.tables.map((table) => ({
+          ...table,
+          schema: table.schema || {},
+        }));
+      }
+      setDatabase(data);
+    } catch (error) {
+      console.error("Error fetching database details:", error);
+      setSnackbar({
+        open: true,
+        message:
+          error.response?.data?.error || "Failed to fetch database details",
+        severity: "error",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
+  const getAllTablesByDbId = async () => {
+    try {
+      const response = await axiosInstance.get(`/table/${dbId}/tables`, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      });
+      setTableData(response.data);
+      console.log(response.data);
+    } catch (error) {
+      console.error("Error fetching tables:", error);
+      setSnackbar({
+        open: true,
+        message: error.response?.data?.error || "Failed to fetch tables",
+        severity: "error",
+      });
+    }
+  };
+
+  // Refresh data after delete operation
   useEffect(() => {
-    fetchDatabaseDetails();
-  }, [dbName, dbId]);
+    if (!deleteDialog.open && !deleteLoading) {
+      Promise.all([fetchDatabaseDetails(), getAllTablesByDbId()])
+        .catch((error) => {
+          console.error("Error refreshing data:", error);
+          setSnackbar({
+            open: true,
+            message: error.response?.data?.error || "Failed to refresh data",
+            severity: "error",
+          });
+        });
+    }
+  }, [deleteDialog.open, deleteLoading, dbName, dbId]);
 
   const handleShowMoreColumns = (event, table) => {
     setColumnsAnchorEl(event.currentTarget);
@@ -273,45 +332,6 @@ const DatabaseDetails = () => {
     }
   };
 
-  const fetchDatabaseDetails = async () => {
-    try {
-      const response = await axiosInstance.get(
-        `/database/get-by-dbid`,
-        {
-          params: { dbId, dbName },
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-          },
-        }
-      );
-      const data = response.data;
-      data.tables = data.tables || [];
-      if (data.tables) {
-        data.tables = data.tables.map((table) => ({
-          ...table,
-          schema: table.schema || {},
-        }));
-      }
-      setDatabase(data);
-    } catch (error) {
-      console.error("Error fetching database details:", error);
-      setSnackbar({
-        open: true,
-        message:
-          error.response?.data?.error || "Failed to fetch database details",
-        severity: "error",
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-
-
-  useEffect(() => {
-    fetchDatabaseDetails();
-  }, [dbName]);
-
   const handleDrawerToggle = () => {
     setMobileOpen(!mobileOpen);
   };
@@ -405,20 +425,14 @@ const DatabaseDetails = () => {
 
   const handleViewData = async (table) => {
     try {
-      const columnsResponse = await axiosInstance.get(
-        `/database/${dbName}/tables/${table.tableName}/columns`,
+      const columnsResponse = await axiosInstance.get(`/database/${dbName}/tables/${table.tableName}/columns`,
         {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-          },
+          headers: { Authorization: `Bearer ${localStorage.getItem("token")}`},
         }
       );
-      const dataResponse = await axiosInstance.get(
-        `/database/${dbName}/tables/${table.tableName}/data`,
+      const dataResponse = await axiosInstance.get(`/database/${dbName}/tables/${table.tableName}/data`,
         {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-          },
+          headers: { Authorization: `Bearer ${localStorage.getItem("token")}`},
         }
       );
       setViewDataDialog({
@@ -476,9 +490,10 @@ const DatabaseDetails = () => {
   };
 
   const handleDeleteTable = async () => {
+    setDeleteLoading(true);
     try {
-      await axiosInstance.delete(
-        `/database/${dbName}/tables/${deleteDialog.tableName}`,
+      const response = await axiosInstance.delete(
+        `/table/${dbName}/tables/${deleteDialog.tableName}`,
         {
           headers: {
             Authorization: `Bearer ${localStorage.getItem("token")}`,
@@ -487,18 +502,19 @@ const DatabaseDetails = () => {
       );
       setSnackbar({
         open: true,
-        message: "Table deleted successfully!",
+        message: response.data.message || "Table deleted successfully!",
         severity: "success",
       });
       setDeleteDialog({ open: false, tableName: "" });
-      await fetchDatabaseDetails();
     } catch (error) {
       console.error("Error deleting table:", error);
       setSnackbar({
         open: true,
-        message: error.response?.data?.error || "Failed to delete table",
+        message: error.response?.data?.details || error.response?.data?.error || "Failed to delete table",
         severity: "error",
       });
+    } finally {
+      setDeleteLoading(false);
     }
   };
 
@@ -522,16 +538,6 @@ const DatabaseDetails = () => {
       tableName: table.tableName,
     });
   };
-
-
-  const getAllTablesByDbId = async () => {
-    const response = await axiosInstance.get(`/table/${dbId}/tables`);
-    setTableData(response.data)
-    console.log(response.data)
-  }
-  useEffect(() => {
-    getAllTablesByDbId();
-  }, [])
 
   const drawer = (
     <div style={{ backgroundColor: "var(--bg-paper)" }}>
@@ -846,7 +852,6 @@ const DatabaseDetails = () => {
     );
   }
 
-
   return (
     <Box sx={{ display: "flex" }}>
       <AppBar
@@ -1068,7 +1073,7 @@ const DatabaseDetails = () => {
                           fontWeight: "bold",
                         }}
                       >
-                        Select
+                        Select~
                       </TableCell>
                     </TableRow>
                   </TableHead>
@@ -1262,6 +1267,7 @@ const DatabaseDetails = () => {
                                   sx={{
                                     color: "var(--error-color)",
                                   }}
+                                  disabled={deleteLoading}
                                 >
                                   <DeleteIcon fontSize="small" />
                                 </IconButton>
@@ -1452,6 +1458,7 @@ const DatabaseDetails = () => {
                     backgroundColor: "var(--primary-light-hover)",
                   },
                 }}
+                disabled={deleteLoading}
               >
                 Cancel
               </Button>
@@ -1464,9 +1471,10 @@ const DatabaseDetails = () => {
                   },
                 }}
                 variant="contained"
-                startIcon={<DeleteIcon />}
+                startIcon={deleteLoading ? <CircularProgress size={20} /> : <DeleteIcon />}
+                disabled={deleteLoading}
               >
-                Delete
+                {deleteLoading ? "Deleting..." : "Delete"}
               </Button>
             </DialogActions>
           </Dialog>
