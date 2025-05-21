@@ -36,13 +36,12 @@ import {
   Logout as LogoutIcon,
 } from "@mui/icons-material";
 import { useLocation, useNavigate } from "react-router-dom";
-import axios from "axios";
+import axiosInstance from "../utils/axiosInstance";
 import AddDatabaseDialog from "./AddDatabaseDialog";
 import { styled } from "@mui/material/styles";
 import { FaDatabase } from "react-icons/fa";
 import { CiViewTable } from "react-icons/ci";
 import DashboardCustomizeRoundedIcon from '@mui/icons-material/DashboardCustomizeRounded';
-import axiosInstance from "../utils/axiosInstance";
 
 const drawerWidth = 240;
 
@@ -196,27 +195,31 @@ const UserDashboard = () => {
 
   const handleDeleteDatabase = async () => {
     try {
-      await axios.delete(`/database/${deleteDialog.name}`, {
+      const response = await axiosInstance.delete(`/database/${deleteDialog.name}`, {
         headers: {
           Authorization: `Bearer ${localStorage.getItem("token")}`,
         },
       });
 
-      setSnackbar({
-        open: true,
-        message: "Database deleted successfully!",
-        severity: "success",
-      });
-
-      setDeleteDialog({ ...deleteDialog, open: false });
-      fetchDatabases();
+      if (response.data && response.data.success) {
+        setSnackbar({
+          open: true,
+          message: response.data.message || "Database deleted successfully!",
+          severity: "success",
+        });
+        setDeleteDialog({ ...deleteDialog, open: false });
+        await fetchDatabases();
+      } else {
+        throw new Error(response.data.message || "Failed to delete database");
+      }
     } catch (error) {
       console.error("Error deleting database:", error);
       setSnackbar({
         open: true,
-        message: error.response?.data?.error || "Failed to delete database",
+        message: error.response?.data?.message || "Failed to delete database",
         severity: "error",
       });
+      setDeleteDialog({ ...deleteDialog, open: false });
     }
   };
 
@@ -283,7 +286,7 @@ const UserDashboard = () => {
 
       setSnackbar({
         open: true,
-        message: "Database created successfully!",
+        message: response.data.message || "Database created successfully!",
         severity: "success",
       });
 
@@ -610,7 +613,7 @@ const UserDashboard = () => {
                 <TableBody>
                   {databases.map((db) => (
                     <TableRow
-                      key={db.name}
+                      key={db.dbName}
                       hover
                       sx={{
                         "&:hover": {
@@ -692,7 +695,7 @@ const UserDashboard = () => {
                           <IconButton
                             onClick={(e) => {
                               e.stopPropagation();
-                              handleDeleteClick("database", db.name);
+                              handleDeleteClick("database", db.dbName);
                             }}
                             sx={{ color: "var(--error-color)" }}
                           >
