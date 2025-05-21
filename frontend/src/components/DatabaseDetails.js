@@ -169,7 +169,7 @@ const DatabaseDetails = () => {
         autoHideDuration: null,
       });
       const response = await axiosInstance.post(
-        `/database/${dbName}/create-table`,
+        `/table/${dbName}/tables`,
         formData,
         {
           headers: {
