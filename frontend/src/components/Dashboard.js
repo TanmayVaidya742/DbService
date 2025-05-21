@@ -521,7 +521,7 @@ const Dashboard = () => {
                 sx={{
                   borderColor: "var(--primary-color)",
                   color: "var(--primary-color)",
-                  borderRadius: "var(--border-radius)",
+                  borderRadius: "var(--border-radius)", // Fixed typo
                   "&:hover": {
                     backgroundColor: "var(--primary-light)",
                     borderColor: "var(--primary-hover)",
