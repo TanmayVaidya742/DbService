@@ -94,10 +94,7 @@ const UserDashboard = () => {
         navigate('/login');
         return;
       }
-      
-      // First try to get orgName from localStorage
-      const cachedOrgName = localStorage.getItem('orgName');
-      
+
       // Fetch user data
       const userResponse = await axiosInstance.get('/users/get-user', {
         params: { orgId: user.orgId },
@@ -106,35 +103,18 @@ const UserDashboard = () => {
 
       if (userResponse.data?.data?.[0]) {
         const userData = userResponse.data.data[0];
-        
-        // If we have cached orgName, use that
-        if (cachedOrgName) {
-          setCurrentUser({
-            email: userData.email || '',
-            id: userData.userId || '',
-            name: `${userData.firstName || ''} ${userData.lastName || ''}`.trim(),
-            orgId: userData.orgId || user.orgId || '',
-            orgName: cachedOrgName
-          });
-          return;
-        }
 
-        // Try to get orgName from user response if available
-        const orgName = userData.orgName || 
-                       userData.organization?.name || 
-                       user.orgId; // fallback to ID if name not available
-
-        // Store in localStorage if we found a proper name
-        if (orgName && orgName !== user.orgId) {
-          localStorage.setItem('orgName', orgName);
-        }
+        // Fetch organization data to get orgName
+        const orgResponse = await axiosInstance.get('/orgs');
+        const orgData = orgResponse.data.data.find(org => org.orgId === userData.orgId);
+        const orgName = orgData ? orgData.orgName : 'Not specified';
 
         setCurrentUser({
           email: userData.email || '',
           id: userData.userId || '',
           name: `${userData.firstName || ''} ${userData.lastName || ''}`.trim(),
           orgId: userData.orgId || user.orgId || '',
-          orgName: orgName || 'My Organization'
+          orgName: orgName
         });
       } else {
         console.error('User data missing in response:', userResponse.data);
@@ -322,10 +302,6 @@ const UserDashboard = () => {
     setOpenApiKeyDialog(false);
   };
 
-  const handleCloseSnackbar = () => {
-    setSnackbar({ ...snackbar, open: false });
-  };
-
   const handleRowClick = (dbName, dbId) => {
     navigate(`/database/${encodeURIComponent(dbName)}/${encodeURIComponent(dbId)}`);
   };
@@ -333,7 +309,6 @@ const UserDashboard = () => {
   const handleLogout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
-    localStorage.removeItem("orgName");
     setCurrentUser({
       email: '',
       id: '',
@@ -349,6 +324,10 @@ const UserDashboard = () => {
     setTimeout(() => {
       navigate("/login");
     }, 2000);
+  };
+
+  const handleCloseSnackbar = () => {
+    setSnackbar({ ...snackbar, open: false });
   };
 
   const drawer = (
@@ -507,7 +486,7 @@ const UserDashboard = () => {
                   gap: 1
                 }}
               >
-                Organization: {currentUser?.orgName || currentUser?.orgId || 'Not specified'}
+                Organization: {currentUser?.orgName || 'Not specified'}
               </Typography>
             </Box>
 
