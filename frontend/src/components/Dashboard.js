@@ -82,13 +82,13 @@ const Dashboard = () => {
     email: '',
     id: '',
     name: '',
-    organization: '',
+    orgName: '', // Changed from organization to orgName
   });
 
   const handleLogout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
-    setCurrentUser({ email: '', id: '', name: '', organization: '' });
+    setCurrentUser({ email: '', id: '', name: '', orgName: '' });
     setSnackbar({
       open: true,
       message: "Logged out successfully",
@@ -96,7 +96,7 @@ const Dashboard = () => {
     });
     setTimeout(() => {
       navigate("/login");
-    }, 2000); // 2-second delay to show snackbar
+    }, 2000);
   };
 
   const handleDrawerToggle = () => setMobileOpen(!mobileOpen);
@@ -116,23 +116,28 @@ const Dashboard = () => {
           return;
         }
 
-        const response = await axiosInstance.get('/users/get-user', {
+        // Fetch user data
+        const userResponse = await axiosInstance.get('/users/get-user', {
           params: { orgId: user.orgId },
           headers: { Authorization: `Bearer ${token}` },
         });
 
-        console.log('User data response:', response.data);
+        if (userResponse.data && userResponse.data.data) {
+          const userData = userResponse.data.data[0];
 
-        if (response.data && response.data.data) {
-          const userData = response.data.data[0];
+          // Fetch organization data to get orgName
+          const orgResponse = await axiosInstance.get('/orgs');
+          const orgData = orgResponse.data.data.find(org => org.orgId === userData.orgId);
+          const orgName = orgData ? orgData.orgName : 'Not specified';
+
           setCurrentUser({
             email: userData.email,
             id: userData.userId,
             name: `${userData.firstName} ${userData.lastName}`,
-            organization: userData.orgId,
+            orgName: orgName,
           });
         } else {
-          console.error('User data missing in response:', response.data);
+          console.error('User data missing in response:', userResponse.data);
           setSnackbar({
             open: true,
             message: 'User data incomplete',
@@ -228,7 +233,6 @@ const Dashboard = () => {
       console.log("Organization ID:", orgResponse.data?.data?.orgId);
 
       setSnackbar({
-        
         open: true,
         message: "Organization and owner created successfully",
         severity: "success",
@@ -475,7 +479,7 @@ const Dashboard = () => {
                     gap: 1
                   }}
                 >
-                  Organization: {currentUser?.organization || 'Not specified'}
+                  Organization: {currentUser?.orgName || 'Not specified'}
                 </Typography>
               </Box>
               <Button
@@ -517,7 +521,7 @@ const Dashboard = () => {
                 sx={{
                   borderColor: "var(--primary-color)",
                   color: "var(--primary-color)",
-                  borderRadius: "var(--border-radius)", // Fixed typo
+                  borderRadius: "var(--border-radius)",
                   "&:hover": {
                     backgroundColor: "var(--primary-light)",
                     borderColor: "var(--primary-hover)",
