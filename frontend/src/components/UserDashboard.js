@@ -94,7 +94,10 @@ const UserDashboard = () => {
         navigate('/login');
         return;
       }
-
+      
+      // First try to get orgName from localStorage
+      const cachedOrgName = localStorage.getItem('orgName');
+      
       // Fetch user data
       const userResponse = await axiosInstance.get('/users/get-user', {
         params: { orgId: user.orgId },
@@ -108,6 +111,26 @@ const UserDashboard = () => {
         const orgResponse = await axiosInstance.get('/orgs');
         const orgData = orgResponse.data.data.find(org => org.orgId === userData.orgId);
         const orgName = orgData ? orgData.orgName : 'Not specified';
+        
+        // If we have cached orgName, use that
+        if (cachedOrgName) {
+          setCurrentUser({
+            email: userData.email || '',
+            id: userData.userId || '',
+            name: `${userData.firstName || ''} ${userData.lastName || ''}`.trim(),
+            orgId: userData.orgId || user.orgId || '',
+            orgName: cachedOrgName
+          });
+          return;
+        }
+
+        // Try to get orgName from user response if available
+        // fallback to ID if name not available
+
+        // Store in localStorage if we found a proper name
+        if (orgName && orgName !== user.orgId) {
+          localStorage.setItem('orgName', orgName);
+        }
 
         setCurrentUser({
           email: userData.email || '',
@@ -309,6 +332,7 @@ const UserDashboard = () => {
   const handleLogout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
+    localStorage.removeItem("orgName");
     setCurrentUser({
       email: '',
       id: '',
