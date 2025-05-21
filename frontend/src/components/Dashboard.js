@@ -39,10 +39,9 @@ import {
   Delete as DeleteIcon,
   Visibility as VisibilityIcon,
   VisibilityOff as VisibilityOffIcon,
-  Logout as LogoutIcon, // Added LogoutIcon
+  Logout as LogoutIcon,
 } from "@mui/icons-material";
 import { useLocation, useNavigate } from "react-router-dom";
-import axios from "axios";
 import { styled } from "@mui/material/styles";
 import DashboardCustomizeRoundedIcon from '@mui/icons-material/DashboardCustomizeRounded';
 import axiosInstance from "../utils/axiosInstance";
@@ -76,11 +75,29 @@ const Dashboard = () => {
     message: "",
     severity: "success",
   });
-
   const [users, setUsers] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(false);
-  const [currentUser, setCurrentUser] = useState(null);
+  const [currentUser, setCurrentUser] = useState({
+    email: '',
+    id: '',
+    name: '',
+    organization: '',
+  });
+
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+    setCurrentUser({ email: '', id: '', name: '', organization: '' });
+    setSnackbar({
+      open: true,
+      message: "Logged out successfully",
+      severity: "success",
+    });
+    setTimeout(() => {
+      navigate("/login");
+    }, 2000); // 2-second delay to show snackbar
+  };
 
   const handleDrawerToggle = () => setMobileOpen(!mobileOpen);
 
@@ -88,6 +105,7 @@ const Dashboard = () => {
     const fetchCurrentUser = async () => {
       try {
         const token = localStorage.getItem('token');
+        const user = JSON.parse(localStorage.getItem("user"));
         if (!token) {
           setSnackbar({
             open: true,
@@ -98,21 +116,23 @@ const Dashboard = () => {
           return;
         }
 
-        const response = await axiosInstance.get('/api/superadmin/me', {
-          // headers: { Authorization: `Bearer ${token}` },
+        const response = await axiosInstance.get('/users/get-user', {
+          params: { orgId: user.orgId },
+          headers: { Authorization: `Bearer ${token}` },
         });
 
         console.log('User data response:', response.data);
 
-        if (response.data?.email) {
+        if (response.data && response.data.data) {
+          const userData = response.data.data[0];
           setCurrentUser({
-            email: response.data.email,
-            id: response.data.id,
-            name: response.data.name,
-            organization: response.data.organization,
+            email: userData.email,
+            id: userData.userId,
+            name: `${userData.firstName} ${userData.lastName}`,
+            organization: userData.orgId,
           });
         } else {
-          console.error('Email missing in response:', response.data);
+          console.error('User data missing in response:', response.data);
           setSnackbar({
             open: true,
             message: 'User data incomplete',
@@ -136,44 +156,24 @@ const Dashboard = () => {
     fetchUsers();
   }, []);
 
-
-
-//   const fetchUsers = async () => {
-//   setLoading(true);
-//   try {
-//     const res = await axiosInstance.get("/orgs");
-//     setUsers(res.data);
-//   } catch (err) {
-//     console.error("Error fetching organizations:", err);
-//     setSnackbar({
-//       open: true,
-//       message: "Error fetching organizations",
-//       severity: "error",
-//     });
-//   } finally {
-//     setLoading(false);
-//   }
-// };
-
-const fetchUsers = async () => {
-  setLoading(true);
-  try {
-    const res = await axiosInstance.get("/orgs");
-    // Make sure we're getting an array from the response
-    const orgsData = res.data.data || res.data || [];
-    setUsers(Array.isArray(orgsData) ? orgsData : []);
-  } catch (err) {
-    console.error("Error fetching organizations:", err);
-    setSnackbar({
-      open: true,
-      message: "Error fetching organizations",
-      severity: "error",
-    });
-    setUsers([]); // Reset to empty array on error
-  } finally {
-    setLoading(false);
-  }
-};
+  const fetchUsers = async () => {
+    setLoading(true);
+    try {
+      const res = await axiosInstance.get("/orgs");
+      const orgsData = res.data.data || res.data || [];
+      setUsers(Array.isArray(orgsData) ? orgsData : []);
+    } catch (err) {
+      console.error("Error fetching organizations:", err);
+      setSnackbar({
+        open: true,
+        message: "Error fetching organizations",
+        severity: "error",
+      });
+      setUsers([]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleOpenDialog = () => setOpenDialog(true);
   const handleCloseDialog = () => {
@@ -196,190 +196,55 @@ const fetchUsers = async () => {
     setShowPassword(!showPassword);
   };
 
-  // const handleSubmit = async () => {
-  //   if (
-  //     !formData.organizationName ||
-  //     !formData.domainName ||
-  //     !formData.ownerEmail ||
-  //     !formData.firstName ||
-  //     !formData.lastName ||
-  //     !formData.password
-  //   ) {
-  //     setSnackbar({
-  //       open: true,
-  //       message: "Please fill in all fields",
-  //       severity: "error",
-  //     });
-  //     return;
-  //   }
+  const handleSubmit = async () => {
+    if (
+      !formData.organizationName ||
+      !formData.domainName ||
+      !formData.ownerEmail ||
+      !formData.firstName ||
+      !formData.lastName ||
+      !formData.password
+    ) {
+      setSnackbar({
+        open: true,
+        message: "Please fill in all fields",
+        severity: "error",
+      });
+      return;
+    }
 
-  //   const domainRegex = /^[a-zA-Z0-9-]+(\.[a-zA-Z0-9-]+)*\.[a-zA-Z]{2,}$/;
-  //   if (!domainRegex.test(formData.domainName)) {
-  //     setSnackbar({
-  //       open: true,
-  //       message: "Invalid domain name format",
-  //       severity: "error",
-  //     });
-  //     return;
-  //   }
+    try {
+      const orgResponse = await axiosInstance.post("/orgs/add-org", {
+        orgName: formData.organizationName.trim(),
+        domain: formData.domainName.trim().toLowerCase(),
+        firstName: formData.firstName.trim(),
+        lastName: formData.lastName.trim(),
+        email: formData.ownerEmail.trim().toLowerCase(),
+        password: formData.password,
+      });
 
-  //   const emailDomain = formData.ownerEmail.split("@")[1];
-  //   if (emailDomain !== formData.domainName) {
-  //     setSnackbar({
-  //       open: true,
-  //       message: "Owner email domain must match organization domain",
-  //       severity: "error",
-  //     });
-  //     return;
-  //   }
+      console.log("Full organization response:", orgResponse);
+      console.log("Response data:", orgResponse.data);
+      console.log("Organization ID:", orgResponse.data?.data?.orgId);
 
-  //   try {
-  //     const response = await axios.post(
-  //       "http://localhost:5000/api/users",
-  //       {
-  //         organizationName: formData.organizationName,
-  //         domainName: formData.domainName,
-  //         ownerEmail: formData.ownerEmail,
-  //         firstName: formData.firstName,
-  //         lastName: formData.lastName,
-  //         password: formData.password,
-  //       },
-  //       {
-  //         headers: {
-  //           Authorization: `Bearer ${localStorage.getItem("token")}`,
-  //         },
-  //       }
-  //     );
+      setSnackbar({
+        
+        open: true,
+        message: "Organization and owner created successfully",
+        severity: "success",
+      });
 
-  //     setSnackbar({
-  //       open: true,
-  //       message: "Organization created successfully",
-  //       severity: "success",
-  //     });
-
-  //     await fetchUsers();
-  //     handleCloseDialog();
-  //   } catch (error) {
-  //     console.error("Error adding organization:", error);
-  //     setSnackbar({
-  //       open: true,
-  //       message: error.response?.data?.error || "Error creating organization",
-  //       severity: "error",
-  //     });
-  //   }
-  // };
-
-  // const handleSubmit = async () => {
-  //   // Keep your existing validation
-
-  //   try {
-  //     const response = await axiosInstance.post(
-  //       "http://localhost:5000/api/users",
-  //       {
-  //         organizationName: formData.organizationName.trim(),
-  //         domainName: formData.domainName.trim().toLowerCase(),
-  //         ownerEmail: formData.ownerEmail.trim().toLowerCase(),
-  //         firstName: formData.firstName.trim(),
-  //         lastName: formData.lastName.trim(),
-  //         password: formData.password,
-  //       },
-  //       {
-  //         headers: {
-  //           Authorization: `Bearer ${localStorage.getItem("token")}`,
-  //           'Content-Type': 'application/json'
-  //         },
-  //       }
-  //     );
-
-  //     setSnackbar({
-  //       open: true,
-  //       message: "Organization and user created successfully",
-  //       severity: "success",
-  //     });
-
-  //     await fetchUsers();
-  //     handleCloseDialog();
-  //   } catch (error) {
-  //     console.error("Error adding organization:", error);
-  //     setSnackbar({
-  //       open: true,
-  //       message: error.response?.data?.error || "Error creating organization",
-  //       severity: "error",
-  //     });
-  //   }
-  // };
-
-const handleSubmit = async () => {
-
-  if (
-    !formData.organizationName ||
-    !formData.domainName ||
-    !formData.ownerEmail ||
-    !formData.firstName ||
-    !formData.lastName ||
-    !formData.password
-  ) {
-    setSnackbar({
-      open: true,
-      message: "Please fill in all fields",
-      severity: "error",
-    });
-    return;
-  }
-
-  try {
-    // First create the organization
-    const orgResponse = await axiosInstance.post("/orgs/add-org", {
-      orgName: formData.organizationName.trim(),
-      domain: formData.domainName.trim().toLowerCase(),
-      firstName: formData.firstName.trim(),
-      lastName: formData.lastName.trim(),
-      email: formData.ownerEmail.trim().toLowerCase(),
-      password: formData.password,
-      // organizationId: orgResponse.data.data.orgId, // assuming backend returns this
-      //unitId:"iksnfks",
-      // status:"active",
-      // userType:"superadmin",
-      // userId: null
-    });
-
-
-    console.log("Full organization response:", orgResponse);
-    console.log("Response data:", orgResponse.data);
-    console.log("Organization ID:", orgResponse.data?.data?.orgId);
-
-
-    // Then create the user (owner) for that organization
-    // const userResponse = await axiosInstance.post("/users/add-user", {
-    //   firstName: formData.firstName.trim(),
-    //   lastName: formData.lastName.trim(),
-    //   email: formData.ownerEmail.trim().toLowerCase(),
-    //   password: formData.password,
-    //   organizationId: orgResponse.data.data.orgId, // assuming backend returns this
-    //   unitId:null,
-    //   status:"active",
-    //   userType:"superadmin",
-    //   userId: null
-    // });
-
-
-    setSnackbar({
-      open: true,
-      message: "Organization and owner created successfully",
-      severity: "success",
-    });
-
-    await fetchUsers();
-    handleCloseDialog();
-  } catch (error) {
-    console.error("Error adding organization:", error);
-    setSnackbar({
-      open: true,
-      message: error.response?.data?.message || "Error creating organization",
-      severity: "error",
-    });
-  }
-};
+      await fetchUsers();
+      handleCloseDialog();
+    } catch (error) {
+      console.error("Error adding organization:", error);
+      setSnackbar({
+        open: true,
+        message: error.response?.data?.message || "Error creating organization",
+        severity: "error",
+      });
+    }
+  };
 
   const handleOpenDeleteDialog = (userId) => {
     setUserToDelete(userId);
@@ -391,94 +256,53 @@ const handleSubmit = async () => {
     setUserToDelete(null);
   };
 
-//   const handleDeleteUser = async () => {
-//   try {
-//     const response = await axiosInstance.delete(
-//       `/orgs/delete-org`,
-//       { 
-//         data: { orgName: userToDelete.orgName } // assuming you want to delete by orgName
-//       }
-//     );
+  const handleDeleteUser = async () => {
+    try {
+      const response = await axiosInstance.delete(
+        `/orgs/delete-org`,
+        { 
+          data: { orgName: userToDelete.orgName } 
+        }
+      );
 
-//     setSnackbar({
-//       open: true,
-//       message: "Organization deleted successfully",
-//       severity: "success",
-//     });
+      setSnackbar({
+        open: true,
+        message: "Organization deleted successfully",
+        severity: "success",
+      });
 
-//     setUsers(prevUsers => prevUsers.filter(user => user.orgName !== userToDelete.orgName));
-//     handleCloseDeleteDialog();
-//   } catch (error) {
-//     console.error("Error deleting organization:", error);
-//     setSnackbar({
-//       open: true,
-//       message: error.response?.data?.message || "Error deleting organization",
-//       severity: "error",
-//     });
-//     handleCloseDeleteDialog();
-//   }
-// };
-
-const handleDeleteUser = async () => {
-  try {
-    const response = await axiosInstance.delete(
-      `/orgs/delete-org`,
-      { 
-        data: { orgName: userToDelete.orgName } 
-      }
-    );
-
-    setSnackbar({
-      open: true,
-      message: "Organization deleted successfully",
-      severity: "success",
-    });
-
-    setUsers(prevUsers => prevUsers.filter(org => org.orgId !== userToDelete.orgId));
-    handleCloseDeleteDialog();
-  } catch (error) {
-    console.error("Error deleting organization:", error);
-    setSnackbar({
-      open: true,
-      message: error.response?.data?.message || "Error deleting organization",
-      severity: "error",
-    });
-    handleCloseDeleteDialog();
-  }
-};
+      setUsers(prevUsers => prevUsers.filter(org => org.orgId !== userToDelete.orgId));
+      handleCloseDeleteDialog();
+    } catch (error) {
+      console.error("Error deleting organization:", error);
+      setSnackbar({
+        open: true,
+        message: error.response?.data?.message || "Error deleting organization",
+        severity: "error",
+      });
+      handleCloseDeleteDialog();
+    }
+  };
 
   const handleCloseSnackbar = () => {
     setSnackbar({ ...snackbar, open: false });
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem("token");
-    setCurrentUser(null);
-    setSnackbar({
-      open: true,
-      message: "Logged out successfully",
-      severity: "success",
-    });
-    navigate("/login");
-  };
-
-  // const filteredUsers = users.filter((user) =>
-  //   (user.username?.toLowerCase() || "").includes(searchTerm.toLowerCase())
-  // );
   const filteredUsers = users.filter((org) =>
-  (org.orgName?.toLowerCase() || "").includes(searchTerm.toLowerCase()) ||
-  (org.domain?.toLowerCase() || "").includes(searchTerm.toLowerCase())
-);
+    (org.orgName?.toLowerCase() || "").includes(searchTerm.toLowerCase()) ||
+    (org.domain?.toLowerCase() || "").includes(searchTerm.toLowerCase())
+  );
 
   const location = useLocation();
 
-
   const drawer = (
-    <div>
+    <div style={{ backgroundColor: "var(--bg-paper)" }}>
       <Toolbar>
-        <Typography variant="h6">1SPOC DAAS</Typography>
+        <Typography variant="h6" style={{ color: "var(--text-primary)" }}>
+          1SPOC DAAS
+        </Typography>
       </Toolbar>
-      <Divider />
+      <Divider style={{ backgroundColor: "var(--border-color)" }} />
       <List>
         <ListItem
           button
@@ -493,7 +317,6 @@ const handleDeleteUser = async () => {
               location.pathname === '/superadmin-dashboard'
                 ? "var(--primary-light)"
                 : "transparent",
-
             cursor: "pointer"
           }}
         >
@@ -507,7 +330,7 @@ const handleDeleteUser = async () => {
               }}
             />
           </ListItemIcon>
-          <ListItemText primary="Dashborad" />
+          <ListItemText primary="Dashboard" />
         </ListItem>
       </List>
     </div>
@@ -531,7 +354,6 @@ const handleDeleteUser = async () => {
         }}
       >
         <Toolbar>
-
           <IconButton
             color="inherit"
             edge="start"
@@ -558,24 +380,23 @@ const handleDeleteUser = async () => {
             sx={{
               color: "var(--primary-text)",
               borderColor: "var(--primary-text)",
-              borderRadius: "20%", // Circular shape for icon button
-              minWidth: 40, // Fixed width for circular button
-              width: 40, // Fixed width for circular button
-              height: 40, // Fixed height for circular button
-              p: 0, // Remove padding
+              borderRadius: "20%",
+              minWidth: 40,
+              width: 40,
+              height: 40,
+              p: 0,
               backgroundColor: "rgba(255, 255, 255, 0.1)",
               "&:hover": {
                 backgroundColor: "rgba(255, 255, 255, 0.2)",
                 borderColor: "var(--primary-text)",
                 boxShadow: "0 2px 8px rgba(0, 0, 0, 0.2)",
-                transform: "scale(1.05)", // Slight scale effect on hover
+                transform: "scale(1.05)",
               },
               transition: "all 0.3s ease",
             }}
           >
-            <LogoutIcon fontSize="small" /> {/* Adjusted icon size */}
+            <LogoutIcon fontSize="small" />
           </Button>
-
         </Toolbar>
       </AppBar>
 
@@ -590,7 +411,10 @@ const handleDeleteUser = async () => {
           ModalProps={{ keepMounted: true }}
           sx={{
             display: { xs: "block", sm: "none" },
-            "& .MuiDrawer-paper": { width: drawerWidth },
+            "& .MuiDrawer-paper": {
+              width: drawerWidth,
+              backgroundColor: "var(--bg-paper)",
+            },
           }}
         >
           {drawer}
@@ -599,7 +423,10 @@ const handleDeleteUser = async () => {
           variant="permanent"
           sx={{
             display: { xs: "none", sm: "block" },
-            "& .MuiDrawer-paper": { width: drawerWidth },
+            "& .MuiDrawer-paper": {
+              width: drawerWidth,
+              backgroundColor: "var(--bg-paper)",
+            },
           }}
           open
         >
@@ -616,21 +443,22 @@ const handleDeleteUser = async () => {
         }}
       >
         <Toolbar />
-
         <Grid>
-
           <StyledPaper>
             <Box sx={{
               display: "flex",
               justifyContent: "space-between",
               alignItems: "center",
-              mb: 3
+              mb: 3,
+              flexDirection: { xs: 'column', sm: 'row' },
+              gap: 2
             }}>
               <Box>
                 <Typography
-                  variant="h6"
+                  variant="h5"
                   sx={{
                     color: 'var(--text-primary)',
+                    fontWeight: 'bold',
                     display: 'flex',
                     alignItems: 'center',
                     gap: 1
@@ -650,7 +478,6 @@ const handleDeleteUser = async () => {
                   Organization: {currentUser?.organization || 'Not specified'}
                 </Typography>
               </Box>
-
               <Button
                 variant="contained"
                 startIcon={<AddIcon />}
@@ -669,12 +496,11 @@ const handleDeleteUser = async () => {
                 Add organization
               </Button>
             </Box>
-
             <Box sx={{ display: "flex", gap: 2, mb: 2 }}>
               <TextField
                 fullWidth
                 size="small"
-                placeholder="Search users..."
+                placeholder="Search organizations..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 InputProps={{
@@ -691,7 +517,7 @@ const handleDeleteUser = async () => {
                 sx={{
                   borderColor: "var(--primary-color)",
                   color: "var(--primary-color)",
-                  borderRadius: "var(--border-radius)",
+                  borderRadius: "var(--border-radius)", // Fixed typo
                   "&:hover": {
                     backgroundColor: "var(--primary-light)",
                     borderColor: "var(--primary-hover)",
@@ -701,70 +527,44 @@ const handleDeleteUser = async () => {
                 Filters
               </Button>
             </Box>
-
             <TableContainer>
-
               <Table>
-                {/* <TableHead>
+                <TableHead>
                   <TableRow>
-                    <TableCell>Organization</TableCell>
-                    <TableCell>Domain Name</TableCell>
-                    <TableCell>First Name</TableCell>
-                    <TableCell>Last Name</TableCell>
-                    <TableCell>Owner Email</TableCell>
-                    <TableCell>Date And Time</TableCell>
+                    <TableCell>Organization ID</TableCell>
+                    <TableCell>Organization Name</TableCell>
+                    <TableCell>Domain</TableCell>
+                    <TableCell>Created At</TableCell>
                     <TableCell>Actions</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
                   {loading ? (
                     <TableRow>
-                      <TableCell colSpan={6} align="center">
-                        Loading users...
+                      <TableCell colSpan={5} align="center">
+                        Loading organizations...
                       </TableCell>
                     </TableRow>
                   ) : filteredUsers.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={6} align="center">
-                        No users found
+                      <TableCell colSpan={5} align="center">
+                        No organizations found
                       </TableCell>
                     </TableRow>
                   ) : (
-                    filteredUsers.map((user) => (
-                      <TableRow key={user.user_id}>
-                        <TableCell>{user.organization_name || ""}</TableCell>
-                        <TableCell>{user.domain_name || ""}</TableCell>
-                        <TableCell>{user.first_name || ""}</TableCell>
-                        <TableCell>{user.last_name || ""}</TableCell>
-
-                        <TableCell>{user.owner_email || ""}</TableCell>
+                    filteredUsers.map((org) => (
+                      <TableRow key={org.orgId}>
+                        <TableCell>{org.orgId}</TableCell>
+                        <TableCell>{org.orgName}</TableCell>
+                        <TableCell>{org.domain}</TableCell>
                         <TableCell>
-                          {user.created_at
-                            ? (() => {
-                              const date = new Date(user.created_at);
-                              const day = String(date.getDate()).padStart(
-                                2,
-                                "0"
-                              );
-                              const month = String(
-                                date.getMonth() + 1
-                              ).padStart(2, "0");
-                              const year = String(date.getFullYear()).slice(
-                                -2
-                              );
-                              const time = date.toLocaleTimeString([], {
-                                hour: "2-digit",
-                                minute: "2-digit",
-                              });
-                              return `${day}/${month}/${year} ${time}`;
-                            })()
-                            : ""}
+                          {org.createdAt ? new Date(org.createdAt).toLocaleString() : ''}
                         </TableCell>
                         <TableCell>
                           <IconButton
-                            onClick={() => handleOpenDeleteDialog(user.user_id)}
+                            onClick={() => handleOpenDeleteDialog(org)}
                             color="error"
-                            aria-label="delete user"
+                            aria-label="delete organization"
                           >
                             <DeleteIcon />
                           </IconButton>
@@ -772,55 +572,10 @@ const handleDeleteUser = async () => {
                       </TableRow>
                     ))
                   )}
-                </TableBody> */}
-                <TableHead>
-  <TableRow>
-    <TableCell>Organization ID</TableCell>
-    <TableCell>Organization Name</TableCell>
-    <TableCell>Domain</TableCell>
-    <TableCell>Created At</TableCell>
-    <TableCell>Actions</TableCell>
-  </TableRow>
-</TableHead>
-<TableBody>
-  {loading ? (
-    <TableRow>
-      <TableCell colSpan={5} align="center">
-        Loading organizations...
-      </TableCell>
-    </TableRow>
-  ) : filteredUsers.length === 0 ? (
-    <TableRow>
-      <TableCell colSpan={5} align="center">
-        No organizations found
-      </TableCell>
-    </TableRow>
-  ) : (
-    filteredUsers.map((org) => (
-      <TableRow key={org.orgId}>
-        <TableCell>{org.orgId}</TableCell>
-        <TableCell>{org.orgName}</TableCell>
-        <TableCell>{org.domain}</TableCell>
-        <TableCell>
-          {org.createdAt ? new Date(org.createdAt).toLocaleString() : ''}
-        </TableCell>
-        <TableCell>
-          <IconButton
-            onClick={() => handleOpenDeleteDialog(org)}
-            color="error"
-            aria-label="delete organization"
-          >
-            <DeleteIcon />
-          </IconButton>
-        </TableCell>
-      </TableRow>
-    ))
-  )}
-</TableBody>
+                </TableBody>
               </Table>
             </TableContainer>
           </StyledPaper>
-
           <Dialog
             open={openDialog}
             onClose={handleCloseDialog}
@@ -857,7 +612,6 @@ const handleDeleteUser = async () => {
                   fullWidth
                   required
                 />
-
                 <TextField
                   label="Last Name"
                   name="lastName"
@@ -910,7 +664,6 @@ const handleDeleteUser = async () => {
               </Button>
             </DialogActions>
           </Dialog>
-
           <Dialog
             open={deleteDialogOpen}
             onClose={handleCloseDeleteDialog}
@@ -984,7 +737,6 @@ const handleDeleteUser = async () => {
               </Button>
             </DialogActions>
           </Dialog>
-
           <Snackbar
             open={snackbar.open}
             autoHideDuration={6000}

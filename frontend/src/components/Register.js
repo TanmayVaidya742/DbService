@@ -13,6 +13,7 @@ import {
 } from '@mui/material';
 import { styled } from '@mui/material/styles';
 import axios from 'axios';
+import axiosInstance from '../utils/axiosInstance';
 
 // Styled Components
 const MainSection = styled('section')({
@@ -53,7 +54,7 @@ const Register = () => {
     organization: '',
     password: '',
     confirmPassword: '',
-    usertype: 'superadmin'
+    usertype: 'user'
   });
 
   const [errors, setErrors] = useState({});
@@ -107,7 +108,7 @@ const Register = () => {
       };
       delete dataToSend.mobileNo;
 
-      await axios.post('http://localhost:5000/api/auth/register', dataToSend);
+      await axiosInstance.post('/api/auth/register', dataToSend);
 
       setSnackbar({
         open: true,

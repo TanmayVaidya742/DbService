@@ -101,7 +101,6 @@ const Login = () => {
     }
   
     try {
-      debugger;
       const res = await axiosInstance.post('/login', {
         email: formData.email,
         password: formData.password

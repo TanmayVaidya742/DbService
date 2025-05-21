@@ -11,7 +11,6 @@ import {
   ListItemIcon,
   ListItemText,
   Divider,
-  Container,
   Button,
   Paper,
   Snackbar,
@@ -22,7 +21,6 @@ import {
   TableContainer,
   TableHead,
   TableRow,
-  Chip,
   Dialog,
   DialogTitle,
   Grid,
@@ -32,34 +30,21 @@ import {
 } from "@mui/material";
 import {
   Menu as MenuIcon,
-  Settings as SettingsIcon,
-  Storage as StorageIcon,
   Delete as DeleteIcon,
   Visibility as VisibilityIcon,
   ContentCopy as ContentCopyIcon,
   Logout as LogoutIcon,
-  Store as StoreIcon,
 } from "@mui/icons-material";
 import { useLocation, useNavigate } from "react-router-dom";
 import axios from "axios";
 import AddDatabaseDialog from "./AddDatabaseDialog";
 import { styled } from "@mui/material/styles";
-import { Person as PersonIcon } from "@mui/icons-material";
 import { FaDatabase } from "react-icons/fa";
 import { CiViewTable } from "react-icons/ci";
 import DashboardCustomizeRoundedIcon from '@mui/icons-material/DashboardCustomizeRounded';
 import axiosInstance from "../utils/axiosInstance";
 
-
 const drawerWidth = 240;
-
-const StyledPaper = styled(Paper)(({ theme }) => ({
-  padding: "var(--spacing-unit) * 3",
-  borderRadius: "var(--border-radius)",
-  boxShadow: "var(--shadow-lg)",
-  backgroundColor: "var(--bg-paper)",
-  marginTop: "var(--spacing-unit) * 3",
-}));
 
 const EqualWidthTableCell = styled(TableCell)({
   width: '20%',
@@ -69,13 +54,9 @@ const EqualWidthTableCell = styled(TableCell)({
 const UserDashboard = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
   const [openDialog, setOpenDialog] = useState(false);
-  const [openTableDialog, setOpenTableDialog] = useState(false);
-  const [currentDbForTable, setCurrentDbForTable] = useState('');
-  const [loading , setLoading] = useState(true)
-  const [tableFormData, setTableFormData] = useState({
-    tableName: '',
-  });
+  const [loading, setLoading] = useState(true);
   const [databaseFormData, setDatabaseFormData] = useState({
     databaseName: "",
   });
@@ -97,14 +78,15 @@ const UserDashboard = () => {
     email: '',
     id: '',
     name: '',
-    organization: ''
+    orgId: '',
+    orgName: ''
   });
 
   const fetchCurrentUser = async () => {
     try {
       const token = localStorage.getItem('token');
-      const user = JSON.parse(localStorage.getItem("user"))
-      if (!token) {
+      const user = JSON.parse(localStorage.getItem("user"));
+      if (!token || !user) {
         setSnackbar({
           open: true,
           message: 'Not authenticated. Please log in.',
@@ -113,25 +95,57 @@ const UserDashboard = () => {
         navigate('/login');
         return;
       }
-      const response = await axiosInstance.get('/users/get-user', {params:{orgId: user.orgId}},{
+      
+      // First try to get orgName from localStorage
+      const cachedOrgName = localStorage.getItem('orgName');
+      
+      // Fetch user data
+      const userResponse = await axiosInstance.get('/users/get-user', {
+        params: { orgId: user.orgId },
         headers: { Authorization: `Bearer ${token}` },
       });
-      if (response.data && response.data.data) {
-        const user = response.data.data[0];
+
+      if (userResponse.data?.data?.[0]) {
+        const userData = userResponse.data.data[0];
+        
+        // If we have cached orgName, use that
+        if (cachedOrgName) {
+          setCurrentUser({
+            email: userData.email || '',
+            id: userData.userId || '',
+            name: `${userData.firstName || ''} ${userData.lastName || ''}`.trim(),
+            orgId: userData.orgId || user.orgId || '',
+            orgName: cachedOrgName
+          });
+          return;
+        }
+
+        // Try to get orgName from user response if available
+        const orgName = userData.orgName || 
+                       userData.organization?.name || 
+                       user.orgId; // fallback to ID if name not available
+
+        // Store in localStorage if we found a proper name
+        if (orgName && orgName !== user.orgId) {
+          localStorage.setItem('orgName', orgName);
+        }
+
         setCurrentUser({
-          email: user.email,
-          id: user.userId,
-          name: `${user.firstName} ${user.lastName}`,
-          organization: user.orgId
+          email: userData.email || '',
+          id: userData.userId || '',
+          name: `${userData.firstName || ''} ${userData.lastName || ''}`.trim(),
+          orgId: userData.orgId || user.orgId || '',
+          orgName: orgName || 'My Organization'
         });
       } else {
-        console.error('User data missing in response:', response.data);
+        console.error('User data missing in response:', userResponse.data);
         setSnackbar({
           open: true,
           message: 'User data incomplete',
           severity: 'warning',
         });
-      }      
+        navigate('/login');
+      }
     } catch (error) {
       console.error('Failed to fetch user:', error);
       setSnackbar({
@@ -139,63 +153,54 @@ const UserDashboard = () => {
         message: error.response?.data?.error || 'Failed to load user data',
         severity: 'error',
       });
+      navigate('/login');
+    } finally {
+      setLoading(false);
     }
   };
 
-const fetchDatabases = async () => {
-  try {
-    debugger;
-    const response = await axiosInstance.get("/database", {
-      params: { userId: currentUser.id },
-      headers: {
-        Authorization: `Bearer ${localStorage.getItem("token")}`,
-      },
-    });
-    
+  const fetchDatabases = async () => {
+    try {
+      const response = await axiosInstance.get("/database", {
+        params: { userId: currentUser.id },
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      });
 
-    if (response.data && response.data.success) {
-      // Handle case where data might be undefined
-      const dbData = response.data.data || [];
-      
-      
-      setDatabases(dbData);
-    } else {
+      if (response.data && response.data.success) {
+        setDatabases(response.data.data || []);
+      } else {
+        setDatabases([]);
+      }
+    } catch (error) {
+      console.error("Error fetching databases:", error);
+      setSnackbar({
+        open: true,
+        message: error.response?.data?.message || "Failed to fetch databases",
+        severity: "error",
+      });
       setDatabases([]);
     }
-  } catch (error) {
-    console.error("Error fetching databases:", error);
-    setSnackbar({
-      open: true,
-      message: error.response?.data?.message || "Failed to fetch databases",
-      severity: "error",
-    });
-    setDatabases([]);
-  }
-};
+  };
 
-
-  
   useEffect(() => {
     fetchCurrentUser();
   }, [navigate]);
-  
+
   useEffect(() => {
     if (currentUser?.id) {
       fetchDatabases();
     }
-  }, [currentUser.id]);
-  
+  }, [currentUser?.id]);
 
   const handleDeleteDatabase = async () => {
     try {
-      await axios.delete(
-        `/database/${deleteDialog.name}`,
-        {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-          },
-        }
-      );
+      await axios.delete(`/database/${deleteDialog.name}`, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      });
 
       setSnackbar({
         open: true,
@@ -234,84 +239,70 @@ const fetchDatabases = async () => {
     });
   };
 
-  const handleOpenTableDialog = (dbName) => {
-    setCurrentDbForTable(dbName);
-    setOpenTableDialog(true);
-  };
-
-  const handleCloseTableDialog = () => {
-    setOpenTableDialog(false);
-    setTableFormData({
-      tableName: '',
-    });
-    setCurrentDbForTable('');
-  };
-
   const handleDatabaseSubmit = async (formData) => {
-  // Client-side validation
-  if (!formData.databaseName) {
-    setSnackbar({
-      open: true,
-      message: "Database name is required",
-      severity: "error",
-    });
-    return;
-  }
-
-  if (!/^[a-zA-Z0-9_-]+$/.test(formData.databaseName)) {
-    setSnackbar({
-      open: true,
-      message: "Database name can only contain letters, numbers, underscores, and hyphens",
-      severity: "error",
-    });
-    return;
-  }
-
-  if (formData.databaseName.length > 63) {
-    setSnackbar({
-      open: true,
-      message: "Database name must be 63 characters or less",
-      severity: "error",
-    });
-    return;
-  }
-
-  try {
-    setSnackbar({
-      open: true,
-      message: "Creating database...",
-      severity: "info",
-      autoHideDuration: null,
-    });
-
-    const response = await axiosInstance.post(
-      "/database",
-      { databaseName: formData.databaseName },
-      { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } }
-    );
-
-    setSnackbar({
-      open: true,
-      message: "Database created successfully!",
-      severity: "success",
-    });
-
-    await fetchDatabases();
-    handleCloseDialog();
-
-    if (response.data.apiKey) {
-      setCurrentApiKey(response.data.apiKey);
-      setOpenApiKeyDialog(true);
+    if (!formData.databaseName) {
+      setSnackbar({
+        open: true,
+        message: "Database name is required",
+        severity: "error",
+      });
+      return;
     }
-  } catch (error) {
-    console.error("Error creating database:", error);
-    setSnackbar({
-      open: true,
-      message: error.response?.data?.message || error.message || "Failed to create database",
-      severity: "error",
-    });
-  }
-};
+
+    if (!/^[a-zA-Z0-9_-]+$/.test(formData.databaseName)) {
+      setSnackbar({
+        open: true,
+        message: "Database name can only contain letters, numbers, underscores, and hyphens",
+        severity: "error",
+      });
+      return;
+    }
+
+    if (formData.databaseName.length > 63) {
+      setSnackbar({
+        open: true,
+        message: "Database name must be 63 characters or less",
+        severity: "error",
+      });
+      return;
+    }
+
+    try {
+      setSnackbar({
+        open: true,
+        message: "Creating database...",
+        severity: "info",
+        autoHideDuration: null,
+      });
+
+      const response = await axiosInstance.post(
+        "/database",
+        { databaseName: formData.databaseName },
+        { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } }
+      );
+
+      setSnackbar({
+        open: true,
+        message: "Database created successfully!",
+        severity: "success",
+      });
+
+      await fetchDatabases();
+      handleCloseDialog();
+
+      if (response.data.apiKey) {
+        setCurrentApiKey(response.data.apiKey);
+        setOpenApiKeyDialog(true);
+      }
+    } catch (error) {
+      console.error("Error creating database:", error);
+      setSnackbar({
+        open: true,
+        message: error.response?.data?.message || error.message || "Failed to create database",
+        severity: "error",
+      });
+    }
+  };
 
   const handleShowApiKey = (apiKey) => {
     setCurrentApiKey(apiKey);
@@ -338,10 +329,24 @@ const fetchDatabases = async () => {
 
   const handleLogout = () => {
     localStorage.removeItem("token");
-    setCurrentUser(null);
-    navigate("/login");
+    localStorage.removeItem("user");
+    localStorage.removeItem("orgName");
+    setCurrentUser({
+      email: '',
+      id: '',
+      name: '',
+      orgId: '',
+      orgName: ''
+    });
+    setSnackbar({
+      open: true,
+      message: "Logged out successfully",
+      severity: "success",
+    });
+    setTimeout(() => {
+      navigate("/login");
+    }, 2000);
   };
-  const location = useLocation();
 
   const drawer = (
     <div style={{ backgroundColor: "var(--bg-paper)" }}>
@@ -374,21 +379,12 @@ const fetchDatabases = async () => {
           </ListItemIcon>
           <ListItemText primary="Databases" />
         </ListItem>
-
-
       </List>
     </div>
   );
 
-  console.log(databases , "databasesdatabasesdatabases")
   return (
-    <Box
-      sx={{
-        display: "flex",
-        backgroundColor: "var(--bg-secondary)",
-        minHeight: "100vh",
-      }}
-    >
+    <Box sx={{ display: "flex", backgroundColor: "var(--bg-secondary)", minHeight: "100vh" }}>
       <AppBar
         position="fixed"
         sx={{
@@ -407,17 +403,10 @@ const fetchDatabases = async () => {
           >
             <MenuIcon />
           </IconButton>
-          <Typography
-            variant="h6"
-            sx={{ flexGrow: 1 }}
-            style={{ color: "var(--primary-text)" }}
-          >
+          <Typography variant="h6" sx={{ flexGrow: 1 }} style={{ color: "var(--primary-text)" }}>
             Databases
           </Typography>
-          <Typography
-            variant="body1"
-            sx={{ color: "var(--primary-text)", mr: 2 }}
-          >
+          <Typography variant="body1" sx={{ color: "var(--primary-text)", mr: 2 }}>
             {currentUser?.email || "Loading..."}
           </Typography>
           <Button
@@ -426,30 +415,27 @@ const fetchDatabases = async () => {
             sx={{
               color: "var(--primary-text)",
               borderColor: "var(--primary-text)",
-              borderRadius: "20%", // Circular shape for icon button
-              minWidth: 40, // Fixed width for circular button
-              width: 40, // Fixed width for circular button
-              height: 40, // Fixed height for circular button
-              p: 0, // Remove padding
+              borderRadius: "20%",
+              minWidth: 40,
+              width: 40,
+              height: 40,
+              p: 0,
               backgroundColor: "rgba(255, 255, 255, 0.1)",
               "&:hover": {
                 backgroundColor: "rgba(255, 255, 255, 0.2)",
                 borderColor: "var(--primary-text)",
                 boxShadow: "0 2px 8px rgba(0, 0, 0, 0.2)",
-                transform: "scale(1.05)", // Slight scale effect on hover
+                transform: "scale(1.05)",
               },
               transition: "all 0.3s ease",
             }}
           >
-            <LogoutIcon fontSize="small" /> {/* Adjusted icon size */}
+            <LogoutIcon fontSize="small" />
           </Button>
         </Toolbar>
       </AppBar>
 
-      <Box
-        component="nav"
-        sx={{ width: { sm: drawerWidth }, flexShrink: { sm: 0 } }}
-      >
+      <Box component="nav" sx={{ width: { sm: drawerWidth }, flexShrink: { sm: 0 } }}>
         <Drawer
           variant="temporary"
           open={mobileOpen}
@@ -491,9 +477,6 @@ const fetchDatabases = async () => {
       >
         <Toolbar />
         <Grid>
-
-
-
           <Box sx={{
             display: 'flex',
             justifyContent: 'space-between',
@@ -521,7 +504,7 @@ const fetchDatabases = async () => {
                   gap: 1
                 }}
               >
-                Organization: {currentUser?.organization || 'Not specified'}
+                Organization: {currentUser?.orgName || currentUser?.orgId || 'Not specified'}
               </Typography>
             </Box>
 
@@ -635,9 +618,7 @@ const fetchDatabases = async () => {
                         },
                       }}
                     >
-                      <EqualWidthTableCell
-                        style={{ color: "var(--text-primary)" }}
-                      >
+                      <EqualWidthTableCell style={{ color: "var(--text-primary)" }}>
                         {db.dbName}
                       </EqualWidthTableCell>
 
@@ -656,16 +637,14 @@ const fetchDatabases = async () => {
                           }}
                           onClick={(e) => {
                             e.stopPropagation();
-                            handleRowClick(db.dbName , db.dbId);
+                            handleRowClick(db.dbName, db.dbId);
                           }}
                         >
                           Tables
                         </Button>
                       </EqualWidthTableCell>
 
-                      <EqualWidthTableCell
-                        style={{ color: "var(--text-primary)" }}
-                      >
+                      <EqualWidthTableCell style={{ color: "var(--text-primary)" }}>
                         <Box
                           sx={{
                             display: "flex",
@@ -709,13 +688,7 @@ const fetchDatabases = async () => {
                       </EqualWidthTableCell>
 
                       <EqualWidthTableCell>
-                        <Box
-                          sx={{
-                            display: "flex",
-                            gap: 1,
-                            justifyContent: "center",
-                          }}
-                        >
+                        <Box sx={{ display: "flex", gap: 1, justifyContent: "center" }}>
                           <IconButton
                             onClick={(e) => {
                               e.stopPropagation();
@@ -741,17 +714,11 @@ const fetchDatabases = async () => {
           onSubmit={handleDatabaseSubmit}
         />
 
-        <Dialog
-          open={openApiKeyDialog}
-          onClose={() => setOpenApiKeyDialog(false)}
-        >
-          <DialogTitle style={{ color: "var(--text-primary)" }}>
-            API Key
-          </DialogTitle>
+        <Dialog open={openApiKeyDialog} onClose={() => setOpenApiKeyDialog(false)}>
+          <DialogTitle style={{ color: "var(--text-primary)" }}>API Key</DialogTitle>
           <DialogContent>
             <DialogContentText style={{ color: "var(--text-primary)" }}>
-              Here is your API key for this database. Keep it secure and don't
-              share it with others.
+              Here is your API key for this database. Keep it secure and don't share it with others.
             </DialogContentText>
             <Box
               sx={{
@@ -810,9 +777,7 @@ const fetchDatabases = async () => {
             },
           }}
         >
-          <DialogTitle
-            sx={{ color: "var(--text-primary)", fontWeight: "bold" }}
-          >
+          <DialogTitle sx={{ color: "var(--text-primary)", fontWeight: "bold" }}>
             Delete {deleteDialog.type === "database" ? "Database" : "Table"}
           </DialogTitle>
 
