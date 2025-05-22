@@ -60,8 +60,8 @@ import { CiViewTable } from "react-icons/ci";
 import ContentCopyIcon from "@mui/icons-material/ContentCopy";
 import UpgradeDialog from "./UpgradeDialog";
 import StoreIcon from "@mui/icons-material/Store";
-import DashboardIcon from '@mui/icons-material/Dashboard';
-import StorageRoundedIcon from '@mui/icons-material/StorageRounded';
+import DashboardIcon from "@mui/icons-material/Dashboard";
+import StorageRoundedIcon from "@mui/icons-material/StorageRounded";
 
 const drawerWidth = 240;
 
@@ -105,24 +105,27 @@ const DatabaseDetails = () => {
   const [expandedTable, setExpandedTable] = useState(null);
   const [upgradeDialogOpen, setUpgradeDialogOpen] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
+  const [tableHasData, setTableHasData] = useState(false);
 
   const fetchCurrentUser = async () => {
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem("token");
       const user = JSON.parse(localStorage.getItem("user"));
       if (!token) {
         setSnackbar({
           open: true,
-          message: 'Not authenticated. Please log in.',
-          severity: 'error',
+          message: "Not authenticated. Please log in.",
+          severity: "error",
         });
-        navigate('/login');
+        navigate("/login");
         return;
       }
-      const response = await axiosInstance.get('/users/get-user', {
+
+      const response = await axiosInstance.get("/users/get-user", {
         params: { orgId: user.orgId },
         headers: { Authorization: `Bearer ${token}` },
       });
+
       if (response.data && response.data.data) {
         const userData = response.data.data[0];
         setCurrentUser({
@@ -131,19 +134,19 @@ const DatabaseDetails = () => {
           name: `${userData.firstName} ${userData.lastName}`,
         });
       } else {
-        console.error('User data missing in response:', response.data);
+        console.error("User data missing in response:", response.data);
         setSnackbar({
           open: true,
-          message: 'User data incomplete',
-          severity: 'warning',
+          message: "User data incomplete",
+          severity: "warning",
         });
       }
     } catch (error) {
-      console.error('Failed to fetch user:', error);
+      console.error("Failed to fetch user:", error);
       setSnackbar({
         open: true,
-        message: error.response?.data?.error || 'Failed to load user data',
-        severity: 'error',
+        message: error.response?.data?.error || "Failed to load user data",
+        severity: "error",
       });
     }
   };
@@ -152,53 +155,25 @@ const DatabaseDetails = () => {
     fetchCurrentUser();
   }, [navigate]);
 
-  const fetchDatabaseDetails = async () => {
-    try {
-      const response = await axiosInstance.get(`/database/get-by-dbid`, {
-        params: { dbId, dbName },
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
-      });
-      const data = response.data;
-      data.tables = data.tables || [];
-      if (data.tables) {
-        data.tables = data.tables.map((table) => ({
-          ...table,
-          schema: table.schema || [],
-        }));
-      }
-      setDatabase(data);
-    } catch (error) {
-      console.error("Error fetching database details:", error);
-      setSnackbar({
-        open: true,
-        message: error.response?.data?.error || "Failed to fetch database details",
-        severity: "error",
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
 
-  const getAllTablesByDbId = async () => {
-    try {
-      const response = await axiosInstance.get(`/table/${dbId}/tables`, {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
-      });
-      setTableData(response.data || []);
-    } catch (error) {
-      console.error("Error fetching tables:", error);
-      setSnackbar({
-        open: true,
-        message: error.response?.data?.error || "Failed to fetch tables",
-        severity: "error",
-      });
-      setTableData([]);
-    }
-  };
+  // const getAllTablesByDbId = async () => {
+  //   try {
+  //     const response = await axiosInstance.get(`/table/${dbId}/tables`, {
+  //       headers: {
+  //         Authorization: `Bearer ${localStorage.getItem("token")}`,
+  //       },
+  //     });
+  //     setTableData(response.data || []);
+  //   } catch (error) {
+  //     console.error("Error fetching tables:", error);
+  //     setSnackbar({
+  //       open: true,
+  //       message: error.response?.data?.error || "Failed to fetch tables",
+  //       severity: "error",
+  //     });
+  //     setTableData([]);
+  //   }
+  // };
 
   useEffect(() => {
     Promise.all([fetchDatabaseDetails(), getAllTablesByDbId()])
@@ -213,7 +188,7 @@ const DatabaseDetails = () => {
   }, [dbName, dbId]);
 
   const handleShowMoreColumns = (event, table) => {
-    setColumnsAnchorEl(event.currentTarget);
+    setColumnsAnchorEl(event.currentTarget);   
     setExpandedTable(table);
   };
 
@@ -231,6 +206,7 @@ const DatabaseDetails = () => {
         severity: "info",
         autoHideDuration: null,
       });
+
       const response = await axiosInstance.post(
         `/table/${dbName}/tables`,
         formData,
@@ -241,6 +217,7 @@ const DatabaseDetails = () => {
           },
         }
       );
+
       setSnackbar({
         open: true,
         message: response.data.message || "Table created successfully!",
@@ -264,63 +241,134 @@ const DatabaseDetails = () => {
     }
   };
 
-  const handleEditTable = (dbName, tableName) => {
-    axiosInstance
-      .get(`/table/${dbName}/${tableName}/schema`, {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
-      })
-      .then((response) => {
-        const columns = response.data.schema
-          ? Object.entries(response.data.schema).map(([name, col]) => ({
-              name,
-              type: col.type,
-              isNullable: col.allowNull,
-              isUnique: col.unique,
-              isPrimaryKey: col.primaryKey,
-              defaultValue: col.defaultValue,
-            }))
-          : [];
-        setEditDialog({
-          open: true,
-          dbName,
-          tableName,
-          columns,
-        });
-      })
-      .catch((error) => {
-        console.error("Error fetching table schema:", error);
-        setSnackbar({
-          open: true,
-          message: error.response?.data?.error || "Failed to fetch table schema",
-          severity: "error",
-        });
-      });
-  };
-
-  const handleSaveTableChanges = async (dbName, tableName, columns) => {
+  const handleEditTable = async (dbName, tableName) => {
     try {
-      const response = await axiosInstance.put(
-        `/table/${dbName}/${tableName}/schema`,
-        { schema: columns },
-        { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } }
+      // debugger
+      const response = await axiosInstance.get(
+        `/table/${dbName}/tables/${tableName}/columns`,
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+        }
       );
+
+      // Transform the API response into the expected format
+      const columns = response.data.map((column) => ({
+        column_name: column.name,
+        data_type: column.type,
+        column_default: column.defaultValue || null,
+        is_nullable: column.isNullable ? "YES" : "NO",
+        is_primary: column.isPrimary || false,
+        is_unique: column.isUnique || false,
+      }));
+
+      setEditDialog({
+        open: true,
+        dbName,
+        tableName,
+        columns,
+      });
+    } catch (error) {
+      console.error("Error fetching table columns:", error);
       setSnackbar({
         open: true,
-        message: response.data?.message || "Table updated successfully!",
+        message: error.response?.data?.error || "Failed to fetch table columns",
+        severity: "error",
+      });
+    }
+  };
+
+  // Updated handleSaveTableChanges function
+  const handleSaveTableChanges = async (dbName, tableName, columns) => {
+    try {
+      // Transform columns to match backend expected format
+      const formattedColumns = columns.map((column) => ({
+        name: column.column_name,
+        type: column.data_type,
+        isNullable: column.is_nullable === "YES",
+        isUnique: column.is_unique || false,
+        isPrimary: column.is_primary || false,
+        defaultValue: column.column_default || null,
+      }));
+
+      const response = await axiosInstance.put(
+        `/table/${dbName}/tables/${tableName}`,
+        {
+          columns: JSON.stringify(formattedColumns), // Stringify as backend expects
+        },
+        {
+          params: { dbId: dbId },
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      // Refresh the table data after successful update
+      await fetchDatabaseDetails();
+
+      setSnackbar({
+        open: true,
+        message: "Table updated successfully!",
         severity: "success",
       });
       await Promise.all([fetchDatabaseDetails(), getAllTablesByDbId()]);
       return true;
     } catch (error) {
       console.error("Error updating table:", error);
+      let errorMessage = "Failed to update table";
+
+      if (error.response) {
+        errorMessage =
+          error.response.data?.details ||
+          error.response.data?.error ||
+          errorMessage;
+
+        // Handle specific error cases
+        if (error.response.status === 403) {
+          setUpgradeDialogOpen(true);
+          errorMessage = "Upgrade required to modify table structure";
+        }
+      }
+
       setSnackbar({
         open: true,
-        message: error.response?.data?.error || "Failed to update table",
+        message: errorMessage,
         severity: "error",
       });
       return false;
+    }
+  };
+
+  const fetchDatabaseDetails = async () => {
+    try {
+      const response = await axiosInstance.get(`/database/get-by-dbid`, {
+        params: { dbId, dbName },
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      });
+      const data = response.data;
+      data.tables = data.tables || [];
+      if (data.tables) {
+        data.tables = data.tables.map((table) => ({
+          ...table,
+          schema: table.schema || {},
+        }));
+      }
+      setDatabase(data);
+    } catch (error) {
+      console.error("Error fetching database details:", error);
+      setSnackbar({
+        open: true,
+        message:
+          error.response?.data?.error || "Failed to fetch database details",
+        severity: "error",
+      });
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -379,7 +427,9 @@ const DatabaseDetails = () => {
           open: true,
           message: (
             <div>
-              <div>{`${action.charAt(0).toUpperCase() + action.slice(1)} URL copied to clipboard!`}</div>
+              <div>{`${
+                action.charAt(0).toUpperCase() + action.slice(1)
+              } URL copied to clipboard!`}</div>
               <div
                 style={{
                   fontFamily: "monospace",
@@ -405,7 +455,6 @@ const DatabaseDetails = () => {
           severity: "error",
         });
       });
-
     return url;
   };
 
@@ -425,6 +474,7 @@ const DatabaseDetails = () => {
           },
         }
       );
+
       const dataResponse = await axiosInstance.get(
         `/table/${dbName}/view-table-data`,
         {
@@ -434,6 +484,7 @@ const DatabaseDetails = () => {
           },
         }
       );
+
       setViewDataDialog({
         open: true,
         tableName: table.tableName,
@@ -488,6 +539,38 @@ const DatabaseDetails = () => {
     });
   };
 
+  const checkTableHasData = async (dbName, tableName) => {
+    try {
+      // You can implement an API call to check if the table has data
+      // For now, defaulting to false for simplicity
+      setTableHasData(false);
+
+      // Example API call (uncomment and modify if you have such an endpoint):
+      /*
+      const response = await axiosInstance.get(
+        `/table/${dbName}/tables/${tableName}/has-data`,
+        { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } }
+      );
+      setTableHasData(response.data.hasData);
+      */
+    } catch (error) {
+      console.error("Error checking if table has data:", error);
+      setTableHasData(false);
+    }
+  };
+
+  const handleOpenEditDialog = async (dbName, tableName, columns) => {
+    // First check if table has data
+    await checkTableHasData(dbName, tableName);
+
+    setEditDialog({
+      open: true,
+      dbName,
+      tableName,
+      columns,
+    });
+  };
+
   const handleDeleteTable = async () => {
     const tableName = deleteDialog.tableName;
     setDeleteLoading((prev) => ({ ...prev, [tableName]: true }));
@@ -501,6 +584,7 @@ const DatabaseDetails = () => {
           },
         }
       );
+
       setSnackbar({
         open: true,
         message: response.data.message || `Table "${tableName}" deleted successfully!`,
@@ -554,6 +638,15 @@ const DatabaseDetails = () => {
     viewDataDialog.page * viewDataDialog.rowsPerPage,
     (viewDataDialog.page + 1) * viewDataDialog.rowsPerPage
   );
+
+  const getAllTablesByDbId = async () => {
+    const response = await axiosInstance.get(`/table/${dbId}/tables`);
+    setTableData(response.data)
+    console.log(response.data)
+  }
+  useEffect(() => {
+    getAllTablesByDbId();
+  }, [])
 
   const drawer = (
     <div style={{ backgroundColor: "var(--bg-paper)" }}>
@@ -1010,6 +1103,7 @@ const DatabaseDetails = () => {
                 Create Table
               </Button>
             </Box>
+
             <Paper
               elevation={3}
               sx={{
@@ -1099,27 +1193,28 @@ const DatabaseDetails = () => {
                         <TableRow key={table.tableName}>
                           <TableCell align="left">{table.tableName}</TableCell>
                           <TableCell align="left">
-                            {table.schema && table.schema.length > 0 ? (
-                              table.schema.map((item) => (
-                                <Chip
-                                  key={item.name}
-                                  label={`${item.name}: ${item.type}`}
-                                  sx={{
-                                    mr: 1,
-                                    mb: 1,
-                                    backgroundColor: "var(--primary-light)",
-                                  }}
-                                  variant="outlined"
-                                />
-                              ))
-                            ) : (
-                              <Typography variant="body2">No columns defined</Typography>
-                            )}
-                            {table.schema && table.schema.length > 2 && (
+                            {/* Show first 2 columns */}
+                            {table.schema?.slice(0, 2).map((item) => (
+                              <Chip
+                                key={item.name}
+                                label={`${item.name}: ${item.type}`}
+                                sx={{
+                                  mr: 1,
+                                  mb: 1,
+                                  backgroundColor: "var(--primary-light)",
+                                }}
+                                variant="outlined"
+                              />
+                            ))}
+
+                            {/* Show "+N more" button if more than 2 */}
+                            {table.schema?.length > 2 && (
                               <>
                                 <Chip
                                   label={`+${table.schema.length - 2} more`}
-                                  onClick={(e) => handleShowMoreColumns(e, table)}
+                                  onClick={(e) =>
+                                    handleShowMoreColumns(e, table)
+                                  }
                                   sx={{
                                     mr: 1,
                                     mb: 1,
@@ -1164,20 +1259,21 @@ const DatabaseDetails = () => {
                                         gap: 1,
                                       }}
                                     >
-                                      {expandedTable &&
-                                        expandedTable.schema.map((col) => (
-                                          <Chip
-                                            key={col.name}
-                                            label={`${col.name}: ${col.type}`}
-                                            sx={{
-                                              backgroundColor: "var(--primary-light)",
-                                              "&:hover": {
-                                                backgroundColor: "var(--primary-hover)",
-                                              },
-                                            }}
-                                            variant="outlined"
-                                          />
-                                        ))}
+                                      {expandedTable?.schema?.map((item) => (
+                                        <Chip
+                                          key={item.name}
+                                          label={`${item.name}: ${item.type}`}
+                                          sx={{
+                                            backgroundColor:
+                                              "var(--primary-light)",
+                                            "&:hover": {
+                                              backgroundColor:
+                                                "var(--primary-hover)",
+                                            },
+                                          }}
+                                          variant="outlined"
+                                        />
+                                      ))}
                                     </Box>
                                   </Box>
                                 </Popover>
@@ -1311,6 +1407,7 @@ const DatabaseDetails = () => {
               </TableContainer>
             </Paper>
           </Box>
+
           <EditTableDialog
             open={editDialog.open}
             onClose={() =>
@@ -1324,19 +1421,10 @@ const DatabaseDetails = () => {
             dbName={editDialog.dbName}
             tableName={editDialog.tableName}
             columns={editDialog.columns}
-            onSave={async (dbName, tableName, columns) => {
-              const success = await handleSaveTableChanges(dbName, tableName, columns);
-              if (success) {
-                setEditDialog({
-                  open: false,
-                  dbName: "",
-                  tableName: "",
-                  columns: [],
-                });
-              }
-              return success;
-            }}
+            hasData={tableHasData}
+            onSave={handleSaveTableChanges}
           />
+
           <Menu
             id="table-actions-menu"
             anchorEl={anchorEl}
@@ -1423,12 +1511,14 @@ const DatabaseDetails = () => {
               </MenuItem>
             ))}
           </Menu>
+
           <CreateTableDialog
             open={openTableDialog}
             onClose={() => setOpenTableDialog(false)}
             dbName={dbName}
             onSubmit={handleCreateTable}
           />
+
           <Dialog
             open={deleteDialog.open}
             onClose={() => setDeleteDialog({ open: false, tableName: "" })}
@@ -1449,12 +1539,15 @@ const DatabaseDetails = () => {
             </DialogTitle>
             <DialogContent>
               <DialogContentText sx={{ color: "var(--text-secondary)", mb: 2 }}>
-                Are you sure you want to delete table "{deleteDialog.tableName}"? This action cannot be undone.
+                Are you sure you want to delete table "{deleteDialog.tableName}
+                "? This action cannot be undone.
               </DialogContentText>
             </DialogContent>
             <DialogActions sx={{ padding: 2, gap: 2 }}>
               <Button
-                onClick={() => setDeleteDialog({ open: false, tableName: "" })}
+                onClick={() =>
+                  setDeleteDialog({ ...deleteDialog, open: false })
+                }
                 sx={{
                   color: "var(--text-primary)",
                   "&:hover": {
@@ -1487,6 +1580,7 @@ const DatabaseDetails = () => {
               </Button>
             </DialogActions>
           </Dialog>
+
           <Dialog
             open={viewDataDialog.open}
             onClose={handleCloseViewData}
@@ -1606,10 +1700,12 @@ const DatabaseDetails = () => {
               }}
             />
           </Dialog>
+
           <UpgradeDialog
             open={upgradeDialogOpen}
             onClose={() => setUpgradeDialogOpen(false)}
           />
+
           <Snackbar
             open={snackbar.open}
             autoHideDuration={6000}

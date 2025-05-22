@@ -64,13 +64,23 @@ const EditTableDialog = ({
   useEffect(() => {
     if (initialColumns) {
       setEditedColumns(initialColumns.map(col => ({
-        column_name: col.column_name,
-        data_type: mapDataTypeToSelect(col.data_type), // Normalize data_type
-        column_default: col.column_default || '',
-        is_nullable: col.is_nullable || 'YES'
+        column_name: col.name || col.column_name,
+        data_type: col.type || col.data_type,
+        column_default: col.defaultValue || col.column_default || '',
+        is_nullable: col.isNullable ? 'YES' : 'NO',
+        is_primary: col.isPrimary || col.PrimaryKey || false,
+        is_unique: col.isUnique || false
       })));
     }
   }, [initialColumns]);
+
+  const validateDataType = (type) => {
+    const validTypes = [
+      'STRING', 'TEXT', 'INTEGER', 'BIGINT', 
+      'NUMERIC', 'BOOLEAN', 'DATE', 'TIMESTAMP', 'JSONB'
+    ];
+    return validTypes.includes(type.toUpperCase());
+  };
 
   const handleColumnChange = (index, field, value) => {
     const updatedColumns = [...editedColumns];
@@ -107,11 +117,22 @@ const EditTableDialog = ({
 
   const handleSave = async () => {
     if (isSaving) return;
-    setIsSaving(true);
 
+    // Validate columns before saving
+    for (const col of editedColumns) {
+      if (!validateDataType(col.data_type)) {
+        setSnackbar({
+          open: true,
+          message: `Invalid data type for column ${col.column_name}`,
+          severity: 'error'
+        });
+        return;
+      }
+    }
+
+    setIsSaving(true);
     try {
       const success = await onSave(dbName, tableName, editedColumns);
-
       if (success) {
         onClose();
       } else {
@@ -145,6 +166,11 @@ const EditTableDialog = ({
           <Typography variant="subtitle2" color="textSecondary">
             Database: {dbName}
           </Typography>
+          {hasData && (
+            <Typography variant="caption" color="warning.main" sx={{ display: 'block', mt: 1 }}>
+              Note: Some modifications may be restricted because this table contains data.
+            </Typography>
+          )}
         </DialogTitle>
         <DialogContent>
           <Box mb={3}>
@@ -234,8 +260,11 @@ const EditTableDialog = ({
                         </FormControl>
                       </TableCell>
                       <TableCell>
-                        <IconButton onClick={() => handleRemoveColumn(index)}>
-                          <DeleteIcon color="error" />
+                        <IconButton 
+                          onClick={() => handleRemoveColumn(index)}
+                          disabled={hasData} // Disable if table has data
+                        >
+                          <DeleteIcon color={hasData ? "disabled" : "error"} />
                         </IconButton>
                       </TableCell>
                     </TableRow>
@@ -256,6 +285,7 @@ const EditTableDialog = ({
                 onChange={(e) => setNewColumn({ ...newColumn, name: e.target.value })}
                 size="small"
               />
+
               <FormControl size="small" sx={{ minWidth: 120 }}>
                 <InputLabel>Data Type</InputLabel>
                 <Select
@@ -273,12 +303,14 @@ const EditTableDialog = ({
                   <MenuItem value="JSONB">JSONB</MenuItem>
                 </Select>
               </FormControl>
+
               <TextField
                 label="Default Value"
                 value={newColumn.defaultValue}
                 onChange={(e) => setNewColumn({ ...newColumn, defaultValue: e.target.value })}
                 size="small"
               />
+
               <FormControl size="small" sx={{ minWidth: 100 }}>
                 <InputLabel>Nullable</InputLabel>
                 <Select
@@ -290,6 +322,7 @@ const EditTableDialog = ({
                   <MenuItem value="NO">NO</MenuItem>
                 </Select>
               </FormControl>
+
               <IconButton
                 onClick={handleAddColumn}
                 color="primary"
