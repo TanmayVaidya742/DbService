@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import axiosInstance from "../utils/axiosInstance";
@@ -189,7 +188,7 @@ const DatabaseDetails = () => {
           Authorization: `Bearer ${localStorage.getItem("token")}`,
         },
       });
-      setTableData(response.data);
+      setTableData(response.data || []);
     } catch (error) {
       console.error("Error fetching tables:", error);
       setSnackbar({
@@ -197,6 +196,7 @@ const DatabaseDetails = () => {
         message: error.response?.data?.error || "Failed to fetch tables",
         severity: "error",
       });
+      setTableData([]);
     }
   };
 
@@ -265,24 +265,34 @@ const DatabaseDetails = () => {
 
   const handleEditTable = (dbName, tableName) => {
     axiosInstance
-      .get(`/database/${dbName}/tables/${tableName}/columns`, {
+      .get(`/table/${dbName}/${tableName}/schema`, {
         headers: {
           Authorization: `Bearer ${localStorage.getItem("token")}`,
         },
       })
       .then((response) => {
+        const columns = response.data.schema
+          ? Object.entries(response.data.schema).map(([name, col]) => ({
+              name,
+              type: col.type,
+              isNullable: col.allowNull,
+              isUnique: col.unique,
+              isPrimaryKey: col.primaryKey,
+              defaultValue: col.defaultValue,
+            }))
+          : [];
         setEditDialog({
           open: true,
           dbName,
           tableName,
-          columns: response.data,
+          columns,
         });
       })
       .catch((error) => {
-        console.error("Error fetching table columns:", error);
+        console.error("Error fetching table schema:", error);
         setSnackbar({
           open: true,
-          message: error.response?.data?.error || "Failed to fetch table columns",
+          message: error.response?.data?.error || "Failed to fetch table schema",
           severity: "error",
         });
       });
@@ -291,23 +301,16 @@ const DatabaseDetails = () => {
   const handleSaveTableChanges = async (dbName, tableName, columns) => {
     try {
       const response = await axiosInstance.put(
-        `/database/${dbName}/${tableName}`,
-        { columns },
+        `/table/${dbName}/${tableName}/schema`,
+        { schema: columns },
         { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } }
       );
-      const updatedDatabase = { ...database };
-      const tableIndex = updatedDatabase.tables.findIndex(
-        (table) => table.tableName === tableName
-      );
-      if (tableIndex !== -1) {
-        updatedDatabase.tables[tableIndex].schema = response.data.schema;
-      }
-      setDatabase(updatedDatabase);
       setSnackbar({
         open: true,
         message: response.data?.message || "Table updated successfully!",
         severity: "success",
       });
+      await Promise.all([fetchDatabaseDetails(), getAllTablesByDbId()]);
       return true;
     } catch (error) {
       console.error("Error updating table:", error);
@@ -412,19 +415,24 @@ const DatabaseDetails = () => {
 
   const handleViewData = async (table) => {
     try {
-      const [columnsResponse, dataResponse] = await Promise.all([
-        axiosInstance.get(`/database/${dbName}/tables/${table.tableName}/columns`, {
+      const [schemaResponse, dataResponse] = await Promise.all([
+        axiosInstance.get(`/table/${dbName}/${table.tableName}/schema`, {
           headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
         }),
         axiosInstance.get(`/database/${dbName}/tables/${table.tableName}/data`, {
           headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
         }),
       ]);
+      const columns = schemaResponse.data.schema
+        ? Object.entries(schemaResponse.data.schema).map(([name]) => ({
+            column_name: name,
+          }))
+        : [];
       setViewDataDialog({
         open: true,
         tableName: table.tableName,
-        data: dataResponse.data,
-        columns: columnsResponse.data,
+        data: dataResponse.data || [],
+        columns,
         searchTerm: "",
         page: 0,
         rowsPerPage: 10,
@@ -481,6 +489,7 @@ const DatabaseDetails = () => {
       const response = await axiosInstance.delete(
         `/table/${dbId}/tables/${tableName}`,
         {
+          params: {dbName: dbName},
           headers: {
             Authorization: `Bearer ${localStorage.getItem("token")}`,
           },
@@ -503,7 +512,7 @@ const DatabaseDetails = () => {
           errorMessage = "Unauthorized to delete table";
           setUpgradeDialogOpen(true);
         } else if (error.response.status === 500) {
-          errorMessage = "Server error while deleting table";
+          errorMessage = error.response.data?.details || "Server error while deleting table";
         } else {
           errorMessage = error.response.data?.details || error.response.data?.error || errorMessage;
         }
@@ -878,7 +887,7 @@ const DatabaseDetails = () => {
               variant="h5"
               sx={{ ml: 2, color: "var(--primary-text)" }}
             >
-              Database: {database.dbname || dbName || "Unnamed Database"}
+              Database: {database.data?.dbName || dbName || "Unnamed Database"}
             </Typography>
           </Box>
           <Box sx={{ flexGrow: 1 }} />
@@ -1007,7 +1016,7 @@ const DatabaseDetails = () => {
               <Box sx={{ display: "flex", alignItems: "center", mb: 1, ml: 2 }}>
                 <FaDatabase size={24} />
                 <Typography variant="h4" sx={{ ml: 2 }}>
-                  {database.dbname || dbName || "Unnamed Database"}
+                  {database.data?.dbName || dbName || "Unnamed Database"}
                 </Typography>
               </Box>
               <Divider sx={{ my: 2 }} />
