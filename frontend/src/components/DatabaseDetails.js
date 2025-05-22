@@ -398,9 +398,11 @@ const DatabaseDetails = () => {
   };
 
   const generateandCopyUrlByActionType = (dbName, tableName, action) => {
-    const baseUrl = process.env.REACT_APP_SERVER_BASE_URL;
-    const queryRoute = process.env.REACT_APP_QUERY_ROUTE_ODATA || "/api/query";
-    let url = "";
+
+    //const baseUrl = process.env.REACT_APP_SERVER_BASE_URL;
+    const baseUrl = axiosInstance.defaults.baseURL; // Now using the axios instance's baseURL
+    const queryRoute = process.env.REACT_APP_QUERY_ROUTE_ODATA || '/api/access';
+    let url = '';
 
     switch (action) {
       case "read":
@@ -410,7 +412,8 @@ const DatabaseDetails = () => {
         url = `${baseUrl}${queryRoute}/${dbName}/${tableName}/insert`;
         break;
       case "update":
-        url = `${baseUrl}${queryRoute}/${dbName}/${tableName}?$filter=id eq 1&$update=name=Jane,age=31`;
+        // Changed from $update=name=Jane,age=31 to $update=name=Jane&$update=age=31
+        url = `${baseUrl}${queryRoute}/${dbName}/${tableName}?$filter=id eq 1&name=Jane&age=31`;
         break;
       case "delete":
         url = `${baseUrl}${queryRoute}/${dbName}/${tableName}?$filter=id eq 1`;
