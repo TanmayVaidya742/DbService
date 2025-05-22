@@ -246,7 +246,8 @@ const DatabaseDetails = () => {
         message: response.data.message || "Table created successfully!",
         severity: "success",
       });
-      await Promise.all([fetchDatabaseDetails(), getAllTablesByDbId()]);
+      await fetchDatabaseDetails();
+      await getAllTablesByDbId();
       setOpenTableDialog(false);
     } catch (error) {
       setSnackbar({ open: false, message: "" });
@@ -415,24 +416,29 @@ const DatabaseDetails = () => {
 
   const handleViewData = async (table) => {
     try {
-      const [schemaResponse, dataResponse] = await Promise.all([
-        axiosInstance.get(`/table/${dbName}/${table.tableName}/schema`, {
-          headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
-        }),
-        axiosInstance.get(`/database/${dbName}/tables/${table.tableName}/data`, {
-          headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
-        }),
-      ]);
-      const columns = schemaResponse.data.schema
-        ? Object.entries(schemaResponse.data.schema).map(([name]) => ({
-            column_name: name,
-          }))
-        : [];
+      const columnsResponse = await axiosInstance.get(
+        `/table/${dbName}/view-table-column`,
+        {
+          params: {dbName: dbName, tableName: table.tableName},
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+        }
+      );
+      const dataResponse = await axiosInstance.get(
+        `/table/${dbName}/view-table-data`,
+        {
+          params: {dbName: dbName, tableName: table.tableName},
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+        }
+      );
       setViewDataDialog({
         open: true,
         tableName: table.tableName,
         data: dataResponse.data || [],
-        columns,
+        columns: columnsResponse.data || [],
         searchTerm: "",
         page: 0,
         rowsPerPage: 10,
@@ -501,7 +507,8 @@ const DatabaseDetails = () => {
         severity: "success",
       });
       setDeleteDialog({ open: false, tableName: "" });
-      await Promise.all([fetchDatabaseDetails(), getAllTablesByDbId()]);
+      await fetchDatabaseDetails();
+      await getAllTablesByDbId();
     } catch (error) {
       console.error("Error deleting table:", error);
       let errorMessage = "Failed to delete table";
