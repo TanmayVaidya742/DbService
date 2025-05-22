@@ -124,11 +124,8 @@ const UserDashboard = () => {
           return;
         }
 
-        // Try to get orgName from user response if available
-        // fallback to ID if name not available
-
         // Store in localStorage if we found a proper name
-        if (orgName && orgName !== user.orgId) {
+        if (orgName && orgName !== userData.orgId) {
           localStorage.setItem('orgName', orgName);
         }
 
@@ -666,7 +663,7 @@ const UserDashboard = () => {
                             margin: "0 auto",
                           }}
                         >
-                          {/* {db.tables.length} */}
+                          {db.tableCount || 0}
                         </Box>
                       </EqualWidthTableCell>
 

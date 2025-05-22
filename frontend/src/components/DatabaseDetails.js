@@ -38,6 +38,7 @@ import {
   InputAdornment,
   TablePagination,
   Popover,
+  CircularProgress,
 } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
 import {
@@ -59,9 +60,8 @@ import { CiViewTable } from "react-icons/ci";
 import ContentCopyIcon from "@mui/icons-material/ContentCopy";
 import UpgradeDialog from "./UpgradeDialog";
 import StoreIcon from "@mui/icons-material/Store";
-import DashboardIcon from '@mui/icons-material/Dashboard';
-import StorageRoundedIcon from '@mui/icons-material/StorageRounded';
-import axios from "axios";
+import DashboardIcon from "@mui/icons-material/Dashboard";
+import StorageRoundedIcon from "@mui/icons-material/StorageRounded";
 
 const drawerWidth = 240;
 
@@ -72,9 +72,8 @@ const DatabaseDetails = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [database, setDatabase] = useState(null);
   const [tableData, setTableData] = useState([]);
-
   const [loading, setLoading] = useState(true);
-
+  const [deleteLoading, setDeleteLoading] = useState({});
   const [snackbar, setSnackbar] = useState({
     open: false,
     message: "",
@@ -106,26 +105,27 @@ const DatabaseDetails = () => {
   const [expandedTable, setExpandedTable] = useState(null);
   const [upgradeDialogOpen, setUpgradeDialogOpen] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
-
-
+  const [tableHasData, setTableHasData] = useState(false);
 
   const fetchCurrentUser = async () => {
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem("token");
       const user = JSON.parse(localStorage.getItem("user"));
       if (!token) {
         setSnackbar({
           open: true,
-          message: 'Not authenticated. Please log in.',
-          severity: 'error',
+          message: "Not authenticated. Please log in.",
+          severity: "error",
         });
-        navigate('/login');
+        navigate("/login");
         return;
       }
-      const response = await axiosInstance.get('/users/get-user', {
+
+      const response = await axiosInstance.get("/users/get-user", {
         params: { orgId: user.orgId },
         headers: { Authorization: `Bearer ${token}` },
       });
+
       if (response.data && response.data.data) {
         const userData = response.data.data[0];
         setCurrentUser({
@@ -134,19 +134,19 @@ const DatabaseDetails = () => {
           name: `${userData.firstName} ${userData.lastName}`,
         });
       } else {
-        console.error('User data missing in response:', response.data);
+        console.error("User data missing in response:", response.data);
         setSnackbar({
           open: true,
-          message: 'User data incomplete',
-          severity: 'warning',
+          message: "User data incomplete",
+          severity: "warning",
         });
       }
     } catch (error) {
-      console.error('Failed to fetch user:', error);
+      console.error("Failed to fetch user:", error);
       setSnackbar({
         open: true,
-        message: error.response?.data?.error || 'Failed to load user data',
-        severity: 'error',
+        message: error.response?.data?.error || "Failed to load user data",
+        severity: "error",
       });
     }
   };
@@ -155,14 +155,40 @@ const DatabaseDetails = () => {
     fetchCurrentUser();
   }, [navigate]);
 
-  
+
+  // const getAllTablesByDbId = async () => {
+  //   try {
+  //     const response = await axiosInstance.get(`/table/${dbId}/tables`, {
+  //       headers: {
+  //         Authorization: `Bearer ${localStorage.getItem("token")}`,
+  //       },
+  //     });
+  //     setTableData(response.data || []);
+  //   } catch (error) {
+  //     console.error("Error fetching tables:", error);
+  //     setSnackbar({
+  //       open: true,
+  //       message: error.response?.data?.error || "Failed to fetch tables",
+  //       severity: "error",
+  //     });
+  //     setTableData([]);
+  //   }
+  // };
 
   useEffect(() => {
-    fetchDatabaseDetails();
+    Promise.all([fetchDatabaseDetails(), getAllTablesByDbId()])
+      .catch((error) => {
+        console.error("Error fetching initial data:", error);
+        setSnackbar({
+          open: true,
+          message: error.response?.data?.error || "Failed to load data",
+          severity: "error",
+        });
+      });
   }, [dbName, dbId]);
 
   const handleShowMoreColumns = (event, table) => {
-    setColumnsAnchorEl(event.currentTarget);
+    setColumnsAnchorEl(event.currentTarget);   
     setExpandedTable(table);
   };
 
@@ -180,6 +206,7 @@ const DatabaseDetails = () => {
         severity: "info",
         autoHideDuration: null,
       });
+
       const response = await axiosInstance.post(
         `/table/${dbName}/tables`,
         formData,
@@ -190,12 +217,14 @@ const DatabaseDetails = () => {
           },
         }
       );
+
       setSnackbar({
         open: true,
-        message: "Table created successfully!",
+        message: response.data.message || "Table created successfully!",
         severity: "success",
       });
       await fetchDatabaseDetails();
+      await getAllTablesByDbId();
       setOpenTableDialog(false);
     } catch (error) {
       setSnackbar({ open: false, message: "" });
@@ -212,61 +241,101 @@ const DatabaseDetails = () => {
     }
   };
 
-  const handleEditTable = (dbName, tableName) => {
-    axiosInstance
-      .get(
-        `/database/${dbName}/tables/${tableName}/columns`,
+  const handleEditTable = async (dbName, tableName) => {
+    try {
+      // debugger
+      const response = await axiosInstance.get(
+        `/table/${dbName}/tables/${tableName}/columns`,
         {
           headers: {
             Authorization: `Bearer ${localStorage.getItem("token")}`,
           },
         }
-      )
-      .then((response) => {
-        setEditDialog({
-          open: true,
-          dbName,
-          tableName,
-          columns: response.data,
-        });
-      })
-      .catch((error) => {
-        console.error("Error fetching table columns:", error);
-        setSnackbar({
-          open: true,
-          message:
-            error.response?.data?.error || "Failed to fetch table columns",
-          severity: "error",
-        });
-      });
-  };
+      );
 
-  const handleSaveTableChanges = async (dbName, tableName, columns) => {
-    try {
-      const response = await axiosInstance.put(
-        `/database/${dbName}/${tableName}`,
-        { columns },
-        { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } }
-      );
-      const updatedDatabase = JSON.parse(JSON.stringify(database));
-      const tableIndex = updatedDatabase.tables.findIndex(
-        (table) => table.tableName === tableName
-      );
-      if (tableIndex !== -1) {
-        updatedDatabase.tables[tableIndex].schema = response.data.schema;
-      }
-      setDatabase(updatedDatabase);
+      // Transform the API response into the expected format
+      const columns = response.data.map((column) => ({
+        column_name: column.name,
+        data_type: column.type,
+        column_default: column.defaultValue || null,
+        is_nullable: column.isNullable ? "YES" : "NO",
+        is_primary: column.isPrimary || false,
+        is_unique: column.isUnique || false,
+      }));
+
+      setEditDialog({
+        open: true,
+        dbName,
+        tableName,
+        columns,
+      });
+    } catch (error) {
+      console.error("Error fetching table columns:", error);
       setSnackbar({
         open: true,
-        message: response.data?.message || "Table updated successfully!",
+        message: error.response?.data?.error || "Failed to fetch table columns",
+        severity: "error",
+      });
+    }
+  };
+
+  // Updated handleSaveTableChanges function
+  const handleSaveTableChanges = async (dbName, tableName, columns) => {
+    try {
+      // Transform columns to match backend expected format
+      const formattedColumns = columns.map((column) => ({
+        name: column.column_name,
+        type: column.data_type,
+        isNullable: column.is_nullable === "YES",
+        isUnique: column.is_unique || false,
+        isPrimary: column.is_primary || false,
+        defaultValue: column.column_default || null,
+      }));
+
+      const response = await axiosInstance.put(
+        `/table/${dbName}/tables/${tableName}`,
+        {
+          columns: JSON.stringify(formattedColumns), // Stringify as backend expects
+        },
+        {
+          params: { dbId: dbId },
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      // Refresh the table data after successful update
+      await fetchDatabaseDetails();
+
+      setSnackbar({
+        open: true,
+        message: "Table updated successfully!",
         severity: "success",
       });
+      await Promise.all([fetchDatabaseDetails(), getAllTablesByDbId()]);
       return true;
     } catch (error) {
       console.error("Error updating table:", error);
+      let errorMessage = "Failed to update table";
+
+      if (error.response) {
+        errorMessage =
+          error.response.data?.details ||
+          error.response.data?.error ||
+          errorMessage;
+
+        // Handle specific error cases
+        if (error.response.status === 403) {
+          setUpgradeDialogOpen(true);
+          errorMessage = "Upgrade required to modify table structure";
+        }
+      }
+
       setSnackbar({
         open: true,
-        message: error.response?.data?.error || "Failed to update table",
+        message: errorMessage,
         severity: "error",
       });
       return false;
@@ -275,15 +344,12 @@ const DatabaseDetails = () => {
 
   const fetchDatabaseDetails = async () => {
     try {
-      const response = await axiosInstance.get(
-        `/database/get-by-dbid`,
-        {
-          params: { dbId, dbName },
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-          },
-        }
-      );
+      const response = await axiosInstance.get(`/database/get-by-dbid`, {
+        params: { dbId, dbName },
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      });
       const data = response.data;
       data.tables = data.tables || [];
       if (data.tables) {
@@ -306,12 +372,6 @@ const DatabaseDetails = () => {
     }
   };
 
-
-
-  useEffect(() => {
-    fetchDatabaseDetails();
-  }, [dbName]);
-
   const handleDrawerToggle = () => {
     setMobileOpen(!mobileOpen);
   };
@@ -332,14 +392,14 @@ const DatabaseDetails = () => {
 
   const handleLogout = () => {
     localStorage.removeItem("token");
+    localStorage.removeItem("user");
     setCurrentUser(null);
     navigate("/login");
   };
 
   const generateandCopyUrlByActionType = (dbName, tableName, action) => {
     const baseUrl = process.env.REACT_APP_SERVER_BASE_URL;
-    const queryRoute =
-      process.env.REACT_APP_QUERY_ROUTE_ODATA || "/api/query";
+    const queryRoute = process.env.REACT_APP_QUERY_ROUTE_ODATA || "/api/query";
     let url = "";
 
     switch (action) {
@@ -367,8 +427,9 @@ const DatabaseDetails = () => {
           open: true,
           message: (
             <div>
-              <div>{`${action.charAt(0).toUpperCase() + action.slice(1)
-                } URL copied to clipboard!`}</div>
+              <div>{`${
+                action.charAt(0).toUpperCase() + action.slice(1)
+              } URL copied to clipboard!`}</div>
               <div
                 style={{
                   fontFamily: "monospace",
@@ -394,7 +455,6 @@ const DatabaseDetails = () => {
           severity: "error",
         });
       });
-
     return url;
   };
 
@@ -406,26 +466,30 @@ const DatabaseDetails = () => {
   const handleViewData = async (table) => {
     try {
       const columnsResponse = await axiosInstance.get(
-        `/database/${dbName}/tables/${table.tableName}/columns`,
+        `/table/${dbName}/view-table-column`,
         {
+          params: {dbName: dbName, tableName: table.tableName},
           headers: {
             Authorization: `Bearer ${localStorage.getItem("token")}`,
           },
         }
       );
+
       const dataResponse = await axiosInstance.get(
-        `/database/${dbName}/tables/${table.tableName}/data`,
+        `/table/${dbName}/view-table-data`,
         {
+          params: {dbName: dbName, tableName: table.tableName},
           headers: {
             Authorization: `Bearer ${localStorage.getItem("token")}`,
           },
         }
       );
+
       setViewDataDialog({
         open: true,
         tableName: table.tableName,
-        data: dataResponse.data,
-        columns: columnsResponse.data,
+        data: dataResponse.data || [],
+        columns: columnsResponse.data || [],
         searchTerm: "",
         page: 0,
         rowsPerPage: 10,
@@ -475,31 +539,90 @@ const DatabaseDetails = () => {
     });
   };
 
-  const handleDeleteTable = async () => {
+  const checkTableHasData = async (dbName, tableName) => {
     try {
-      await axiosInstance.delete(
-        `/database/${dbName}/tables/${deleteDialog.tableName}`,
+      // You can implement an API call to check if the table has data
+      // For now, defaulting to false for simplicity
+      setTableHasData(false);
+
+      // Example API call (uncomment and modify if you have such an endpoint):
+      /*
+      const response = await axiosInstance.get(
+        `/table/${dbName}/tables/${tableName}/has-data`,
+        { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } }
+      );
+      setTableHasData(response.data.hasData);
+      */
+    } catch (error) {
+      console.error("Error checking if table has data:", error);
+      setTableHasData(false);
+    }
+  };
+
+  const handleOpenEditDialog = async (dbName, tableName, columns) => {
+    // First check if table has data
+    await checkTableHasData(dbName, tableName);
+
+    setEditDialog({
+      open: true,
+      dbName,
+      tableName,
+      columns,
+    });
+  };
+
+  const handleDeleteTable = async () => {
+    const tableName = deleteDialog.tableName;
+    setDeleteLoading((prev) => ({ ...prev, [tableName]: true }));
+    try {
+      const response = await axiosInstance.delete(
+        `/table/${dbId}/tables/${tableName}`,
         {
+          params: {dbName: dbName},
           headers: {
             Authorization: `Bearer ${localStorage.getItem("token")}`,
           },
         }
       );
+
       setSnackbar({
         open: true,
-        message: "Table deleted successfully!",
+        message: response.data.message || `Table "${tableName}" deleted successfully!`,
         severity: "success",
       });
       setDeleteDialog({ open: false, tableName: "" });
       await fetchDatabaseDetails();
+      await getAllTablesByDbId();
     } catch (error) {
       console.error("Error deleting table:", error);
+      let errorMessage = "Failed to delete table";
+      if (error.response) {
+        if (error.response.status === 404) {
+          errorMessage = `Table "${tableName}" not found`;
+        } else if (error.response.status === 403) {
+          errorMessage = "Unauthorized to delete table";
+          setUpgradeDialogOpen(true);
+        } else if (error.response.status === 500) {
+          errorMessage = error.response.data?.details || "Server error while deleting table";
+        } else {
+          errorMessage = error.response.data?.details || error.response.data?.error || errorMessage;
+        }
+      }
       setSnackbar({
         open: true,
-        message: error.response?.data?.error || "Failed to delete table",
+        message: errorMessage,
         severity: "error",
       });
+    } finally {
+      setDeleteLoading((prev) => ({ ...prev, [tableName]: false }));
     }
+  };
+
+  const handleDeleteClick = (table) => {
+    setDeleteDialog({
+      open: true,
+      tableName: table.tableName,
+    });
   };
 
   const filteredData = viewDataDialog.data.filter((row) => {
@@ -515,14 +638,6 @@ const DatabaseDetails = () => {
     viewDataDialog.page * viewDataDialog.rowsPerPage,
     (viewDataDialog.page + 1) * viewDataDialog.rowsPerPage
   );
-
-  const handleDeleteClick = (table) => {
-    setDeleteDialog({
-      open: true,
-      tableName: table.tableName,
-    });
-  };
-
 
   const getAllTablesByDbId = async () => {
     const response = await axiosInstance.get(`/table/${dbId}/tables`);
@@ -555,7 +670,7 @@ const DatabaseDetails = () => {
               location.pathname === `/database/${dbName}/${dbId}`
                 ? "var(--primary-light)"
                 : "transparent",
-            cursor: "pointer"
+            cursor: "pointer",
           }}
         >
           <ListItemIcon>
@@ -583,7 +698,7 @@ const DatabaseDetails = () => {
               location.pathname === "/databases"
                 ? "var(--primary-light)"
                 : "transparent",
-            cursor: "pointer"
+            cursor: "pointer",
           }}
         >
           <ListItemIcon>
@@ -611,7 +726,7 @@ const DatabaseDetails = () => {
               location.pathname === "/pricing"
                 ? "var(--primary-light)"
                 : "transparent",
-            cursor: "pointer"
+            cursor: "pointer",
           }}
         >
           <ListItemIcon>
@@ -775,22 +890,22 @@ const DatabaseDetails = () => {
               sx={{
                 color: "var(--primary-text)",
                 borderColor: "var(--primary-text)",
-                borderRadius: "20%", // Circular shape for icon button
-                minWidth: 40, // Fixed width for circular button
-                width: 40, // Fixed width for circular button
-                height: 40, // Fixed height for circular button
-                p: 0, // Remove padding
+                borderRadius: "20%",
+                minWidth: 40,
+                width: 40,
+                height: 40,
+                p: 0,
                 backgroundColor: "rgba(255, 255, 255, 0.1)",
                 "&:hover": {
                   backgroundColor: "rgba(255, 255, 255, 0.2)",
                   borderColor: "var(--primary-text)",
                   boxShadow: "0 2px 8px rgba(0, 0, 0, 0.2)",
-                  transform: "scale(1.05)", // Slight scale effect on hover
+                  transform: "scale(1.05)",
                 },
                 transition: "all 0.3s ease",
               }}
             >
-              <LogoutIcon fontSize="small" /> {/* Adjusted icon size */}
+              <LogoutIcon fontSize="small" />
             </Button>
           </Toolbar>
         </AppBar>
@@ -846,7 +961,6 @@ const DatabaseDetails = () => {
     );
   }
 
-
   return (
     <Box sx={{ display: "flex" }}>
       <AppBar
@@ -873,7 +987,7 @@ const DatabaseDetails = () => {
               variant="h5"
               sx={{ ml: 2, color: "var(--primary-text)" }}
             >
-              Database: {database.dbname || dbName || "Unnamed Database"}
+              Database: {database.data?.dbName || dbName || "Unnamed Database"}
             </Typography>
           </Box>
           <Box sx={{ flexGrow: 1 }} />
@@ -989,6 +1103,7 @@ const DatabaseDetails = () => {
                 Create Table
               </Button>
             </Box>
+
             <Paper
               elevation={3}
               sx={{
@@ -1002,7 +1117,7 @@ const DatabaseDetails = () => {
               <Box sx={{ display: "flex", alignItems: "center", mb: 1, ml: 2 }}>
                 <FaDatabase size={24} />
                 <Typography variant="h4" sx={{ ml: 2 }}>
-                  {database.dbname || dbName || "Unnamed Database"}
+                  {database.data?.dbName || dbName || "Unnamed Database"}
                 </Typography>
               </Box>
               <Divider sx={{ my: 2 }} />
@@ -1068,7 +1183,7 @@ const DatabaseDetails = () => {
                           fontWeight: "bold",
                         }}
                       >
-                        Select
+                        View Data
                       </TableCell>
                     </TableRow>
                   </TableHead>
@@ -1078,28 +1193,28 @@ const DatabaseDetails = () => {
                         <TableRow key={table.tableName}>
                           <TableCell align="left">{table.tableName}</TableCell>
                           <TableCell align="left">
-                            {table.schema
-                              .map((item) => (
-                                <>
-                               
-                                <Chip
-                                  key={item.name}
-                                  label={`${item.name}: ${item.type}`}
-                                  sx={{
-                                    mr: 1,
-                                    mb: 1,
-                                    backgroundColor: "var(--primary-light)",
-                                  }}
-                                  variant="outlined"
-                                />
-                                </>
-                              ))}
-                            {Object.keys(table.schema).length > 2 && (
+                            {/* Show first 2 columns */}
+                            {table.schema?.slice(0, 2).map((item) => (
+                              <Chip
+                                key={item.name}
+                                label={`${item.name}: ${item.type}`}
+                                sx={{
+                                  mr: 1,
+                                  mb: 1,
+                                  backgroundColor: "var(--primary-light)",
+                                }}
+                                variant="outlined"
+                              />
+                            ))}
+
+                            {/* Show "+N more" button if more than 2 */}
+                            {table.schema?.length > 2 && (
                               <>
                                 <Chip
-                                  label={`+${Object.keys(table.schema).length - 2
-                                    } more`}
-                                  onClick={(e) => handleShowMoreColumns(e, table)}
+                                  label={`+${table.schema.length - 2} more`}
+                                  onClick={(e) =>
+                                    handleShowMoreColumns(e, table)
+                                  }
                                   sx={{
                                     mr: 1,
                                     mb: 1,
@@ -1112,7 +1227,7 @@ const DatabaseDetails = () => {
                                   variant="outlined"
                                 />
                                 <Popover
-                                  open={Boolean(columnsAnchorEl)}
+                                  open={Boolean(columnsAnchorEl) && expandedTable?.tableName === table.tableName}
                                   anchorEl={columnsAnchorEl}
                                   onClose={handleCloseColumnsPopup}
                                   anchorOrigin={{
@@ -1144,24 +1259,21 @@ const DatabaseDetails = () => {
                                         gap: 1,
                                       }}
                                     >
-                                      {expandedTable &&
-                                        Object.entries(expandedTable.schema).map(
-                                          ([colName, colType]) => (
-                                            <Chip
-                                              key={colName}
-                                              label={`${colName}: ${colType}`}
-                                              sx={{
-                                                backgroundColor:
-                                                  "var(--primary-light)",
-                                                "&:hover": {
-                                                  backgroundColor:
-                                                    "var(--primary-hover)",
-                                                },
-                                              }}
-                                              variant="outlined"
-                                            />
-                                          )
-                                        )}
+                                      {expandedTable?.schema?.map((item) => (
+                                        <Chip
+                                          key={item.name}
+                                          label={`${item.name}: ${item.type}`}
+                                          sx={{
+                                            backgroundColor:
+                                              "var(--primary-light)",
+                                            "&:hover": {
+                                              backgroundColor:
+                                                "var(--primary-hover)",
+                                            },
+                                          }}
+                                          variant="outlined"
+                                        />
+                                      ))}
                                     </Box>
                                   </Box>
                                 </Popover>
@@ -1193,14 +1305,12 @@ const DatabaseDetails = () => {
                                     gap: 1,
                                     "&:hover": {
                                       borderColor: "var(--primary-hover)",
-                                      backgroundColor:
-                                        "rgba(var(--primary-rgb), 0.08)",
+                                      backgroundColor: "rgba(var(--primary-rgb), 0.08)",
                                       transform: "translateY(-1px)",
                                     },
                                     "&:active": {
                                       transform: "translateY(0)",
-                                      backgroundColor:
-                                        "rgba(var(--primary-rgb), 0.12)",
+                                      backgroundColor: "rgba(var(--primary-rgb), 0.12)",
                                     },
                                     "& .MuiSvgIcon-root": {
                                       fontSize: "1.2rem",
@@ -1208,13 +1318,9 @@ const DatabaseDetails = () => {
                                     },
                                   }}
                                 >
-                                  <LinkIcon
-                                    sx={{ fontSize: "1.1rem", opacity: 0.9 }}
-                                  />
+                                  <LinkIcon sx={{ fontSize: "1.1rem", opacity: 0.9 }} />
                                   URLs
-                                  <KeyboardArrowDownIcon
-                                    sx={{ fontSize: "1.2rem" }}
-                                  />
+                                  <KeyboardArrowDownIcon sx={{ fontSize: "1.2rem" }} />
                                 </Button>
                               </Box>
                             )}
@@ -1262,8 +1368,13 @@ const DatabaseDetails = () => {
                                   sx={{
                                     color: "var(--error-color)",
                                   }}
+                                  disabled={deleteLoading[table.tableName]}
                                 >
-                                  <DeleteIcon fontSize="small" />
+                                  {deleteLoading[table.tableName] ? (
+                                    <CircularProgress size={20} />
+                                  ) : (
+                                    <DeleteIcon fontSize="small" />
+                                  )}
                                 </IconButton>
                               </Box>
                             )}
@@ -1274,6 +1385,7 @@ const DatabaseDetails = () => {
                                 variant="outlined"
                                 startIcon={<VisibilityIcon />}
                                 onClick={() => handleViewData(table)}
+                                disabled={deleteLoading[table.tableName]}
                               >
                                 View Data
                               </Button>
@@ -1295,6 +1407,7 @@ const DatabaseDetails = () => {
               </TableContainer>
             </Paper>
           </Box>
+
           <EditTableDialog
             open={editDialog.open}
             onClose={() =>
@@ -1308,23 +1421,10 @@ const DatabaseDetails = () => {
             dbName={editDialog.dbName}
             tableName={editDialog.tableName}
             columns={editDialog.columns}
-            onSave={async (dbName, tableName, columns) => {
-              const success = await handleSaveTableChanges(
-                dbName,
-                tableName,
-                columns
-              );
-              if (success) {
-                setEditDialog({
-                  open: false,
-                  dbName: "",
-                  tableName: "",
-                  columns: [],
-                });
-              }
-              return success;
-            }}
+            hasData={tableHasData}
+            onSave={handleSaveTableChanges}
           />
+
           <Menu
             id="table-actions-menu"
             anchorEl={anchorEl}
@@ -1411,15 +1511,17 @@ const DatabaseDetails = () => {
               </MenuItem>
             ))}
           </Menu>
+
           <CreateTableDialog
             open={openTableDialog}
             onClose={() => setOpenTableDialog(false)}
             dbName={dbName}
             onSubmit={handleCreateTable}
           />
+
           <Dialog
             open={deleteDialog.open}
-            onClose={() => setDeleteDialog({ ...deleteDialog, open: false })}
+            onClose={() => setDeleteDialog({ open: false, tableName: "" })}
             fullWidth
             maxWidth="sm"
             slotProps={{
@@ -1432,26 +1534,27 @@ const DatabaseDetails = () => {
               },
             }}
           >
-            <DialogTitle
-              sx={{ color: "var(--text-primary)", fontWeight: "bold" }}
-            >
+            <DialogTitle sx={{ color: "var(--text-primary)", fontWeight: "bold" }}>
               Delete Table
             </DialogTitle>
             <DialogContent>
               <DialogContentText sx={{ color: "var(--text-secondary)", mb: 2 }}>
-                Are you sure you want to delete table "{deleteDialog.tableName}"?
-                This action cannot be undone.
+                Are you sure you want to delete table "{deleteDialog.tableName}
+                "? This action cannot be undone.
               </DialogContentText>
             </DialogContent>
             <DialogActions sx={{ padding: 2, gap: 2 }}>
               <Button
-                onClick={() => setDeleteDialog({ ...deleteDialog, open: false })}
+                onClick={() =>
+                  setDeleteDialog({ ...deleteDialog, open: false })
+                }
                 sx={{
                   color: "var(--text-primary)",
                   "&:hover": {
                     backgroundColor: "var(--primary-light-hover)",
                   },
                 }}
+                disabled={deleteLoading[deleteDialog.tableName]}
               >
                 Cancel
               </Button>
@@ -1464,12 +1567,20 @@ const DatabaseDetails = () => {
                   },
                 }}
                 variant="contained"
-                startIcon={<DeleteIcon />}
+                startIcon={
+                  deleteLoading[deleteDialog.tableName] ? (
+                    <CircularProgress size={20} />
+                  ) : (
+                    <DeleteIcon />
+                  )
+                }
+                disabled={deleteLoading[deleteDialog.tableName]}
               >
-                Delete
+                {deleteLoading[deleteDialog.tableName] ? "Deleting..." : "Delete"}
               </Button>
             </DialogActions>
           </Dialog>
+
           <Dialog
             open={viewDataDialog.open}
             onClose={handleCloseViewData}
@@ -1551,7 +1662,7 @@ const DatabaseDetails = () => {
                               key={`${rowIndex}-${column.column_name}`}
                               sx={{ padding: "8px 16px" }}
                             >
-                              {String(row[column.column_name])}
+                              {String(row[column.column_name] ?? '')}
                             </TableCell>
                           ))}
                         </TableRow>
@@ -1589,10 +1700,12 @@ const DatabaseDetails = () => {
               }}
             />
           </Dialog>
+
           <UpgradeDialog
             open={upgradeDialogOpen}
             onClose={() => setUpgradeDialogOpen(false)}
           />
+
           <Snackbar
             open={snackbar.open}
             autoHideDuration={6000}
