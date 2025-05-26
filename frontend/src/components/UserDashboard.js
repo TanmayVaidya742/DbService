@@ -41,16 +41,18 @@ import AddDatabaseDialog from "./AddDatabaseDialog";
 import { styled } from "@mui/material/styles";
 import { FaDatabase } from "react-icons/fa";
 import { CiViewTable } from "react-icons/ci";
-import DashboardCustomizeRoundedIcon from '@mui/icons-material/DashboardCustomizeRounded';
+import DashboardCustomizeRoundedIcon from "@mui/icons-material/DashboardCustomizeRounded";
+import { useSelector } from "react-redux";
 
 const drawerWidth = 240;
 
 const EqualWidthTableCell = styled(TableCell)({
-  width: '20%',
-  textAlign: 'center',
+  width: "20%",
+  textAlign: "center",
 });
 
 const UserDashboard = () => {
+  const state = useSelector((store) => store.dbaasStore);
   const [mobileOpen, setMobileOpen] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
@@ -74,85 +76,91 @@ const UserDashboard = () => {
     dbName: "",
   });
   const [currentUser, setCurrentUser] = useState({
-    email: '',
-    id: '',
-    name: '',
-    orgId: '',
-    orgName: ''
+    email: "",
+    id: "",
+    name: "",
+    orgId: "",
+    orgName: "",
   });
 
   const fetchCurrentUser = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const user = JSON.parse(localStorage.getItem("user"));
-      if (!token || !user) {
+      const token = localStorage.getItem("token");
+      const user = JSON.parse(localStorage.getItem("user")) || state.userData;
+      if (!user) {
         setSnackbar({
           open: true,
-          message: 'Not authenticated. Please log in.',
-          severity: 'error',
+          message: "Not authenticated. Please log in.",
+          severity: "error",
         });
-        navigate('/login');
+        navigate("/login");
         return;
       }
-      
+
       // First try to get orgName from localStorage
-      const cachedOrgName = localStorage.getItem('orgName');
-      
+      const cachedOrgName = localStorage.getItem("orgName");
+
       // Fetch user data
-      const userResponse = await axiosInstance.get('/users/get-user', {
+      const userResponse = await axiosInstance.get("/users/get-user", {
         params: { orgId: user.orgId },
         headers: { Authorization: `${token}` },
       });
 
       if (userResponse.data?.data?.[0]) {
         const userData = userResponse.data.data[0];
-
+        let orgName;
         // Fetch organization data to get orgName
-        const orgResponse = await axiosInstance.get('/orgs');
-        const orgData = orgResponse.data.data.find(org => org.orgId === userData.orgId);
-        const orgName = orgData ? orgData.orgName : 'Not specified';
-        
+        if (!state.userData.unitDetails) {
+          const orgResponse = await axiosInstance.get("/orgs");
+          const orgData = orgResponse.data.data.find(
+            (org) => org.orgId === userData.orgId
+          );
+          orgName = orgData ? orgData.orgName : "Not specified";
+        }
+
         // If we have cached orgName, use that
         if (cachedOrgName) {
           setCurrentUser({
-            email: userData.email || '',
-            id: userData.userId || '',
-            name: `${userData.firstName || ''} ${userData.lastName || ''}`.trim(),
-            orgId: userData.orgId || user.orgId || '',
-            orgName: cachedOrgName
+            email: userData.email || "",
+            id: userData.userId || "",
+            name: `${userData.firstName || ""} ${
+              userData.lastName || ""
+            }`.trim(),
+            orgId: userData.orgId || user.orgId || "",
+            // orgName: cachedOrgName,
           });
           return;
         }
 
         // Store in localStorage if we found a proper name
         if (orgName && orgName !== userData.orgId) {
-          localStorage.setItem('orgName', orgName);
+          localStorage.setItem("orgName", orgName);
         }
 
         setCurrentUser({
-          email: userData.email || '',
-          id: userData.userId || '',
-          name: `${userData.firstName || ''} ${userData.lastName || ''}`.trim(),
-          orgId: userData.orgId || user.orgId || '',
-          orgName: orgName
+          email: userData.email || "",
+          id: userData.userId || "",
+          name: `${userData.firstName || ""} ${userData.lastName || ""}`.trim(),
+          orgId: userData.orgId || user.orgId || "",
+          orgName: orgName,
         });
       } else {
-        console.error('User data missing in response:', userResponse.data);
+        console.error("User data missing in response:", userResponse.data);
         setSnackbar({
           open: true,
-          message: 'User data incomplete',
-          severity: 'warning',
+          message: "User data incomplete",
+          severity: "warning",
         });
-        navigate('/login');
+        navigate("/login");
       }
     } catch (error) {
-      console.error('Failed to fetch user:', error);
+      console.error("Failed to fetch user:", error);
       setSnackbar({
         open: true,
-        message: error.response?.data?.error || 'Failed to load user data',
-        severity: 'error',
+        message: error.response?.data?.error || "Failed to load user data",
+        severity: "error",
       });
-      navigate('/login');
+      navigate("/login");
     } finally {
       setLoading(false);
     }
@@ -195,11 +203,14 @@ const UserDashboard = () => {
 
   const handleDeleteDatabase = async () => {
     try {
-      const response = await axiosInstance.delete(`/database/${deleteDialog.name}`, {
-        headers: {
-          Authorization: `${localStorage.getItem("token")}`,
-        },
-      });
+      const response = await axiosInstance.delete(
+        `/database/${deleteDialog.name}`,
+        {
+          headers: {
+            Authorization: `${localStorage.getItem("token")}`,
+          },
+        }
+      );
 
       if (response.data && response.data.success) {
         setSnackbar({
@@ -255,7 +266,8 @@ const UserDashboard = () => {
     if (!/^[a-zA-Z0-9_-]+$/.test(formData.databaseName)) {
       setSnackbar({
         open: true,
-        message: "Database name can only contain letters, numbers, underscores, and hyphens",
+        message:
+          "Database name can only contain letters, numbers, underscores, and hyphens",
         severity: "error",
       });
       return;
@@ -301,7 +313,10 @@ const UserDashboard = () => {
       console.error("Error creating database:", error);
       setSnackbar({
         open: true,
-        message: error.response?.data?.message || error.message || "Failed to create database",
+        message:
+          error.response?.data?.message ||
+          error.message ||
+          "Failed to create database",
         severity: "error",
       });
     }
@@ -323,7 +338,9 @@ const UserDashboard = () => {
   };
 
   const handleRowClick = (dbName, dbId) => {
-    navigate(`/database/${encodeURIComponent(dbName)}/${encodeURIComponent(dbId)}`);
+    navigate(
+      `/database/${encodeURIComponent(dbName)}/${encodeURIComponent(dbId)}`
+    );
   };
 
   const handleLogout = () => {
@@ -331,11 +348,11 @@ const UserDashboard = () => {
     localStorage.removeItem("user");
     localStorage.removeItem("orgName");
     setCurrentUser({
-      email: '',
-      id: '',
-      name: '',
-      orgId: '',
-      orgName: ''
+      email: "",
+      id: "",
+      name: "",
+      orgId: "",
+      orgName: "",
     });
     setSnackbar({
       open: true,
@@ -351,10 +368,14 @@ const UserDashboard = () => {
     setSnackbar({ ...snackbar, open: false });
   };
 
-  
-
   return (
-    <Box sx={{ display: "flex", backgroundColor: "var(--bg-secondary)", minHeight: "100vh" }}>
+    <Box
+      sx={{
+        display: "flex",
+        backgroundColor: "var(--bg-secondary)",
+        minHeight: "100vh",
+      }}
+    >
       <AppBar
         position="fixed"
         sx={{
@@ -373,10 +394,17 @@ const UserDashboard = () => {
           >
             <MenuIcon />
           </IconButton>
-          <Typography variant="h6" sx={{ flexGrow: 1 }} style={{ color: "var(--primary-text)" }}>
+          <Typography
+            variant="h6"
+            sx={{ flexGrow: 1 }}
+            style={{ color: "var(--primary-text)" }}
+          >
             Databases
           </Typography>
-          <Typography variant="body1" sx={{ color: "var(--primary-text)", mr: 2 }}>
+          <Typography
+            variant="body1"
+            sx={{ color: "var(--primary-text)", mr: 2 }}
+          >
             {currentUser?.email || "Loading..."}
           </Typography>
           <Button
@@ -405,8 +433,6 @@ const UserDashboard = () => {
         </Toolbar>
       </AppBar>
 
-      
-
       <Box
         component="main"
         sx={{
@@ -418,14 +444,16 @@ const UserDashboard = () => {
       >
         <Toolbar />
         <Grid>
-          <Box sx={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            mb: 3,
-            flexDirection: { xs: 'column', sm: 'row' },
-            gap: 2
-          }}>
+          <Box
+            sx={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              mb: 3,
+              flexDirection: { xs: "column", sm: "row" },
+              gap: 2,
+            }}
+          >
             <Box>
               <Typography
                 variant="h5"
@@ -434,7 +462,7 @@ const UserDashboard = () => {
                   fontWeight: "bold",
                 }}
               >
-                Welcome, {currentUser?.name || 'User'}
+                Welcome, {currentUser?.name || "User"}
               </Typography>
               <Typography
                 variant="subtitle1"
@@ -442,10 +470,10 @@ const UserDashboard = () => {
                   color: "var(--text-secondary)",
                   display: "flex",
                   alignItems: "center",
-                  gap: 1
+                  gap: 1,
                 }}
               >
-                Organization: {currentUser?.orgName || 'Not specified'}
+                Organization: {currentUser?.orgName || "Not specified"}
               </Typography>
             </Box>
 
@@ -559,7 +587,9 @@ const UserDashboard = () => {
                         },
                       }}
                     >
-                      <EqualWidthTableCell style={{ color: "var(--text-primary)" }}>
+                      <EqualWidthTableCell
+                        style={{ color: "var(--text-primary)" }}
+                      >
                         {db.dbName}
                       </EqualWidthTableCell>
 
@@ -585,7 +615,9 @@ const UserDashboard = () => {
                         </Button>
                       </EqualWidthTableCell>
 
-                      <EqualWidthTableCell style={{ color: "var(--text-primary)" }}>
+                      <EqualWidthTableCell
+                        style={{ color: "var(--text-primary)" }}
+                      >
                         <Box
                           sx={{
                             display: "flex",
@@ -629,7 +661,13 @@ const UserDashboard = () => {
                       </EqualWidthTableCell>
 
                       <EqualWidthTableCell>
-                        <Box sx={{ display: "flex", gap: 1, justifyContent: "center" }}>
+                        <Box
+                          sx={{
+                            display: "flex",
+                            gap: 1,
+                            justifyContent: "center",
+                          }}
+                        >
                           <IconButton
                             onClick={(e) => {
                               e.stopPropagation();
@@ -655,11 +693,17 @@ const UserDashboard = () => {
           onSubmit={handleDatabaseSubmit}
         />
 
-        <Dialog open={openApiKeyDialog} onClose={() => setOpenApiKeyDialog(false)}>
-          <DialogTitle style={{ color: "var(--text-primary)" }}>API Key</DialogTitle>
+        <Dialog
+          open={openApiKeyDialog}
+          onClose={() => setOpenApiKeyDialog(false)}
+        >
+          <DialogTitle style={{ color: "var(--text-primary)" }}>
+            API Key
+          </DialogTitle>
           <DialogContent>
             <DialogContentText style={{ color: "var(--text-primary)" }}>
-              Here is your API key for this database. Keep it secure and don't share it with others.
+              Here is your API key for this database. Keep it secure and don't
+              share it with others.
             </DialogContentText>
             <Box
               sx={{
@@ -718,7 +762,9 @@ const UserDashboard = () => {
             },
           }}
         >
-          <DialogTitle sx={{ color: "var(--text-primary)", fontWeight: "bold" }}>
+          <DialogTitle
+            sx={{ color: "var(--text-primary)", fontWeight: "bold" }}
+          >
             Delete {deleteDialog.type === "database" ? "Database" : "Table"}
           </DialogTitle>
 
@@ -775,10 +821,10 @@ const UserDashboard = () => {
                 snackbar.severity === "error"
                   ? "var(--error-color)"
                   : snackbar.severity === "success"
-                    ? "var(--success-color)"
-                    : snackbar.severity === "warning"
-                      ? "var(--warning-color)"
-                      : "var(--info-color)",
+                  ? "var(--success-color)"
+                  : snackbar.severity === "warning"
+                  ? "var(--warning-color)"
+                  : "var(--info-color)",
               color: "white",
             }}
           >

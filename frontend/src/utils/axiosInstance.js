@@ -10,7 +10,7 @@ const appURL = `http://api.${domain}:5001`
 
 const axiosInstance = axios.create({
     baseURL: appURL,
-    // withCredentials: true,
+    withCredentials: true,
 });
 
 axiosInstance.interceptors.response.use(

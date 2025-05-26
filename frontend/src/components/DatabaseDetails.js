@@ -243,7 +243,6 @@ const DatabaseDetails = () => {
 
   const handleEditTable = async (dbName, tableName) => {
     try {
-      // debugger
       const response = await axiosInstance.get(
         `/table/${dbName}/tables/${tableName}/columns`,
         {

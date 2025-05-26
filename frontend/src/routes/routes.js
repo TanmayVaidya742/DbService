@@ -9,6 +9,7 @@ import Register from "../components/Register";
 import UserDashboard from "../components/UserDashboard";
 import AuthGuard from "../guards/AuthGuard";
 import Layout from "../components/layout/layout";
+import LaunchPagePyramid from "../components/PyramidLaunch/LaunchPagePyramid";
 
 const PrivateRoute = ({ children }) => {
   const token = localStorage.getItem("token");
@@ -26,6 +27,10 @@ export const routes = [
   {
     path: "/register",
     element: <Register />,
+  },
+  {
+    path: "launch-dbaas",
+    element: <LaunchPagePyramid />
   },
   {
     path: "",
