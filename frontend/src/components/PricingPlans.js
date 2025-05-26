@@ -72,7 +72,7 @@ const PricingPlans = () => {
 
                 const response = await axiosInstance.get('/users/get-user', {
                     params: { orgId: user.orgId },
-                    headers: { Authorization: `Bearer ${token}` },
+                    headers: { Authorization: `${token}` },
                 });
 
                 if (response.data && response.data.data) {
@@ -177,80 +177,80 @@ const PricingPlans = () => {
         navigate("/login");
     };
 
-    const drawer = (
-        <div>
-            <Toolbar>
-                <Typography variant="h6">1SPOC DAAS</Typography>
-            </Toolbar>
-            <Divider />
-            <List>
-                <ListItem
-                    button
-                    onClick={() => navigate("/pricing")}
-                    selected={location.pathname === "/pricing"}
-                    style={{
-                        color:
-                            location.pathname === "/pricing"
-                                ? "var(--primary-color)"
-                                : "var(--text-primary)",
-                        backgroundColor:
-                            location.pathname === "/pricing"
-                                ? "var(--primary-light)"
-                                : "transparent",
-                        cursor: "pointer"
-                    }}
-                >
-                    <ListItemIcon>
-                        <StoreIcon
-                            style={{
-                                color:
-                                    location.pathname === "/pricing"
-                                        ? "var(--primary-color)"
-                                        : "var(--text-secondary)",
-                            }}
-                        />
-                    </ListItemIcon>
-                    <ListItemText primary="Pricing Plans" />
-                </ListItem>
+    // const drawer = (
+    //     <div>
+    //         <Toolbar>
+    //             <Typography variant="h6">1SPOC DAAS</Typography>
+    //         </Toolbar>
+    //         <Divider />
+    //         <List>
+    //             <ListItem
+    //                 button
+    //                 onClick={() => navigate("/pricing")}
+    //                 selected={location.pathname === "/pricing"}
+    //                 style={{
+    //                     color:
+    //                         location.pathname === "/pricing"
+    //                             ? "var(--primary-color)"
+    //                             : "var(--text-primary)",
+    //                     backgroundColor:
+    //                         location.pathname === "/pricing"
+    //                             ? "var(--primary-light)"
+    //                             : "transparent",
+    //                     cursor: "pointer"
+    //                 }}
+    //             >
+    //                 <ListItemIcon>
+    //                     <StoreIcon
+    //                         style={{
+    //                             color:
+    //                                 location.pathname === "/pricing"
+    //                                     ? "var(--primary-color)"
+    //                                     : "var(--text-secondary)",
+    //                         }}
+    //                     />
+    //                 </ListItemIcon>
+    //                 <ListItemText primary="Pricing Plans" />
+    //             </ListItem>
 
-                <ListItem button onClick={() => navigate("/databases")}>
-                    <ListItemIcon>
-                        <PersonIcon />
-                    </ListItemIcon>
-                    <ListItemText primary="Databases" />
-                </ListItem>
+    //             <ListItem button onClick={() => navigate("/databases")}>
+    //                 <ListItemIcon>
+    //                     <PersonIcon />
+    //                 </ListItemIcon>
+    //                 <ListItemText primary="Databases" />
+    //             </ListItem>
 
-                <ListItem
-                    button
-                    onClick={() => navigate(`/database/${dbName}`)}
-                    selected={location.pathname === `/database/${dbName}`}
-                    style={{
-                        color:
-                            location.pathname === `/database/${dbName}`
-                                ? "var(--primary-color)"
-                                : "var(--text-primary)",
-                        backgroundColor:
-                            location.pathname === `/database/${dbName}`
-                                ? "var(--primary-light)"
-                                : "transparent",
-                        cursor: "pointer"
-                    }}
-                >
-                    <ListItemIcon>
-                        <DashboardIcon
-                            style={{
-                                color:
-                                    location.pathname === `/database/${dbName}`
-                                        ? "var(--primary-color)"
-                                        : "var(--text-secondary)",
-                            }}
-                        />
-                    </ListItemIcon>
-                    <ListItemText primary="Database Details" />
-                </ListItem>
-            </List>
-        </div>
-    );
+    //             <ListItem
+    //                 button
+    //                 onClick={() => navigate(`/database/${dbName}`)}
+    //                 selected={location.pathname === `/database/${dbName}`}
+    //                 style={{
+    //                     color:
+    //                         location.pathname === `/database/${dbName}`
+    //                             ? "var(--primary-color)"
+    //                             : "var(--text-primary)",
+    //                     backgroundColor:
+    //                         location.pathname === `/database/${dbName}`
+    //                             ? "var(--primary-light)"
+    //                             : "transparent",
+    //                     cursor: "pointer"
+    //                 }}
+    //             >
+    //                 <ListItemIcon>
+    //                     <DashboardIcon
+    //                         style={{
+    //                             color:
+    //                                 location.pathname === `/database/${dbName}`
+    //                                     ? "var(--primary-color)"
+    //                                     : "var(--text-secondary)",
+    //                         }}
+    //                     />
+    //                 </ListItemIcon>
+    //                 <ListItemText primary="Database Details" />
+    //             </ListItem>
+    //         </List>
+    //     </div>
+    // );
 
     const handleCardClick = (index) => {
         setSelectedPlan(index);
@@ -265,7 +265,7 @@ const PricingPlans = () => {
 
     return (
         <Box sx={{ display: 'flex' }}>
-            <AppBar
+            {/* <AppBar
                 position="fixed"
                 sx={{
                     zIndex: (theme) => theme.zIndex.drawer + 1,
@@ -313,12 +313,12 @@ const PricingPlans = () => {
                             transition: "all 0.3s ease",
                         }}
                     >
-                        <LogoutIcon fontSize="small" /> {/* Adjusted icon size */}
+                        <LogoutIcon fontSize="small" />
                     </Button>
                 </Toolbar>
-            </AppBar>
+            </AppBar> */}
 
-            <Box
+            {/* <Box
                 component="nav"
                 sx={{ width: { sm: drawerWidth }, flexShrink: { sm: 0 } }}
             >
@@ -352,7 +352,7 @@ const PricingPlans = () => {
                 >
                     {drawer}
                 </Drawer>
-            </Box>
+            </Box> */}
 
             <Box
                 component="main"

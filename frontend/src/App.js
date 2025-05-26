@@ -1,52 +1,36 @@
-import React, { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { ThemeProvider, createTheme } from '@mui/material';
-import Login from './components/Login';
-import Register from './components/Register';
-import Dashboard from './components/Dashboard';
-import LandingPage from './components/LandingPage';
-import UserDashboard from './components/UserDashboard';
-import Organizations from './components/Organizations';
-import axios from 'axios';
-import DatabaseDetails from './components/DatabaseDetails';
-import './styles/theme.css';
-import PricingPlans from './components/PricingPlans';
-
+import React, { useState, useEffect } from "react";
+import { BrowserRouter as Router, useRoutes, Navigate } from "react-router-dom";
+import { ThemeProvider, createTheme } from "@mui/material";
+import "./styles/theme.css";
+import { routes } from "./routes/routes";
+import { Provider } from "react-redux";
+import { store } from "./redux/store";
 
 const theme = createTheme({
   palette: {
     primary: {
-      main: '#1976d2',
+      main: "#1976d2",
+      light: "#3B82F614",
+      text: "#3d53fb",
+      dark: "#000"
     },
     secondary: {
-      main: '#dc004e',
+      main: "#dc004e",
     },
   },
 });
 
-const PrivateRoute = ({ children }) => {
-  const token = localStorage.getItem('token');
-  return token ? children : <Navigate to="/" />;
-};
+// This should be a top-level component
+function AppRoutes() {
+  const element = useRoutes(routes);
+  return element;
+}
 
 function App() {
-  const [hasUsers, setHasUsers] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false); // Set to false or handle your async logic
 
   useEffect(() => {
-    const checkUsers = async () => {
-      try {
-        const response = await axios.get('http://localhost:5000/api/auth/check-users');
-        setHasUsers(response.data.hasUsers);
-      } catch (error) {
-        console.error('Error checking users:', error);
-        setHasUsers(false);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    checkUsers();
+    // You can fetch initial data here
   }, []);
 
   if (loading) {
@@ -55,33 +39,11 @@ function App() {
 
   return (
     <ThemeProvider theme={theme}>
-      <Router>
-        <Routes>
-          <Route path="/" element={<LandingPage />} />
-          <Route 
-            path="/login" 
-            element={<Login />} 
-          />
-          <Route 
-            path="/register" 
-            element={<Register />} 
-          />
-          <Route
-            path="/superadmin-dashboard"
-            element={
-              <PrivateRoute>
-                <Dashboard />
-              </PrivateRoute>
-            }
-          />
-          <Route path="/databases" element={<UserDashboard />} />
-          <Route path="/organizations" element={<Organizations />} />
-          <Route path="/database/:dbName/:dbId" element={<DatabaseDetails />} />
-          <Route path="/pricing" element={<PricingPlans />} />
-
-
-        </Routes>
-      </Router>
+      <Provider store={store}>
+        <Router>
+          <AppRoutes />
+        </Router>
+      </Provider>
     </ThemeProvider>
   );
 }

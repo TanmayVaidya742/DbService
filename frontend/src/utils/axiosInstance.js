@@ -20,7 +20,7 @@ axiosInstance.interceptors.response.use(
 
 // axiosInstance.defaults.withCredentials = true;
 if(token){
-    axiosInstance.defaults.headers.Authorization= `Bearer ${token}`;
+    axiosInstance.defaults.headers.Authorization= `${token}`;
 }
 
 export default axiosInstance;

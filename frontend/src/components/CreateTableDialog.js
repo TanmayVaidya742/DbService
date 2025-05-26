@@ -122,7 +122,7 @@ const CreateTableDialog = ({ open, onClose, dbName, onSubmit }) => {
         `/api/databases/${dbName}/tables`,
         {
           headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
+            Authorization: `${localStorage.getItem("token")}`,
           },
         }
       );
@@ -148,7 +148,7 @@ const CreateTableDialog = ({ open, onClose, dbName, onSubmit }) => {
         `http://localhost:5000/api/databases/${dbName}/tables/${tableName}/columns`,
         {
           headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
+            Authorization: `${localStorage.getItem("token")}`,
           },
         }
       );

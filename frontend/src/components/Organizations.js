@@ -36,7 +36,7 @@ const Organizations = () => {
       try {
         const response = await axios.get('http://localhost:5000/api/users', {
           headers: {
-            Authorization: `Bearer ${localStorage.getItem('token')}`
+            Authorization: `${localStorage.getItem('token')}`
           }
         });
         

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useParams, useNavigate, useLocation } from "react-router-dom";
+import { useParams, useNavigate, useLocation, data } from "react-router-dom";
 import axiosInstance from "../utils/axiosInstance";
 import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
 import LinkIcon from "@mui/icons-material/Link";
@@ -123,7 +123,7 @@ const DatabaseDetails = () => {
 
       const response = await axiosInstance.get("/users/get-user", {
         params: { orgId: user.orgId },
-        headers: { Authorization: `Bearer ${token}` },
+        headers: { Authorization: `${token}` },
       });
 
       if (response.data && response.data.data) {
@@ -213,7 +213,7 @@ const DatabaseDetails = () => {
         {
           headers: {
             "Content-Type": "multipart/form-data",
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
+            Authorization: `${localStorage.getItem("token")}`,
           },
         }
       );
@@ -248,7 +248,7 @@ const DatabaseDetails = () => {
         `/table/${dbName}/tables/${tableName}/columns`,
         {
           headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
+            Authorization: `${localStorage.getItem("token")}`,
           },
         }
       );
@@ -300,7 +300,7 @@ const DatabaseDetails = () => {
         {
           params: { dbId: dbId },
           headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
+            Authorization: `${localStorage.getItem("token")}`,
             "Content-Type": "application/json",
           },
         }
@@ -347,7 +347,7 @@ const DatabaseDetails = () => {
       const response = await axiosInstance.get(`/database/get-by-dbid`, {
         params: { dbId, dbName },
         headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
+          Authorization: `${localStorage.getItem("token")}`,
         },
       });
       const data = response.data;
@@ -466,21 +466,21 @@ const DatabaseDetails = () => {
   const handleViewData = async (table) => {
     try {
       const columnsResponse = await axiosInstance.get(
-        `/table/${dbName}/view-table-column`,
+        `/table/${dbId}/view-table-column`,
         {
           params: {dbName: dbName, tableName: table.tableName},
           headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
+            Authorization: `${localStorage.getItem("token")}`,
           },
         }
       );
 
       const dataResponse = await axiosInstance.get(
-        `/table/${dbName}/view-table-data`,
+        `/table/${dbId}/view-table-data`,
         {
           params: {dbName: dbName, tableName: table.tableName},
           headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
+            Authorization: `${localStorage.getItem("token")}`,
           },
         }
       );
@@ -580,7 +580,7 @@ const DatabaseDetails = () => {
         {
           params: {dbName: dbName},
           headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
+            Authorization: `${localStorage.getItem("token")}`,
           },
         }
       );
@@ -648,318 +648,318 @@ const DatabaseDetails = () => {
     getAllTablesByDbId();
   }, [])
 
-  const drawer = (
-    <div style={{ backgroundColor: "var(--bg-paper)" }}>
-      <Toolbar>
-        <Typography variant="h6" style={{ color: "var(--text-primary)" }}>
-          1SPOC DAAS
-        </Typography>
-      </Toolbar>
-      <Divider style={{ backgroundColor: "var(--border-color)" }} />
-      <List>
-        <ListItem
-          button
-          onClick={() => navigate(`/database/${dbName}/${dbId}`)}
-          selected={location.pathname === `/database/${dbName}/${dbId}`}
-          style={{
-            color:
-              location.pathname === `/database/${dbName}/${dbId}`
-                ? "var(--primary-color)"
-                : "var(--text-primary)",
-            backgroundColor:
-              location.pathname === `/database/${dbName}/${dbId}`
-                ? "var(--primary-light)"
-                : "transparent",
-            cursor: "pointer",
-          }}
-        >
-          <ListItemIcon>
-            <DashboardIcon
-              style={{
-                color:
-                  location.pathname === `/database/${dbName}/${dbId}`
-                    ? "var(--primary-color)"
-                    : "var(--text-secondary)",
-              }}
-            />
-          </ListItemIcon>
-          <ListItemText primary="Database Details" />
-        </ListItem>
-        <ListItem
-          button
-          onClick={() => navigate("/databases")}
-          selected={location.pathname === "/databases"}
-          style={{
-            color:
-              location.pathname === "/databases"
-                ? "var(--primary-color)"
-                : "var(--text-primary)",
-            backgroundColor:
-              location.pathname === "/databases"
-                ? "var(--primary-light)"
-                : "transparent",
-            cursor: "pointer",
-          }}
-        >
-          <ListItemIcon>
-            <StorageRoundedIcon
-              style={{
-                color:
-                  location.pathname === "/databases"
-                    ? "var(--primary-color)"
-                    : "var(--text-secondary)",
-              }}
-            />
-          </ListItemIcon>
-          <ListItemText primary="Databases" />
-        </ListItem>
-        <ListItem
-          button
-          onClick={() => navigate("/pricing", { state: { dbName } })}
-          selected={location.pathname === "/pricing"}
-          style={{
-            color:
-              location.pathname === "/pricing"
-                ? "var(--primary-color)"
-                : "var(--text-primary)",
-            backgroundColor:
-              location.pathname === "/pricing"
-                ? "var(--primary-light)"
-                : "transparent",
-            cursor: "pointer",
-          }}
-        >
-          <ListItemIcon>
-            <StoreIcon
-              style={{
-                color:
-                  location.pathname === "/pricing"
-                    ? "var(--primary-color)"
-                    : "var(--text-secondary)",
-              }}
-            />
-          </ListItemIcon>
-          <ListItemText primary="Pricing Plans" />
-        </ListItem>
-      </List>
-    </div>
-  );
+  // const drawer = (
+  //   <div style={{ backgroundColor: "var(--bg-paper)" }}>
+  //     <Toolbar>
+  //       <Typography variant="h6" style={{ color: "var(--text-primary)" }}>
+  //         1SPOC DAAS
+  //       </Typography>
+  //     </Toolbar>
+  //     <Divider style={{ backgroundColor: "var(--border-color)" }} />
+  //     <List>
+  //       <ListItem
+  //         button
+  //         onClick={() => navigate(`/database/${dbName}/${dbId}`)}
+  //         selected={location.pathname === `/database/${dbName}/${dbId}`}
+  //         style={{
+  //           color:
+  //             location.pathname === `/database/${dbName}/${dbId}`
+  //               ? "var(--primary-color)"
+  //               : "var(--text-primary)",
+  //           backgroundColor:
+  //             location.pathname === `/database/${dbName}/${dbId}`
+  //               ? "var(--primary-light)"
+  //               : "transparent",
+  //           cursor: "pointer",
+  //         }}
+  //       >
+  //         <ListItemIcon>
+  //           <DashboardIcon
+  //             style={{
+  //               color:
+  //                 location.pathname === `/database/${dbName}/${dbId}`
+  //                   ? "var(--primary-color)"
+  //                   : "var(--text-secondary)",
+  //             }}
+  //           />
+  //         </ListItemIcon>
+  //         <ListItemText primary="Database Details" />
+  //       </ListItem>
+  //       <ListItem
+  //         button
+  //         onClick={() => navigate("/databases")}
+  //         selected={location.pathname === "/databases"}
+  //         style={{
+  //           color:
+  //             location.pathname === "/databases"
+  //               ? "var(--primary-color)"
+  //               : "var(--text-primary)",
+  //           backgroundColor:
+  //             location.pathname === "/databases"
+  //               ? "var(--primary-light)"
+  //               : "transparent",
+  //           cursor: "pointer",
+  //         }}
+  //       >
+  //         <ListItemIcon>
+  //           <StorageRoundedIcon
+  //             style={{
+  //               color:
+  //                 location.pathname === "/databases"
+  //                   ? "var(--primary-color)"
+  //                   : "var(--text-secondary)",
+  //             }}
+  //           />
+  //         </ListItemIcon>
+  //         <ListItemText primary="Databases" />
+  //       </ListItem>
+  //       <ListItem
+  //         button
+  //         onClick={() => navigate("/pricing", { state: { dbName } })}
+  //         selected={location.pathname === "/pricing"}
+  //         style={{
+  //           color:
+  //             location.pathname === "/pricing"
+  //               ? "var(--primary-color)"
+  //               : "var(--text-primary)",
+  //           backgroundColor:
+  //             location.pathname === "/pricing"
+  //               ? "var(--primary-light)"
+  //               : "transparent",
+  //           cursor: "pointer",
+  //         }}
+  //       >
+  //         <ListItemIcon>
+  //           <StoreIcon
+  //             style={{
+  //               color:
+  //                 location.pathname === "/pricing"
+  //                   ? "var(--primary-color)"
+  //                   : "var(--text-secondary)",
+  //             }}
+  //           />
+  //         </ListItemIcon>
+  //         <ListItemText primary="Pricing Plans" />
+  //       </ListItem>
+  //     </List>
+  //   </div>
+  // );
 
-  if (loading) {
-    return (
-      <Box sx={{ display: "flex" }}>
-        <AppBar
-          position="fixed"
-          sx={{
-            zIndex: (theme) => theme.zIndex.drawer + 1,
-            backgroundColor: "var(--primary-color)",
-            width: { sm: `calc(100% - ${drawerWidth}px)` },
-            ml: { sm: `${drawerWidth}px` },
-          }}
-        >
-          <Toolbar>
-            <IconButton
-              color="inherit"
-              edge="start"
-              onClick={handleDrawerToggle}
-              sx={{ mr: 2, display: { sm: "none" } }}
-            >
-              <MenuIcon />
-            </IconButton>
-            <Typography variant="h6" noWrap component="div">
-              Database Details
-            </Typography>
-            <Box sx={{ flexGrow: 1 }} />
-            <Typography
-              variant="body1"
-              sx={{ color: "var(--primary-text)", mr: 2 }}
-            >
-              {currentUser?.email || "Loading..."}
-            </Typography>
-            <Button
-              variant="outlined"
-              onClick={handleLogout}
-              sx={{
-                color: "var(--primary-text)",
-                borderColor: "var(--primary-text)",
-                borderRadius: "20%",
-                minWidth: 40,
-                width: 40,
-                height: 40,
-                p: 0,
-                backgroundColor: "rgba(255, 255, 255, 0.1)",
-                "&:hover": {
-                  backgroundColor: "rgba(255, 255, 255, 0.2)",
-                  borderColor: "var(--primary-text)",
-                  boxShadow: "0 2px 8px rgba(0, 0, 0, 0.2)",
-                  transform: "scale(1.05)",
-                },
-                transition: "all 0.3s ease",
-              }}
-            >
-              <LogoutIcon fontSize="small" />
-            </Button>
-          </Toolbar>
-        </AppBar>
-        <Box
-          component="nav"
-          sx={{ width: { sm: drawerWidth }, flexShrink: { sm: 0 } }}
-        >
-          <Drawer
-            variant="temporary"
-            open={mobileOpen}
-            onClose={handleDrawerToggle}
-            ModalProps={{
-              keepMounted: true,
-            }}
-            sx={{
-              display: { xs: "block", sm: "none" },
-              "& .MuiDrawer-paper": {
-                boxSizing: "border-box",
-                width: drawerWidth,
-              },
-            }}
-          >
-            {drawer}
-          </Drawer>
-          <Drawer
-            variant="permanent"
-            sx={{
-              display: { xs: "none", sm: "block" },
-              "& .MuiDrawer-paper": {
-                boxSizing: "border-box",
-                width: drawerWidth,
-              },
-            }}
-            open
-          >
-            {drawer}
-          </Drawer>
-        </Box>
-        <Box
-          component="main"
-          sx={{
-            flexGrow: 1,
-            p: 3,
-            width: { sm: `calc(100% - ${drawerWidth}px)` },
-          }}
-        >
-          <Toolbar />
-          <Container maxWidth="lg">
-            <Typography variant="h6">Loading database details...</Typography>
-          </Container>
-        </Box>
-      </Box>
-    );
-  }
+  // if (loading) {
+  //   return (
+  //     <Box sx={{ display: "flex" }}>
+  //       <AppBar
+  //         position="fixed"
+  //         sx={{
+  //           zIndex: (theme) => theme.zIndex.drawer + 1,
+  //           backgroundColor: "var(--primary-color)",
+  //           width: { sm: `calc(100% - ${drawerWidth}px)` },
+  //           ml: { sm: `${drawerWidth}px` },
+  //         }}
+  //       >
+  //         <Toolbar>
+  //           <IconButton
+  //             color="inherit"
+  //             edge="start"
+  //             onClick={handleDrawerToggle}
+  //             sx={{ mr: 2, display: { sm: "none" } }}
+  //           >
+  //             <MenuIcon />
+  //           </IconButton>
+  //           <Typography variant="h6" noWrap component="div">
+  //             Database Details
+  //           </Typography>
+  //           <Box sx={{ flexGrow: 1 }} />
+  //           <Typography
+  //             variant="body1"
+  //             sx={{ color: "var(--primary-text)", mr: 2 }}
+  //           >
+  //             {currentUser?.email || "Loading..."}
+  //           </Typography>
+  //           <Button
+  //             variant="outlined"
+  //             onClick={handleLogout}
+  //             sx={{
+  //               color: "var(--primary-text)",
+  //               borderColor: "var(--primary-text)",
+  //               borderRadius: "20%",
+  //               minWidth: 40,
+  //               width: 40,
+  //               height: 40,
+  //               p: 0,
+  //               backgroundColor: "rgba(255, 255, 255, 0.1)",
+  //               "&:hover": {
+  //                 backgroundColor: "rgba(255, 255, 255, 0.2)",
+  //                 borderColor: "var(--primary-text)",
+  //                 boxShadow: "0 2px 8px rgba(0, 0, 0, 0.2)",
+  //                 transform: "scale(1.05)",
+  //               },
+  //               transition: "all 0.3s ease",
+  //             }}
+  //           >
+  //             <LogoutIcon fontSize="small" />
+  //           </Button>
+  //         </Toolbar>
+  //       </AppBar>
+  //       <Box
+  //         component="nav"
+  //         sx={{ width: { sm: drawerWidth }, flexShrink: { sm: 0 } }}
+  //       >
+  //         <Drawer
+  //           variant="temporary"
+  //           open={mobileOpen}
+  //           onClose={handleDrawerToggle}
+  //           ModalProps={{
+  //             keepMounted: true,
+  //           }}
+  //           sx={{
+  //             display: { xs: "block", sm: "none" },
+  //             "& .MuiDrawer-paper": {
+  //               boxSizing: "border-box",
+  //               width: drawerWidth,
+  //             },
+  //           }}
+  //         >
+  //           {drawer}
+  //         </Drawer>
+  //         <Drawer
+  //           variant="permanent"
+  //           sx={{
+  //             display: { xs: "none", sm: "block" },
+  //             "& .MuiDrawer-paper": {
+  //               boxSizing: "border-box",
+  //               width: drawerWidth,
+  //             },
+  //           }}
+  //           open
+  //         >
+  //           {drawer}
+  //         </Drawer>
+  //       </Box>
+  //       <Box
+  //         component="main"
+  //         sx={{
+  //           flexGrow: 1,
+  //           p: 3,
+  //           width: { sm: `calc(100% - ${drawerWidth}px)` },
+  //         }}
+  //       >
+  //         <Toolbar />
+  //         <Container maxWidth="lg">
+  //           <Typography variant="h6">Loading database details...</Typography>
+  //         </Container>
+  //       </Box>
+  //     </Box>
+  //   );
+  // }
 
-  if (!database) {
-    return (
-      <Box sx={{ display: "flex" }}>
-        <AppBar
-          position="fixed"
-          sx={{
-            zIndex: (theme) => theme.zIndex.drawer + 1,
-            backgroundColor: "var(--primary-color)",
-            width: { sm: `calc(100% - ${drawerWidth}px)` },
-            ml: { sm: `${drawerWidth}px` },
-          }}
-        >
-          <Toolbar>
-            <IconButton
-              color="inherit"
-              edge="start"
-              onClick={handleDrawerToggle}
-              sx={{ mr: 2, display: { sm: "none" } }}
-            >
-              <MenuIcon />
-            </IconButton>
-            <Typography variant="h6" noWrap component="div">
-              Database Details
-            </Typography>
-            <Box sx={{ flexGrow: 1 }} />
-            <Typography
-              variant="body1"
-              sx={{ color: "var(--primary-text)", mr: 2 }}
-            >
-              {currentUser?.email || "Loading..."}
-            </Typography>
-            <Button
-              variant="outlined"
-              onClick={handleLogout}
-              sx={{
-                color: "var(--primary-text)",
-                borderColor: "var(--primary-text)",
-                borderRadius: "20%",
-                minWidth: 40,
-                width: 40,
-                height: 40,
-                p: 0,
-                backgroundColor: "rgba(255, 255, 255, 0.1)",
-                "&:hover": {
-                  backgroundColor: "rgba(255, 255, 255, 0.2)",
-                  borderColor: "var(--primary-text)",
-                  boxShadow: "0 2px 8px rgba(0, 0, 0, 0.2)",
-                  transform: "scale(1.05)",
-                },
-                transition: "all 0.3s ease",
-              }}
-            >
-              <LogoutIcon fontSize="small" />
-            </Button>
-          </Toolbar>
-        </AppBar>
-        <Box
-          component="nav"
-          sx={{ width: { sm: drawerWidth }, flexShrink: { sm: 0 } }}
-        >
-          <Drawer
-            variant="temporary"
-            open={mobileOpen}
-            onClose={handleDrawerToggle}
-            ModalProps={{
-              keepMounted: true,
-            }}
-            sx={{
-              display: { xs: "block", sm: "none" },
-              "& .MuiDrawer-paper": {
-                boxSizing: "border-box",
-                width: drawerWidth,
-              },
-            }}
-          >
-            {drawer}
-          </Drawer>
-          <Drawer
-            variant="permanent"
-            sx={{
-              display: { xs: "none", sm: "block" },
-              "& .MuiDrawer-paper": {
-                boxSizing: "border-box",
-                width: drawerWidth,
-              },
-            }}
-            open
-          >
-            {drawer}
-          </Drawer>
-        </Box>
-        <Box
-          component="main"
-          sx={{
-            flexGrow: 1,
-            p: 3,
-            width: { sm: `calc(100% - ${drawerWidth}px)` },
-          }}
-        >
-          <Toolbar />
-          <Container maxWidth="lg">
-            <Typography variant="h6">Database not found</Typography>
-          </Container>
-        </Box>
-      </Box>
-    );
-  }
+  // if (!database) {
+  //   return (
+  //     <Box sx={{ display: "flex" }}>
+  //       <AppBar
+  //         position="fixed"
+  //         sx={{
+  //           zIndex: (theme) => theme.zIndex.drawer + 1,
+  //           backgroundColor: "var(--primary-color)",
+  //           width: { sm: `calc(100% - ${drawerWidth}px)` },
+  //           ml: { sm: `${drawerWidth}px` },
+  //         }}
+  //       >
+  //         <Toolbar>
+  //           <IconButton
+  //             color="inherit"
+  //             edge="start"
+  //             onClick={handleDrawerToggle}
+  //             sx={{ mr: 2, display: { sm: "none" } }}
+  //           >
+  //             <MenuIcon />
+  //           </IconButton>
+  //           <Typography variant="h6" noWrap component="div">
+  //             Database Details
+  //           </Typography>
+  //           <Box sx={{ flexGrow: 1 }} />
+  //           <Typography
+  //             variant="body1"
+  //             sx={{ color: "var(--primary-text)", mr: 2 }}
+  //           >
+  //             {currentUser?.email || "Loading..."}
+  //           </Typography>
+  //           <Button
+  //             variant="outlined"
+  //             onClick={handleLogout}
+  //             sx={{
+  //               color: "var(--primary-text)",
+  //               borderColor: "var(--primary-text)",
+  //               borderRadius: "20%",
+  //               minWidth: 40,
+  //               width: 40,
+  //               height: 40,
+  //               p: 0,
+  //               backgroundColor: "rgba(255, 255, 255, 0.1)",
+  //               "&:hover": {
+  //                 backgroundColor: "rgba(255, 255, 255, 0.2)",
+  //                 borderColor: "var(--primary-text)",
+  //                 boxShadow: "0 2px 8px rgba(0, 0, 0, 0.2)",
+  //                 transform: "scale(1.05)",
+  //               },
+  //               transition: "all 0.3s ease",
+  //             }}
+  //           >
+  //             <LogoutIcon fontSize="small" />
+  //           </Button>
+  //         </Toolbar>
+  //       </AppBar>
+  //       <Box
+  //         component="nav"
+  //         sx={{ width: { sm: drawerWidth }, flexShrink: { sm: 0 } }}
+  //       >
+  //         <Drawer
+  //           variant="temporary"
+  //           open={mobileOpen}
+  //           onClose={handleDrawerToggle}
+  //           ModalProps={{
+  //             keepMounted: true,
+  //           }}
+  //           sx={{
+  //             display: { xs: "block", sm: "none" },
+  //             "& .MuiDrawer-paper": {
+  //               boxSizing: "border-box",
+  //               width: drawerWidth,
+  //             },
+  //           }}
+  //         >
+  //           {drawer}
+  //         </Drawer>
+  //         <Drawer
+  //           variant="permanent"
+  //           sx={{
+  //             display: { xs: "none", sm: "block" },
+  //             "& .MuiDrawer-paper": {
+  //               boxSizing: "border-box",
+  //               width: drawerWidth,
+  //             },
+  //           }}
+  //           open
+  //         >
+  //           {drawer}
+  //         </Drawer>
+  //       </Box>
+  //       <Box
+  //         component="main"
+  //         sx={{
+  //           flexGrow: 1,
+  //           p: 3,
+  //           width: { sm: `calc(100% - ${drawerWidth}px)` },
+  //         }}
+  //       >
+  //         <Toolbar />
+  //         <Container maxWidth="lg">
+  //           <Typography variant="h6">Database not found</Typography>
+  //         </Container>
+  //       </Box>
+  //     </Box>
+  //   );
+  // }
 
   return (
     <Box sx={{ display: "flex" }}>
@@ -987,7 +987,7 @@ const DatabaseDetails = () => {
               variant="h5"
               sx={{ ml: 2, color: "var(--primary-text)" }}
             >
-              Database: {database.data?.dbName || dbName || "Unnamed Database"}
+              {/* Database: {database ? database.data.dbName : dbName || "Unnamed Database"} */}
             </Typography>
           </Box>
           <Box sx={{ flexGrow: 1 }} />
@@ -1022,7 +1022,7 @@ const DatabaseDetails = () => {
           </Button>
         </Toolbar>
       </AppBar>
-      <Box
+      {/* <Box
         component="nav"
         sx={{ width: { sm: drawerWidth }, flexShrink: { sm: 0 } }}
       >
@@ -1056,7 +1056,7 @@ const DatabaseDetails = () => {
         >
           {drawer}
         </Drawer>
-      </Box>
+      </Box> */}
       <Box
         component="main"
         sx={{
@@ -1117,7 +1117,7 @@ const DatabaseDetails = () => {
               <Box sx={{ display: "flex", alignItems: "center", mb: 1, ml: 2 }}>
                 <FaDatabase size={24} />
                 <Typography variant="h4" sx={{ ml: 2 }}>
-                  {database.data?.dbName || dbName || "Unnamed Database"}
+                  { dbName }
                 </Typography>
               </Box>
               <Divider sx={{ my: 2 }} />

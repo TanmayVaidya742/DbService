@@ -43,7 +43,7 @@ import {
 } from "@mui/icons-material";
 import { useLocation, useNavigate } from "react-router-dom";
 import { styled } from "@mui/material/styles";
-import DashboardCustomizeRoundedIcon from '@mui/icons-material/DashboardCustomizeRounded';
+import DashboardCustomizeRoundedIcon from "@mui/icons-material/DashboardCustomizeRounded";
 import axiosInstance from "../utils/axiosInstance";
 
 const drawerWidth = 240;
@@ -79,16 +79,16 @@ const Dashboard = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(false);
   const [currentUser, setCurrentUser] = useState({
-    email: '',
-    id: '',
-    name: '',
-    orgName: '', // Changed from organization to orgName
+    email: "",
+    id: "",
+    name: "",
+    orgName: "", // Changed from organization to orgName
   });
 
   const handleLogout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
-    setCurrentUser({ email: '', id: '', name: '', orgName: '' });
+    setCurrentUser({ email: "", id: "", name: "", orgName: "" });
     setSnackbar({
       open: true,
       message: "Logged out successfully",
@@ -104,31 +104,33 @@ const Dashboard = () => {
   useEffect(() => {
     const fetchCurrentUser = async () => {
       try {
-        const token = localStorage.getItem('token');
+        const token = localStorage.getItem("token");
         const user = JSON.parse(localStorage.getItem("user"));
         if (!token) {
           setSnackbar({
             open: true,
-            message: 'Not authenticated. Please log in.',
-            severity: 'error',
+            message: "Not authenticated. Please log in.",
+            severity: "error",
           });
-          navigate('/login');
+          navigate("/login");
           return;
         }
 
         // Fetch user data
-        const userResponse = await axiosInstance.get('/users/get-user', {
+        const userResponse = await axiosInstance.get("/users/get-user", {
           params: { orgId: user.orgId },
-          headers: { Authorization: `Bearer ${token}` },
+          headers: { Authorization: `${token}` },
         });
 
         if (userResponse.data && userResponse.data.data) {
           const userData = userResponse.data.data[0];
 
           // Fetch organization data to get orgName
-          const orgResponse = await axiosInstance.get('/orgs');
-          const orgData = orgResponse.data.data.find(org => org.orgId === userData.orgId);
-          const orgName = orgData ? orgData.orgName : 'Not specified';
+          const orgResponse = await axiosInstance.get("/orgs");
+          const orgData = orgResponse.data.data.find(
+            (org) => org.orgId === userData.orgId
+          );
+          const orgName = orgData ? orgData.orgName : "Not specified";
 
           setCurrentUser({
             email: userData.email,
@@ -137,19 +139,19 @@ const Dashboard = () => {
             orgName: orgName,
           });
         } else {
-          console.error('User data missing in response:', userResponse.data);
+          console.error("User data missing in response:", userResponse.data);
           setSnackbar({
             open: true,
-            message: 'User data incomplete',
-            severity: 'warning',
+            message: "User data incomplete",
+            severity: "warning",
           });
         }
       } catch (error) {
-        console.error('Failed to fetch user:', error);
+        console.error("Failed to fetch user:", error);
         setSnackbar({
           open: true,
-          message: error.response?.data?.error || 'Failed to load user data',
-          severity: 'error',
+          message: error.response?.data?.error || "Failed to load user data",
+          severity: "error",
         });
       }
     };
@@ -157,6 +159,7 @@ const Dashboard = () => {
     fetchCurrentUser();
   }, [navigate]);
 
+  console.log("0000000000000000000000000000000000000000000000000000000000");
   useEffect(() => {
     fetchUsers();
   }, []);
@@ -262,12 +265,9 @@ const Dashboard = () => {
 
   const handleDeleteUser = async () => {
     try {
-      const response = await axiosInstance.delete(
-        `/orgs/delete-org`,
-        { 
-          data: { orgName: userToDelete.orgName } 
-        }
-      );
+      const response = await axiosInstance.delete(`/orgs/delete-org`, {
+        data: { orgName: userToDelete.orgName },
+      });
 
       setSnackbar({
         open: true,
@@ -275,7 +275,9 @@ const Dashboard = () => {
         severity: "success",
       });
 
-      setUsers(prevUsers => prevUsers.filter(org => org.orgId !== userToDelete.orgId));
+      setUsers((prevUsers) =>
+        prevUsers.filter((org) => org.orgId !== userToDelete.orgId)
+      );
       handleCloseDeleteDialog();
     } catch (error) {
       console.error("Error deleting organization:", error);
@@ -292,53 +294,54 @@ const Dashboard = () => {
     setSnackbar({ ...snackbar, open: false });
   };
 
-  const filteredUsers = users.filter((org) =>
-    (org.orgName?.toLowerCase() || "").includes(searchTerm.toLowerCase()) ||
-    (org.domain?.toLowerCase() || "").includes(searchTerm.toLowerCase())
+  const filteredUsers = users.filter(
+    (org) =>
+      (org.orgName?.toLowerCase() || "").includes(searchTerm.toLowerCase()) ||
+      (org.domain?.toLowerCase() || "").includes(searchTerm.toLowerCase())
   );
 
   const location = useLocation();
 
-  const drawer = (
-    <div style={{ backgroundColor: "var(--bg-paper)" }}>
-      <Toolbar>
-        <Typography variant="h6" style={{ color: "var(--text-primary)" }}>
-          1SPOC DAAS
-        </Typography>
-      </Toolbar>
-      <Divider style={{ backgroundColor: "var(--border-color)" }} />
-      <List>
-        <ListItem
-          button
-          onClick={() => navigate("/superadmin-dashboard")}
-          selected={location.pathname === '/superadmin-dashboard'}
-          style={{
-            color:
-              location.pathname === '/superadmin-dashboard'
-                ? "var(--primary-color)"
-                : "var(--text-primary)",
-            backgroundColor:
-              location.pathname === '/superadmin-dashboard'
-                ? "var(--primary-light)"
-                : "transparent",
-            cursor: "pointer"
-          }}
-        >
-          <ListItemIcon>
-            <DashboardIcon
-              style={{
-                color:
-                  location.pathname === '/superadmin-dashboard'
-                    ? "var(--primary-color)"
-                    : "var(--text-secondary)",
-              }}
-            />
-          </ListItemIcon>
-          <ListItemText primary="Dashboard" />
-        </ListItem>
-      </List>
-    </div>
-  );
+  // const drawer = (
+  //   <div style={{ backgroundColor: "var(--bg-paper)" }}>
+  //     <Toolbar>
+  //       <Typography variant="h6" style={{ color: "var(--text-primary)" }}>
+  //         1SPOC DAAS
+  //       </Typography>
+  //     </Toolbar>
+  //     <Divider style={{ backgroundColor: "var(--border-color)" }} />
+  //     <List>
+  //       <ListItem
+  //         button
+  //         onClick={() => navigate("/superadmin-dashboard")}
+  //         selected={location.pathname === "/superadmin-dashboard"}
+  //         style={{
+  //           color:
+  //             location.pathname === "/superadmin-dashboard"
+  //               ? "var(--primary-color)"
+  //               : "var(--text-primary)",
+  //           backgroundColor:
+  //             location.pathname === "/superadmin-dashboard"
+  //               ? "var(--primary-light)"
+  //               : "transparent",
+  //           cursor: "pointer",
+  //         }}
+  //       >
+  //         <ListItemIcon>
+  //           <DashboardIcon
+  //             style={{
+  //               color:
+  //                 location.pathname === "/superadmin-dashboard"
+  //                   ? "var(--primary-color)"
+  //                   : "var(--text-secondary)",
+  //             }}
+  //           />
+  //         </ListItemIcon>
+  //         <ListItemText primary="Dashboard" />
+  //       </ListItem>
+  //     </List>
+  //   </div>
+  // );
 
   return (
     <Box
@@ -404,7 +407,7 @@ const Dashboard = () => {
         </Toolbar>
       </AppBar>
 
-      <Box
+      {/* <Box
         component="nav"
         sx={{ width: { sm: drawerWidth }, flexShrink: { sm: 0 } }}
       >
@@ -436,7 +439,7 @@ const Dashboard = () => {
         >
           {drawer}
         </Drawer>
-      </Box>
+      </Box> */}
 
       <Box
         component="main"
@@ -449,37 +452,39 @@ const Dashboard = () => {
         <Toolbar />
         <Grid>
           <StyledPaper>
-            <Box sx={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              mb: 3,
-              flexDirection: { xs: 'column', sm: 'row' },
-              gap: 2
-            }}>
+            <Box
+              sx={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                mb: 3,
+                flexDirection: { xs: "column", sm: "row" },
+                gap: 2,
+              }}
+            >
               <Box>
                 <Typography
                   variant="h5"
                   sx={{
-                    color: 'var(--text-primary)',
-                    fontWeight: 'bold',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 1
+                    color: "var(--text-primary)",
+                    fontWeight: "bold",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 1,
                   }}
                 >
-                  Welcome, {currentUser?.name || 'Admin'}
+                  Welcome, {currentUser?.name || "Admin"}
                 </Typography>
                 <Typography
                   variant="subtitle1"
                   sx={{
-                    color: 'var(--text-secondary)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 1
+                    color: "var(--text-secondary)",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 1,
                   }}
                 >
-                  Organization: {currentUser?.orgName || 'Not specified'}
+                  Organization: {currentUser?.orgName || "Not specified"}
                 </Typography>
               </Box>
               <Button
@@ -562,7 +567,9 @@ const Dashboard = () => {
                         <TableCell>{org.orgName}</TableCell>
                         <TableCell>{org.domain}</TableCell>
                         <TableCell>
-                          {org.createdAt ? new Date(org.createdAt).toLocaleString() : ''}
+                          {org.createdAt
+                            ? new Date(org.createdAt).toLocaleString()
+                            : ""}
                         </TableCell>
                         <TableCell>
                           <IconButton

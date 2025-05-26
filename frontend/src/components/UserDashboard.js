@@ -101,7 +101,7 @@ const UserDashboard = () => {
       // Fetch user data
       const userResponse = await axiosInstance.get('/users/get-user', {
         params: { orgId: user.orgId },
-        headers: { Authorization: `Bearer ${token}` },
+        headers: { Authorization: `${token}` },
       });
 
       if (userResponse.data?.data?.[0]) {
@@ -163,7 +163,7 @@ const UserDashboard = () => {
       const response = await axiosInstance.get("/database", {
         params: { userId: currentUser.id },
         headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
+          Authorization: `${localStorage.getItem("token")}`,
         },
       });
 
@@ -197,7 +197,7 @@ const UserDashboard = () => {
     try {
       const response = await axiosInstance.delete(`/database/${deleteDialog.name}`, {
         headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
+          Authorization: `${localStorage.getItem("token")}`,
         },
       });
 
@@ -281,7 +281,7 @@ const UserDashboard = () => {
       const response = await axiosInstance.post(
         "/database",
         { databaseName: formData.databaseName },
-        { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } }
+        { headers: { Authorization: `${localStorage.getItem("token")}` } }
       );
 
       setSnackbar({
@@ -351,40 +351,7 @@ const UserDashboard = () => {
     setSnackbar({ ...snackbar, open: false });
   };
 
-  const drawer = (
-    <div style={{ backgroundColor: "var(--bg-paper)" }}>
-      <Toolbar>
-        <Typography variant="h6" style={{ color: "var(--text-primary)" }}>
-          1SPOC DAAS
-        </Typography>
-      </Toolbar>
-      <Divider style={{ backgroundColor: "var(--border-color)" }} />
-      <List>
-        <ListItem
-          button
-          onClick={() => navigate("/databases")}
-          selected={location.pathname === "/databases"}
-          style={{
-            color: location.pathname === "/databases"
-              ? "var(--primary-color)"
-              : "var(--text-primary)",
-            backgroundColor: location.pathname === "/databases"
-              ? "var(--primary-light)"
-              : "transparent"
-          }}
-        >
-          <ListItemIcon>
-            <DashboardCustomizeRoundedIcon style={{
-              color: location.pathname === "/databases"
-                ? "var(--primary-color)"
-                : "var(--text-secondary)"
-            }} />
-          </ListItemIcon>
-          <ListItemText primary="Databases" />
-        </ListItem>
-      </List>
-    </div>
-  );
+  
 
   return (
     <Box sx={{ display: "flex", backgroundColor: "var(--bg-secondary)", minHeight: "100vh" }}>
@@ -438,36 +405,7 @@ const UserDashboard = () => {
         </Toolbar>
       </AppBar>
 
-      <Box component="nav" sx={{ width: { sm: drawerWidth }, flexShrink: { sm: 0 } }}>
-        <Drawer
-          variant="temporary"
-          open={mobileOpen}
-          onClose={handleDrawerToggle}
-          ModalProps={{ keepMounted: true }}
-          sx={{
-            display: { xs: "block", sm: "none" },
-            "& .MuiDrawer-paper": {
-              width: drawerWidth,
-              backgroundColor: "var(--bg-paper)",
-            },
-          }}
-        >
-          {drawer}
-        </Drawer>
-        <Drawer
-          variant="permanent"
-          sx={{
-            display: { xs: "none", sm: "block" },
-            "& .MuiDrawer-paper": {
-              width: drawerWidth,
-              backgroundColor: "var(--bg-paper)",
-            },
-          }}
-          open
-        >
-          {drawer}
-        </Drawer>
-      </Box>
+      
 
       <Box
         component="main"
