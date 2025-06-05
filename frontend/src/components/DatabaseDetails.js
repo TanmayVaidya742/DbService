@@ -62,6 +62,7 @@ import UpgradeDialog from "./UpgradeDialog";
 import StoreIcon from "@mui/icons-material/Store";
 import DashboardIcon from "@mui/icons-material/Dashboard";
 import StorageRoundedIcon from "@mui/icons-material/StorageRounded";
+import { useSelector } from "react-redux";
 
 const drawerWidth = 240;
 
@@ -106,20 +107,20 @@ const DatabaseDetails = () => {
   const [upgradeDialogOpen, setUpgradeDialogOpen] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
   const [tableHasData, setTableHasData] = useState(false);
-
+  const state = useSelector((store) => store.dbaasStore);
   const fetchCurrentUser = async () => {
     try {
       const token = localStorage.getItem("token");
-      const user = JSON.parse(localStorage.getItem("user"));
-      if (!token) {
-        setSnackbar({
-          open: true,
-          message: "Not authenticated. Please log in.",
-          severity: "error",
-        });
-        navigate("/login");
-        return;
-      }
+      const user =  state.userData;
+      // if (!token) {
+      //   setSnackbar({
+      //     open: true,
+      //     message: "Not authenticated. Please log in.",
+      //     severity: "error",
+      //   });
+      //   navigate("/login");
+      //   return;
+      // }
 
       const response = await axiosInstance.get("/users/get-user", {
         params: { orgId: user.orgId },
@@ -129,9 +130,9 @@ const DatabaseDetails = () => {
       if (response.data && response.data.data) {
         const userData = response.data.data[0];
         setCurrentUser({
-          email: userData.email,
-          id: userData.userId,
-          name: `${userData.firstName} ${userData.lastName}`,
+          email: state.userData.email ? state.userData.email: userData.email,
+          id: state.userData.id ? state.userData.id: userData.userId,
+          name: `${state.userData.firstName} ${state.userData.lastName}` ? `${state.userData.firstName} ${state.userData.lastName}`: `${userData.firstName} ${userData.lastName}`,
         });
       } else {
         console.error("User data missing in response:", response.data);
@@ -419,42 +420,47 @@ const DatabaseDetails = () => {
         return;
     }
 
-    navigator.clipboard
-      .writeText(url)
-      .then(() => {
-        setSnackbar({
-          open: true,
-          message: (
-            <div>
-              <div>{`${
-                action.charAt(0).toUpperCase() + action.slice(1)
-              } URL copied to clipboard!`}</div>
-              <div
-                style={{
-                  fontFamily: "monospace",
-                  padding: "8px",
-                  borderRadius: "4px",
-                  marginTop: "8px",
-                  wordBreak: "break-all",
-                  fontSize: "0.9em",
-                }}
-              >
-                {url}
+    if (navigator?.clipboard?.writeText) {
+      navigator.clipboard.writeText(url)
+        .then(() => {
+          setSnackbar({
+            open: true,
+            message: (
+              <div>
+                <div>{`${action.charAt(0).toUpperCase() + action.slice(1)} URL copied to clipboard!`}</div>
+                <div
+                  style={{
+                    fontFamily: "monospace",
+                    padding: "8px",
+                    borderRadius: "4px",
+                    marginTop: "8px",
+                    wordBreak: "break-all",
+                    fontSize: "0.9em",
+                  }}
+                >
+                  {url}
+                </div>
               </div>
-            </div>
-          ),
-          severity: "success",
+            ),
+            severity: "success",
+          });
+        })
+        .catch((err) => {
+          console.error("Failed to copy URL: ", err);
+          setSnackbar({
+            open: true,
+            message: "Failed to copy URL to clipboard",
+            severity: "error",
+          });
         });
-      })
-      .catch((err) => {
-        console.error("Failed to copy URL: ", err);
-        setSnackbar({
-          open: true,
-          message: "Failed to copy URL to clipboard",
-          severity: "error",
-        });
+    } else {
+      console.error("Clipboard API not supported.");
+      setSnackbar({
+        open: true,
+        message: "Clipboard not supported in this browser or context",
+        severity: "error",
       });
-    return url;
+    }
   };
 
   const handleMenuAction = (action) => {
@@ -961,8 +967,8 @@ const DatabaseDetails = () => {
   // }
 
   return (
-    <Box sx={{ display: "flex" }}>
-      <AppBar
+    <Box sx={{ display: "flex"}}>
+      {/* <AppBar
         position="fixed"
         sx={{
           zIndex: (theme) => theme.zIndex.drawer + 1,
@@ -986,7 +992,7 @@ const DatabaseDetails = () => {
               variant="h5"
               sx={{ ml: 2, color: "var(--primary-text)" }}
             >
-              {/* Database: {database ? database.data.dbName : dbName || "Unnamed Database"} */}
+              Database: {database ? database.data.dbName : dbName || "Unnamed Database"}
             </Typography>
           </Box>
           <Box sx={{ flexGrow: 1 }} />
@@ -1020,7 +1026,7 @@ const DatabaseDetails = () => {
             <LogoutIcon fontSize="small" />
           </Button>
         </Toolbar>
-      </AppBar>
+      </AppBar> */}
       {/* <Box
         component="nav"
         sx={{ width: { sm: drawerWidth }, flexShrink: { sm: 0 } }}

@@ -38,3 +38,19 @@
 }
 
 
+.app-list-grid-container {
+    padding: 0.5rem;
+    display: grid;
+    /* grid-template-columns: 1fr 1fr 1fr; */
+    grid-template-rows: 1fr 1fr 1fr;
+    gap: 0.25rem;
+    height: fit-content !important;
+    max-height: 300px !important;
+    max-width: 400px !important;
+    background-color: white !important;
+    border-radius: 4px !important;
+    /* overflow-y: scroll !important;
+    overflow-x: hidden !important; */
+
+    /* grid-template-rows: repeat(1fr); */
+  }

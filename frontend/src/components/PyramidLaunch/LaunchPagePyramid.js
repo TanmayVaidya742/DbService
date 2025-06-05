@@ -102,6 +102,7 @@ export default function LaunchPagePyramid() {
           display={"flex"}
           flexDirection={"column"}
           alignItems={"center"}
+          justifyContent={"center"}
         >
           <Grid component={Paper} p={4}>
             <Grid>
@@ -110,7 +111,7 @@ export default function LaunchPagePyramid() {
                 display={"flex"}
                 justifyContent={"center"}
                 textAlign={"center"}
-                variant="h1"
+                variant="h4"
                 mb={2}
               >
                 Welcome {state ? state.firstName : ""} to DBAAS Panel of{" "}

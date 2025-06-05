@@ -115,58 +115,118 @@ const CreateTableDialog = ({ open, onClose, dbName, onSubmit }) => {
     }
   }, [open, dbName]);
 
-  const fetchAvailableTables = async () => {
-    setLoadingTables(true);
-    try {
-      const response = await axiosInstance.get(
-        `/api/databases/${dbName}/tables`,
-        {
-          headers: {
-            Authorization: `${localStorage.getItem("token")}`,
-          },
-        }
-      );
+  // const fetchAvailableTables = async () => {
+  //   setLoadingTables(true);
+  //   try {
+  //     const response = await axiosInstance.get(
+  //       `/api/databases/${dbName}/tables`,
+  //       {
+  //         headers: {
+  //           Authorization: `${localStorage.getItem("token")}`,
+  //         },
+  //       }
+  //     );
 
-      const tableNames = response.data
-        .map((table) => table.tablename)
-        .filter((name) => name);
-      setAvailableTables(tableNames);
-    } catch (error) {
-      console.error("Failed to fetch tables:", error);
-      setAvailableTables([]);
-    } finally {
-      setLoadingTables(false);
-    }
-  };
+  //     const tableNames = response.data
+  //       .map((table) => table.tablename)
+  //       .filter((name) => name);
+  //     setAvailableTables(tableNames);
+  //   } catch (error) {
+  //     console.error("Failed to fetch tables:", error);
+  //     setAvailableTables([]);
+  //   } finally {
+  //     setLoadingTables(false);
+  //   }
+  // };
+
+  // const fetchTableColumns = async (tableName) => {
+  //   if (!tableName) return [];
+
+  //   setLoadingColumns(true);
+  //   try {
+  //     const response = await axios.get(
+  //       `http://localhost:5000/api/databases/${dbName}/tables/${tableName}/columns`,
+  //       {
+  //         headers: {
+  //           Authorization: `${localStorage.getItem("token")}`,
+  //         },
+  //       }
+  //     );
+
+  //     const columnNames = response.data.map((col) => col.column_name);
+  //     setTableColumnsCache((prev) => ({
+  //       ...prev,
+  //       [tableName]: columnNames,
+  //     }));
+
+  //     return columnNames;
+  //   } catch (error) {
+  //     console.error(`Failed to fetch columns for table ${tableName}:`, error);
+  //     return [];
+  //   } finally {
+  //     setLoadingColumns(false);
+  //   }
+  // };
+
+
+const fetchAvailableTables = async () => {
+  setLoadingTables(true);
+  try {
+    const response = await axiosInstance.get(`/table/${dbId}/tables`, {
+      headers: {
+        Authorization: `${localStorage.getItem("token")}`,
+      },
+    });
+    const tableNames = response.data
+      .map((table) => table.tableName || table.tableNames) 
+      .filter(Boolean); 
+
+    console.log("Extracted table names:", tableNames); 
+    setAvailableTables(tableNames);
+  } catch (error) {
+    console.error("Failed to fetch tables:", error);
+    setAvailableTables([]);
+  } finally {
+    setLoadingTables(false);
+  }
+};
 
   const fetchTableColumns = async (tableName) => {
-    if (!tableName) return [];
+  if (!tableName) return [];
 
-    setLoadingColumns(true);
-    try {
-      const response = await axios.get(
-        `http://localhost:5000/api/databases/${dbName}/tables/${tableName}/columns`,
-        {
-          headers: {
-            Authorization: `${localStorage.getItem("token")}`,
-          },
+  setLoadingColumns(true);
+  try {
+    const response = await axiosInstance.get(
+      `/table/${dbId}/tables/${tableName}/columns`, 
+      {
+        headers: {
+          Authorization:  `${localStorage.getItem("token")}`,
         }
-      );
-
-      const columnNames = response.data.map((col) => col.column_name);
-      setTableColumnsCache((prev) => ({
-        ...prev,
-        [tableName]: columnNames,
-      }));
-
-      return columnNames;
-    } catch (error) {
-      console.error(`Failed to fetch columns for table ${tableName}:`, error);
-      return [];
-    } finally {
-      setLoadingColumns(false);
+      }
+    );
+    let columnNames = [];
+    if (Array.isArray(response.data)) {
+      columnNames = response.data.map((col) => col.column_name || col.name);
+    } else if (response.data.columns) {
+      columnNames = response.data.columns;
+    } else if (typeof response.data === 'object') {
+      columnNames = Object.keys(response.data);
     }
-  };
+    setTableColumnsCache((prev) => ({
+      ...prev,
+      [tableName]: columnNames,
+    }));
+
+    return columnNames;
+  } catch (error) {
+    console.error(`Failed to fetch columns for table ${tableName}:`, error);
+    console.error("Error details:", error.response?.data); 
+    return [];
+  } finally {
+    setLoadingColumns(false);
+  }
+};
+
 
   const handleForeignKeyTableSelect = async (index, tableName) => {
     handleColumnChange(index, "foreignKeyColumn", "");

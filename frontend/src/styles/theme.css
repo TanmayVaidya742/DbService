@@ -1,16 +1,17 @@
 :root {
   /* Color Palette - Blue Theme */
-  --primary-color: #3d53fb; /* Tailwind's blue-500 */
-  --primary-hover: #6b9efc; /* Tailwind's blue-600 */
-  --primary-light: rgba(59, 130, 246, 0.08);
+  --primary-color: #C55A11; /* Tailwind's blue-500 */
+  --primary-hover: #f1a172; /* Tailwind's blue-600 */
+  --primary-light: #f5e9e2;
   --primary-light-hover: rgba(59, 130, 246, 0.12);
   --primary-text: white;
+  --primary-text_black: black;
   
-  --secondary-color: #6e74eb; /* Tailwind's blue-400 */
-  --error-color: #515ff9;     /* Tailwind's red-500 */
-  --success-color: #10b981;   /* Tailwind's emerald-500 */
-  --warning-color: #f59e0b;   /* Tailwind's amber-500 */
-  --info-color: #0ea5e9;      /* Tailwind's sky-500 */
+  --secondary-color: #f5e9e2; 
+  --error-color: #C55A11;    
+  --success-color: #10b981;  
+  --warning-color: #f59e0b;  
+  --info-color: #C55A11;
   
   /* Background Colors */
   --bg-primary: #ffffff;

@@ -13,7 +13,7 @@ function AuthGuard({ children, params }) {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const [loading, setLoading] = React.useState(false);
-  const state = useSelector((state) => state.userManagementSlice);
+  const state = useSelector((state) => state.dbaasStore);
   const {
     REACT_APP_HTTP_PROTOCOL,
     REACT_APP_REGISTRY_FRONTEND_PORT,
